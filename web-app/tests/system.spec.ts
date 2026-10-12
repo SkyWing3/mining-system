@@ -13,7 +13,7 @@ async function signIn(page: Page) {
   await page.getByLabel('Contraseña', { exact: true }).fill(password)
   await page.getByRole('button', { name: 'Ingresar a la central' }).click()
   await expect(page.getByRole('heading', { name: 'Vista general', exact: true })).toBeVisible()
-  await expect(page.getByText('Central conectada', { exact: true })).toBeVisible()
+  await expect(page.locator('.connection-warning')).toHaveCount(0)
   await expect(page.getByRole('heading', { name: 'Últimos mensajes', exact: true })).toBeVisible()
 }
 
@@ -36,18 +36,24 @@ test.describe.serial('Mining System', () => {
   test('first administrator, empty dashboard and exact light palette', async ({ page }) => {
     const errors: string[] = []
     page.on('pageerror', error => errors.push(error.message))
+    let startupAttempts = 0
+    await page.route('**/api/auth/status', route => ++startupAttempts === 1 ? route.abort('failed') : route.continue())
     await page.goto('/')
+    await expect(page.getByText('La conexión se restablecerá automáticamente.')).toBeVisible()
+    await expect(page.getByRole('button', { name: /Reintentar|Actualizar datos/ })).toHaveCount(0)
     await expect(page.getByRole('heading', { name: 'Prepara tu central' })).toBeVisible()
+    await page.unroute('**/api/auth/status')
     await page.screenshot({ path: 'test-results/login.png', fullPage: true })
     await page.getByLabel('Nombre completo').fill('Administración Central')
     await page.getByLabel('Correo electrónico').fill('admin@browser.invalid')
     await page.getByLabel('Contraseña', { exact: true }).fill(password)
     await page.getByRole('button', { name: 'Crear cuenta y comenzar' }).click()
     await expect(page.getByRole('heading', { name: 'Vista general', exact: true })).toBeVisible()
-    await expect(page.getByText('Central conectada', { exact: true })).toBeVisible()
+    await expect(page.locator('.connection-warning')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /Reintentar|Actualizar datos/ })).toHaveCount(0)
     await expect(page.getByText('Conecta tu primera manilla')).toBeVisible()
     expect(await page.locator('.stat-card.alert').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(133, 42, 59)')
-    expect(await page.locator('.sidebar').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(255, 255, 255)')
+    expect(await page.locator('.sidebar').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgb(55, 57, 70)')
     expect(errors).toEqual([])
   })
 
@@ -82,8 +88,13 @@ test.describe.serial('Mining System', () => {
     const errors: string[] = []
     page.on('pageerror', error => errors.push(error.message))
     await signIn(page)
+    let snapshotAttempts = 0
+    await page.route('**/api/overview', route => ++snapshotAttempts === 1
+      ? route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ message: 'Corte temporal de prueba.' }) })
+      : route.continue())
     await send('HELP')
     await expect(page.locator('.message-title').getByText('Ayuda', { exact: true })).toBeVisible({ timeout: 3000 })
+    await page.unroute('**/api/overview')
     await send('', true)
     await expect(page.locator('.team-reading')).toContainText('28.6 °C')
     await page.screenshot({ path: 'test-results/dashboard.png', fullPage: true })
@@ -104,7 +115,7 @@ test.describe.serial('Mining System', () => {
     await expect(page.getByText(/El enlace en vivo se está restableciendo/)).toBeVisible({ timeout: 10000 })
     await send('OK')
     await page.context().setOffline(false)
-    await expect(page.getByText('Central conectada', { exact: true })).toBeVisible({ timeout: 25000 })
+    await expect(page.locator('.connection-warning')).toHaveCount(0, { timeout: 25000 })
     await expect(page.locator('.message-title').getByText('Todo bien', { exact: true })).toBeVisible()
     expect(await page.locator('textarea').count()).toBe(0)
     expect(errors).toEqual([])
