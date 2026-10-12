@@ -251,3 +251,27 @@ class DockerStackTests(unittest.TestCase):
             'test -d /var/lib/mining-system/restore-check/keys',
         ], cwd=ROOT, env=self.environment, input=backup.stdout, capture_output=True, timeout=30)
         self.assertEqual(restored.returncode, 0, restored.stderr.decode())
+
+    def test_06_script_down_and_restart_preserve_data_and_sessions(self):
+        with tempfile.TemporaryDirectory(prefix='mining-down-test-') as outside_repository:
+            stopped = subprocess.run(
+                [str(ROOT / 'start.sh'), '--down'], cwd=outside_repository, env=self.environment,
+                capture_output=True, text=True, timeout=60,
+            )
+            self.assertEqual(stopped.returncode, 0, stopped.stderr)
+            self.assertIn('Datos conservados.', stopped.stdout)
+            self.assertEqual(self.compose('ps', '--all', '-q').strip(), '')
+            volume = subprocess.run(
+                ['docker', 'volume', 'inspect', self.project + '_central-data'],
+                capture_output=True, timeout=10,
+            )
+            self.assertEqual(volume.returncode, 0, volume.stderr.decode())
+            restarted = subprocess.run(
+                [str(ROOT / 'start.sh')], cwd=outside_repository, env=self.environment,
+                capture_output=True, text=True, timeout=900,
+            )
+            self.assertEqual(restarted.returncode, 0, restarted.stderr)
+        status, _, messages = self.call('/api/messages?deviceId=' + self.device['id'])
+        self.assertEqual(status, 200)  # The existing session still works after down/up.
+        self.assertEqual(messages['total'], 1)
+        self.assertEqual(messages['items'][0]['id'], self.message_id)

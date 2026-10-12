@@ -49,7 +49,7 @@ cp -n .env.example .env
 | `MINING_PUBLIC_ORIGIN` | `http://franco-rasp4.local` | Origen adicional permitido por la API. Incluir el puerto si no es 80. |
 | `MINING_DOCKER_SUBNET` | `172.30.84.0/24` | Red privada del proxy y la API. Cambiar si coincide con otra red Docker o con la LAN. |
 
-Si se cambia la subred de una instalación existente, ejecutar `sudo docker compose down` antes de levantarla otra vez para recrear la red; el volumen de datos se conserva.
+Si se cambia la subred de una instalación existente, ejecutar `sudo ./start.sh --down` antes de levantarla otra vez para recrear la red; el volumen de datos se conserva.
 
 Ejemplo con un puerto ocupado por otro servicio:
 
@@ -74,13 +74,15 @@ sudo docker compose logs --tail=100 -f
 ./start.sh
 
 # Detener, conservando los datos
-sudo docker compose down
+./start.sh --down
 
 # Volver a iniciar, sin recompilar
 sudo docker compose up -d --wait
 ```
 
 Docker se inicia con el sistema y `restart: unless-stopped` vuelve a levantar los contenedores tras reiniciar la Raspberry, siempre que no se hayan detenido explícitamente. La actualización conserva usuarios, mensajes y claves de sesión. **`docker compose down -v` elimina los datos**: no usarlo para una parada o actualización normal.
+
+`./start.sh --help` muestra las opciones. Si Docker requiere permisos de administrador, anteponer `sudo` también al usar `--down`.
 
 ## Respaldar e importar datos
 

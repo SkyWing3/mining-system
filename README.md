@@ -12,6 +12,8 @@ En la Raspberry Pi 4B con **Ubuntu Server LTS de 64 bits**, Docker y Docker Comp
 
 Si Docker requiere permisos de administrador, usar `sudo ./start.sh`. El script compila las imágenes, inicia la API y la web-app, espera sus comprobaciones de salud y muestra la dirección de acceso. Usar el mismo comando para actualizar tras cambiar el código.
 
+Para detener la central conservando los datos: `./start.sh --down` (o `sudo ./start.sh --down`). `./start.sh --help` muestra las opciones.
+
 Abrir **http://franco-rasp4.local**, usando el mDNS del servidor. Nginx redirige ambos WebSockets y los datos/sesiones se conservan en un volumen. No hace falta crear `.env` ni instalar Node.js o .NET en el servidor.
 
 Consultar [despliegue Docker](docs/docker.md) para configuración, actualizaciones, respaldos, mDNS y el contenedor opcional de la manilla OLED.
