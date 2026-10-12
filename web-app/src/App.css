@@ -1165,13 +1165,16 @@
 .search-field input:focus-visible {
   outline:0
 }
-.message-toolbar select,.table-toolbar select {
+.message-toolbar .app-select,.table-toolbar .app-select {
   width:auto;
   min-width:155px;
+  max-width:100%
+}
+.message-toolbar .select-trigger,.table-toolbar .select-trigger {
   height:40px;
   font-size:11px;
   border-color:var(--control-border);
-  padding-right:25px
+  padding-right:10px
 }
 .message-toolbar .export-button {
   font-size:11px;
@@ -1262,7 +1265,9 @@
   color:var(--muted)
 }
 .table-scroll {
-  overflow-x:auto
+  overflow-x:auto;
+  max-width:100%;
+  contain:inline-size layout paint
 }
 table {
   border-collapse:collapse;
@@ -1592,17 +1597,6 @@ tbody tr:hover {
   grid-template-columns:1fr 1fr;
   gap:15px
 }
-.checkbox-label {
-  display:flex;
-  flex-direction:row;
-  align-items:center;
-  gap:8px
-}
-.checkbox-label input {
-  width:15px;
-  height:15px;
-  accent-color:var(--wine)
-}
 .form-hint {
   font-size:11px;
   line-height:1.85;
@@ -1901,7 +1895,7 @@ tbody tr:hover {
   .message-toolbar {
     padding:18px
   }
-  .message-toolbar select {
+  .message-toolbar .app-select {
     min-width:140px
   }
 }
@@ -2135,7 +2129,7 @@ tbody tr:hover {
     width:100%;
     flex:auto
   }
-  .message-toolbar select {
+  .message-toolbar .app-select {
     flex:1;
     width:auto;
     min-width:120px;

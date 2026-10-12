@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { AlertCircle, Check, Copy, KeyRound, Save } from 'lucide-react'
 import { post, put } from './api'
 import { Modal } from './components'
+import { ApplicationForm, Checkbox, Select, TextField } from './controls'
 import type { Device, User, Reading } from './types'
 
 export function UserForm({ user, close, saved }: { user: User | null; close: () => void; saved: () => void }) {
@@ -15,7 +16,22 @@ export function UserForm({ user, close, saved }: { user: User | null; close: () 
     try { await (user ? put(`/users/${user.id}`, body) : post('/users', body)); saved(); close() }
     catch (error) { setError((error as Error).message) } finally { setBusy(false) }
   }
-  return <Modal title={user ? 'Editar usuario' : 'Crear usuario'} subtitle="Define su acceso y su función en la central." close={close}><form className="dialog-form" onSubmit={submit}><label>Nombre completo<input autoComplete="name" name="name" required minLength={2} maxLength={100} defaultValue={user?.name} placeholder="Nombre y apellido" /></label><label>Correo electrónico<input autoComplete="email" name="email" type="email" required maxLength={180} defaultValue={user?.email} placeholder="nombre@empresa.com" /></label><div className="form-grid"><label>Rol<select name="role" defaultValue={user?.role ?? 'Miner'}><option value="Miner">Minero</option><option value="Supervisor">Supervisor</option><option value="Admin">Administrador</option></select></label><label>Contraseña{user && <small>Opcional; renueva el acceso</small>}<input autoComplete="new-password" name="password" type="password" required={!user} minLength={10} maxLength={128} placeholder={user ? 'Conservar la actual' : 'Mínimo 10 caracteres'} /></label></div><label className="checkbox-label"><input name="active" type="checkbox" defaultChecked={user?.active ?? true} />Cuenta activa</label><p className="form-hint">El administrador gestiona usuarios. El supervisor monitorea y administra manillas. El minero envía mensajes desde su manilla.</p>{error && <div className="form-error" role="alert"><AlertCircle size={16} />{error}</div>}<div className="modal-actions"><button className="button secondary" type="button" onClick={close}>Cancelar</button><button className="button primary" disabled={busy}><Save size={16} />{busy ? 'Guardando…' : 'Guardar usuario'}</button></div></form></Modal>
+  return <Modal title={user ? 'Editar usuario' : 'Crear usuario'} subtitle="Define su acceso y su función en la central." close={close}>
+    <ApplicationForm className="dialog-form" onSubmit={submit}>
+      <TextField label="Nombre completo" name="name" required minLength={2} maxLength={100} defaultValue={user?.name} placeholder="Nombre y apellido" />
+      <TextField label="Correo electrónico" name="email" type="email" required maxLength={180} defaultValue={user?.email} placeholder="nombre@empresa.com" />
+      <div className="form-grid">
+        <Select label="Rol" name="role" defaultValue={user?.role ?? 'Miner'} options={[
+          { value: 'Miner', label: 'Minero' }, { value: 'Supervisor', label: 'Supervisor' }, { value: 'Admin', label: 'Administrador' },
+        ]} />
+        <TextField label="Contraseña" hint={user ? 'Opcional; renueva el acceso' : undefined} name="password" type="password" required={!user} minLength={10} maxLength={128} placeholder={user ? 'Conservar la actual' : 'Mínimo 10 caracteres'} />
+      </div>
+      <Checkbox label="Cuenta activa" name="active" defaultChecked={user?.active ?? true} />
+      <p className="form-hint">El administrador gestiona usuarios. El supervisor monitorea y administra manillas. El minero envía mensajes desde su manilla.</p>
+      {error && <div className="form-error" role="alert"><AlertCircle size={16} />{error}</div>}
+      <div className="modal-actions"><button className="button secondary" type="button" onClick={close}>Cancelar</button><button className="button primary" disabled={busy}><Save size={16} />{busy ? 'Guardando…' : 'Guardar usuario'}</button></div>
+    </ApplicationForm>
+  </Modal>
 }
 
 export function DeviceForm({ device, miners, close, saved }: { device: Device | null; miners: User[]; close: () => void; saved: (key: string | null) => void }) {
@@ -28,7 +44,19 @@ export function DeviceForm({ device, miners, close, saved }: { device: Device | 
     try { const result = await (device ? put<{ apiKey: string | null }>(`/devices/${device.id}`, body) : post<{ apiKey: string | null }>('/devices', body)); saved(result.apiKey) }
     catch (error) { setError((error as Error).message) } finally { setBusy(false) }
   }
-  return <Modal title={device ? 'Editar manilla' : 'Registrar manilla'} subtitle="Vincula el dispositivo a un minero y su zona de trabajo." close={close}><form className="dialog-form" onSubmit={submit}><div className="form-grid"><label>Nombre de la manilla<input name="name" required minLength={2} maxLength={60} defaultValue={device?.name} placeholder="Ej. Manilla 01" /></label><label>Zona de trabajo<input name="zone" required minLength={2} maxLength={100} defaultValue={device?.zone} placeholder="Ej. Galería norte" /></label></div><label>Minero asignado<select name="userId" defaultValue={device?.userId ?? ''}><option value="">Sin asignar</option>{miners.map(miner => <option value={miner.id} key={miner.id}>{miner.name}</option>)}</select></label><label className="checkbox-label"><input name="active" type="checkbox" defaultChecked={device?.active ?? true} />Manilla habilitada</label><p className="form-hint">Cada minero puede tener una manilla activa. Al registrar el dispositivo recibirás su credencial de conexión.</p>{error && <div className="form-error" role="alert"><AlertCircle size={16} />{error}</div>}<div className="modal-actions"><button className="button secondary" type="button" onClick={close}>Cancelar</button><button className="button primary" disabled={busy}><Save size={16} />{busy ? 'Guardando…' : 'Guardar manilla'}</button></div></form></Modal>
+  return <Modal title={device ? 'Editar manilla' : 'Registrar manilla'} subtitle="Vincula el dispositivo a un minero y su zona de trabajo." close={close}>
+    <ApplicationForm className="dialog-form" onSubmit={submit}>
+      <div className="form-grid"><TextField label="Nombre de la manilla" name="name" required minLength={2} maxLength={60} defaultValue={device?.name} placeholder="Ej. Manilla 01" /><TextField label="Zona de trabajo" name="zone" required minLength={2} maxLength={100} defaultValue={device?.zone} placeholder="Ej. Galería norte" /></div>
+      <Select label="Minero asignado" name="userId" defaultValue={device?.userId ?? ''} options={[
+        { value: '', label: 'Sin asignar' }, ...miners.map(miner => ({ value: miner.id, label: miner.name })),
+        ...(device?.userId && !miners.some(miner => miner.id === device.userId) ? [{ value: device.userId, label: device.minerName ?? 'Minero asignado' }] : []),
+      ]} />
+      <Checkbox label="Manilla habilitada" name="active" defaultChecked={device?.active ?? true} />
+      <p className="form-hint">Cada minero puede tener una manilla activa. Al registrar el dispositivo recibirás su credencial de conexión.</p>
+      {error && <div className="form-error" role="alert"><AlertCircle size={16} />{error}</div>}
+      <div className="modal-actions"><button className="button secondary" type="button" onClick={close}>Cancelar</button><button className="button primary" disabled={busy}><Save size={16} />{busy ? 'Guardando…' : 'Guardar manilla'}</button></div>
+    </ApplicationForm>
+  </Modal>
 }
 
 export function KeyModal({ apiKey, close }: { apiKey: string; close: () => void }) {
