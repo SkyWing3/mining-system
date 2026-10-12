@@ -1,26 +1,26 @@
-# Docker en Raspberry Pi
+# Docker en Ubuntu Server LTS
 
 La central se ejecuta en dos contenedores: `web-app` sirve React con Nginx y `backend` ejecuta ASP.NET Core. Solo Nginx publica un puerto en la Raspberry. La web, `/api`, `/hubs/mining` y `/ws/device` comparten **http://franco-rasp4.local**. No se necesitan Node.js, Python ni .NET instalados en la Raspberry para ejecutar la central.
 
 Las imágenes se construyen para la arquitectura de la máquina: ARM64 en una Raspberry Pi con sistema de 64 bits, ARM64 en Apple Silicon y AMD64 en un PC x86. No hay una arquitectura x86 fijada en Compose. La base de datos SQLite y las claves de sesión viven en el volumen `mining-system_central-data`, fuera de las imágenes.
 
-## Primera instalación en franco-rasp4
+## Arranque en franco-rasp4
 
-Usar **Raspberry Pi OS de 64 bits** en la Pi 4B, conectada a la misma red que los clientes. `dpkg --print-architecture` debe devolver `arm64`. Docker indica que Raspberry Pi OS de 64 bits usa sus [paquetes de Debian ARM64](https://docs.docker.com/engine/install/raspberry-pi-os/).
+El despliegue está preparado para **Ubuntu Server LTS de 64 bits**, incluido ARM64 en la Raspberry Pi 4B. Usar el servidor con Docker Engine y el plugin Docker Compose ya disponibles. Docker publica sus [versiones de Ubuntu LTS y arquitecturas compatibles](https://docs.docker.com/engine/install/ubuntu/#os-requirements).
 
-Copiar o clonar este repositorio en la Raspberry y ejecutar desde su raíz:
+Desde la raíz del proyecto, el único comando necesario es:
 
 ```sh
-sudo ./scripts/setup-raspberry-pi.sh
-sudo docker compose up -d --build --wait
-sudo docker compose ps
+./start.sh
 ```
 
-El instalador configura el hostname `franco-rasp4`, instala Docker con Compose y Buildx cuando faltan y activa Avahi. Requiere Internet para descargar paquetes e imágenes. Si Docker ya está instalado con Compose, lo conserva. La compilación inicial puede tardar varios minutos en la Pi.
+Si tu usuario no tiene acceso a Docker, ejecutar `sudo ./start.sh`. El script usa el directorio del proyecto aunque se invoque desde otra carpeta, compila las imágenes, inicia ambos servicios en segundo plano y espera a que estén saludables. Al terminar muestra la URL y el estado de los contenedores; si falla, muestra el estado y los últimos logs. La compilación inicial requiere Internet para descargar imágenes y dependencias.
+
+El mismo comando sirve para arranques posteriores y para aplicar cambios del código. No requiere archivos de configuración adicionales y conserva la base de datos y las claves de sesión.
 
 Abrir **http://franco-rasp4.local** desde el navegador y crear el administrador en el primer acceso. No hay credenciales predeterminadas. Las manillas usan **ws://franco-rasp4.local/ws/device** y la credencial generada al registrarlas en la web.
 
-`franco-rasp4.local` lo anuncia **Avahi en el sistema de la Raspberry**, mediante mDNS; los contenedores no cambian el nombre del equipo. Raspberry Pi documenta el acceso por [hostname seguido de `.local`](https://www.raspberrypi.com/documentation/computers/remote-access.html#resolve-raspberrypi-local-with-mdns). Normalmente debe usarse desde la misma LAN, con un cliente que resuelva mDNS.
+El script utiliza el mDNS existente del servidor, **`franco-rasp4.local`**. Su anuncio y resolución dependen del sistema y de la red; en una instalación con Avahi, este servicio anuncia el hostname seguido de `.local`. Debe usarse desde la misma LAN con un cliente que resuelva mDNS. El arranque de la aplicación no cambia el hostname ni instala paquetes del sistema.
 
 Si el equipo no encuentra el nombre:
 
@@ -40,7 +40,7 @@ No hace falta crear `.env` para usar el puerto 80 y `franco-rasp4.local`. Para c
 
 ```sh
 cp -n .env.example .env
-# Editar .env y volver a ejecutar docker compose up -d --build --wait
+# Editar .env y volver a ejecutar ./start.sh
 ```
 
 | Variable | Predeterminado | Uso |
@@ -71,8 +71,7 @@ sudo docker compose ps
 sudo docker compose logs --tail=100 -f
 
 # Tras actualizar el código
-sudo docker compose build --pull
-sudo docker compose up -d --wait
+./start.sh
 
 # Detener, conservando los datos
 sudo docker compose down
@@ -123,7 +122,7 @@ La extracción ejecuta con el usuario de la API, conservando el propietario `165
 
 La central funciona con `compose.yaml` solamente. `compose.device.yaml` es un despliegue independiente para la Raspberry que tiene físicamente conectados la OLED y los botones; puede ser la Pi Zero 2 W o la propia Pi 4B.
 
-En ese equipo, habilitar I²C con `sudo raspi-config nonint do_i2c 0` y reiniciar si lo solicita. Instalar y activar `avahi-daemon` para resolver `.local`. Verificar que existen `/dev/i2c-1`, `/dev/gpiochip0` y `/run/avahi-daemon/socket`.
+En ese equipo, I²C debe estar habilitado y Avahi disponible para resolver `.local`. Verificar que existen `/dev/i2c-1`, `/dev/gpiochip0` y `/run/avahi-daemon/socket`.
 
 ```sh
 cp -n device/config/settings.docker.example.json device/config/settings.docker.json
@@ -135,7 +134,7 @@ sudo docker compose -f compose.device.yaml logs --tail=100 -f
 
 El JSON privado se monta en solo lectura y no entra en la imagen ni en Git. La cola se guarda en el volumen `mining-device_device-outbox`. El contenedor usa la red del host para acceder al Avahi local y solo recibe los dos dispositivos indicados; no usa `privileged`. Ejecuta como root para abrir los dispositivos GPIO/I²C, con capacidades eliminadas. Este despliegue requiere Linux y hardware físico; el simulador con ventana se sigue ejecutando fuera de Docker.
 
-En la Pi Zero 2 W, usar también un sistema de 64 bits e instalar Docker según la [guía de Debian ARM64](https://docs.docker.com/engine/install/debian/), conservando su propio hostname. El instalador `setup-raspberry-pi.sh` es para la central y cambia el hostname a `franco-rasp4`.
+En la Pi Zero 2 W, usar también un sistema de 64 bits y Docker disponible, conservando su propio hostname.
 
 ## Verificación del despliegue
 
@@ -144,7 +143,7 @@ docker compose config --quiet
 docker compose -f compose.device.yaml config --quiet
 ```
 
-Las pruebas del despliegue Docker construyen y levantan una central aislada, comprueban login, rutas React/API, ambos WebSockets y persistencia tras recrear la API. Usan un proyecto/volumen temporal y no tocan el volumen de producción:
+Las pruebas ejecutan `start.sh` desde otra carpeta, construyen y levantan una central aislada, comprueban login, rutas React/API, ambos WebSockets y persistencia tras recrear la API. Usan un proyecto/volumen temporal y no tocan el volumen de producción:
 
 ```sh
 # Docker funcionando y dependencias Python de las pruebas instaladas

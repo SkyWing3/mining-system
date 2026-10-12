@@ -2,16 +2,17 @@
 
 Central de operaciones para la manilla minera: ASP.NET Core 10, React 19 + TypeScript y software Python para Raspberry Pi Zero 2 W. La Raspberry Pi 4 puede alojar la central. La interfaz utiliza blanco y la paleta `#DEC1AF`, `#491A06`, `#373946`, `#852A3B`, `#6C4B68`, en modo claro y sin gradientes.
 
-## Raspberry Pi 4B con Docker
+## Ubuntu Server LTS con Docker
 
-Con Raspberry Pi OS de **64 bits**, copiar este proyecto a `franco-rasp4` y ejecutar desde la raíz:
+En la Raspberry Pi 4B con **Ubuntu Server LTS de 64 bits**, Docker y Docker Compose disponibles, ejecutar:
 
 ```sh
-sudo ./scripts/setup-raspberry-pi.sh
-sudo docker compose up -d --build --wait
+./start.sh
 ```
 
-Abrir **http://franco-rasp4.local**. Docker ejecuta la API y la web-app; Nginx redirige ambos WebSockets y los datos/sesiones se conservan en un volumen. El instalador activa Docker y Avahi y configura el hostname `franco-rasp4`. No hace falta instalar Node.js ni .NET en la Raspberry.
+Si Docker requiere permisos de administrador, usar `sudo ./start.sh`. El script compila las imágenes, inicia la API y la web-app, espera sus comprobaciones de salud y muestra la dirección de acceso. Usar el mismo comando para actualizar tras cambiar el código.
+
+Abrir **http://franco-rasp4.local**, usando el mDNS del servidor. Nginx redirige ambos WebSockets y los datos/sesiones se conservan en un volumen. No hace falta crear `.env` ni instalar Node.js o .NET en el servidor.
 
 Consultar [despliegue Docker](docs/docker.md) para configuración, actualizaciones, respaldos, mDNS y el contenedor opcional de la manilla OLED.
 

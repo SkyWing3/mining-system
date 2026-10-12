@@ -11,6 +11,7 @@ import re
 import socket
 import subprocess
 import tarfile
+import tempfile
 import time
 import unittest
 import urllib.error
@@ -46,6 +47,7 @@ class DockerStackTests(unittest.TestCase):
             cls.port = available.getsockname()[1]
         cls.environment = {
             **os.environ,
+            'COMPOSE_PROJECT_NAME': cls.project,
             'MINING_HTTP_PORT': str(cls.port),
             # Same-origin access must work without relying on a CORS exception.
             'MINING_PUBLIC_ORIGIN': 'http://unused-origin.invalid',
@@ -59,7 +61,15 @@ class DockerStackTests(unittest.TestCase):
             urllib.request.ProxyHandler({}), urllib.request.HTTPCookieProcessor(cls.cookies),
         )
         cls.addClassCleanup(cls.compose, 'down', '--volumes', '--remove-orphans')
-        cls.compose('up', '-d', '--build', '--wait', '--wait-timeout', '180', timeout=900)
+        with tempfile.TemporaryDirectory(prefix='mining-start-test-') as outside_repository:
+            started = subprocess.run(
+                [str(ROOT / 'start.sh')], cwd=outside_repository, env=cls.environment,
+                capture_output=True, text=True, timeout=900,
+            )
+        if started.returncode:
+            raise RuntimeError(f'start.sh failed:\n{started.stdout}\n{started.stderr}')
+        if 'Mining System listo: ' not in started.stdout:
+            raise RuntimeError('start.sh did not report successful startup')
         status, _, body = cls.call('/api/auth/setup', 'POST', {
             'name': 'Docker Administrator', 'email': 'docker@test.invalid', 'password': PASSWORD,
         })
