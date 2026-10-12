@@ -2,7 +2,20 @@
 
 Central de operaciones para la manilla minera: ASP.NET Core 10, React 19 + TypeScript y software Python para Raspberry Pi Zero 2 W. La Raspberry Pi 4 puede alojar la central. La interfaz utiliza blanco y la paleta `#DEC1AF`, `#491A06`, `#373946`, `#852A3B`, `#6C4B68`, en modo claro y sin gradientes.
 
-## Inicio rápido
+## Raspberry Pi 4B con Docker
+
+Con Raspberry Pi OS de **64 bits**, copiar este proyecto a `franco-rasp4` y ejecutar desde la raíz:
+
+```sh
+sudo ./scripts/setup-raspberry-pi.sh
+sudo docker compose up -d --build --wait
+```
+
+Abrir **http://franco-rasp4.local**. Docker ejecuta la API y la web-app; Nginx redirige ambos WebSockets y los datos/sesiones se conservan en un volumen. El instalador activa Docker y Avahi y configura el hostname `franco-rasp4`. No hace falta instalar Node.js ni .NET en la Raspberry.
+
+Consultar [despliegue Docker](docs/docker.md) para configuración, actualizaciones, respaldos, mDNS y el contenedor opcional de la manilla OLED.
+
+## Desarrollo local
 
 Requisitos: SDK .NET 10, Node.js 22.12+ (o 24+), npm y Python 3.10+ para el dispositivo y las pruebas.
 
@@ -97,7 +110,7 @@ Abrir **http://localhost:5080**: el mismo proceso ASP.NET sirve React, API y amb
 - `device/state/outbox.db`: mensajes aún no confirmados. Datos y secretos quedan fuera de Git.
 - `Mining__DataDirectory`: cambia la carpeta del servidor. Fuera de los scripts, la carpeta predeterminada es `../data` respecto al directorio de contenido de ASP.NET.
 - `Mining__AllowedOrigins__0`: origen adicional/autorizado para un frontend separado. En el despliegue integrado, el mismo origen funciona automáticamente.
-- `.env` no se carga automáticamente. Usar variables de entorno, User Secrets o `/etc/mining-system.env` con el servicio incluido.
+- Docker Compose carga `.env` automáticamente. Los scripts locales no: usar variables de entorno, User Secrets o `/etc/mining-system.env` con el servicio incluido.
 
 Las sesiones usan cookies HttpOnly, SameSite Strict, expiración de ocho horas y contraseñas con hash. Las operaciones de la web requieren el encabezado `X-Mining-Client: web`. Los cambios de contraseña, permisos o estado invalidan las sesiones anteriores; las conexiones en vivo también se revocan. Las credenciales de manilla se guardan como hash y se validan en cada evento.
 
@@ -136,4 +149,6 @@ Los mensajes sí están conectados desde la OLED/simulador hasta la web. La entr
 | `tests/backend/` | Pruebas de integración de API y WebSockets. |
 | `docs/` | [Contrato de API y tiempo real](docs/api.md), hardware y documentación existente. |
 | `scripts/` | Desarrollo, compilación, ejecución y pruebas. |
-| `infra/` | Plantillas de servicio y proxy para despliegue. |
+| `infra/` | Proxy Docker y plantillas de servicio para despliegue. |
+| `compose.yaml` | Central Docker: backend, web-app y almacenamiento persistente. |
+| `compose.device.yaml` | Despliegue Docker opcional para OLED y botones. |

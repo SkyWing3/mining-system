@@ -1,0 +1,64 @@
+name: mining-system
+
+services:
+  backend:
+    image: mining-system-backend:local
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Urls: http://0.0.0.0:8080
+      Mining__DataDirectory: /var/lib/mining-system
+      Mining__AllowedOrigins__0: ${MINING_PUBLIC_ORIGIN:-http://franco-rasp4.local}
+      Mining__KnownProxyNetworks__0: ${MINING_DOCKER_SUBNET:-172.30.84.0/24}
+    volumes:
+      - central-data:/var/lib/mining-system
+    networks:
+      - central
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  web-app:
+    image: mining-system-web-app:local
+    build:
+      context: .
+      dockerfile: web-app/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${MINING_HTTP_PORT:-80}:8080"
+    networks:
+      - central
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  central-data:
+
+networks:
+  central:
+    ipam:
+      config:
+        - subnet: ${MINING_DOCKER_SUBNET:-172.30.84.0/24}

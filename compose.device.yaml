@@ -1,0 +1,44 @@
+# Optional: run on the Raspberry connected to the OLED/buttons.
+# This is a separate deployment from the central, not required for the web-app.
+name: mining-device
+
+services:
+  device:
+    image: mining-system-device:local
+    build:
+      context: .
+      dockerfile: device/Dockerfile
+    restart: unless-stopped
+    init: true
+    network_mode: host
+    devices:
+      - /dev/i2c-1:/dev/i2c-1
+      - /dev/gpiochip0:/dev/gpiochip0
+    volumes:
+      - type: bind
+        source: ./device/config/settings.docker.json
+        target: /etc/mining-device/settings.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /run/avahi-daemon/socket
+        target: /run/avahi-daemon/socket
+        read_only: true
+        bind:
+          create_host_path: false
+      - device-outbox:/var/lib/mining-device
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  device-outbox:

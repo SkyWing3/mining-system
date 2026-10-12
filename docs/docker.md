@@ -1,0 +1,154 @@
+# Docker en Raspberry Pi
+
+La central se ejecuta en dos contenedores: `web-app` sirve React con Nginx y `backend` ejecuta ASP.NET Core. Solo Nginx publica un puerto en la Raspberry. La web, `/api`, `/hubs/mining` y `/ws/device` comparten **http://franco-rasp4.local**. No se necesitan Node.js, Python ni .NET instalados en la Raspberry para ejecutar la central.
+
+Las imágenes se construyen para la arquitectura de la máquina: ARM64 en una Raspberry Pi con sistema de 64 bits, ARM64 en Apple Silicon y AMD64 en un PC x86. No hay una arquitectura x86 fijada en Compose. La base de datos SQLite y las claves de sesión viven en el volumen `mining-system_central-data`, fuera de las imágenes.
+
+## Primera instalación en franco-rasp4
+
+Usar **Raspberry Pi OS de 64 bits** en la Pi 4B, conectada a la misma red que los clientes. `dpkg --print-architecture` debe devolver `arm64`. Docker indica que Raspberry Pi OS de 64 bits usa sus [paquetes de Debian ARM64](https://docs.docker.com/engine/install/raspberry-pi-os/).
+
+Copiar o clonar este repositorio en la Raspberry y ejecutar desde su raíz:
+
+```sh
+sudo ./scripts/setup-raspberry-pi.sh
+sudo docker compose up -d --build --wait
+sudo docker compose ps
+```
+
+El instalador configura el hostname `franco-rasp4`, instala Docker con Compose y Buildx cuando faltan y activa Avahi. Requiere Internet para descargar paquetes e imágenes. Si Docker ya está instalado con Compose, lo conserva. La compilación inicial puede tardar varios minutos en la Pi.
+
+Abrir **http://franco-rasp4.local** desde el navegador y crear el administrador en el primer acceso. No hay credenciales predeterminadas. Las manillas usan **ws://franco-rasp4.local/ws/device** y la credencial generada al registrarlas en la web.
+
+`franco-rasp4.local` lo anuncia **Avahi en el sistema de la Raspberry**, mediante mDNS; los contenedores no cambian el nombre del equipo. Raspberry Pi documenta el acceso por [hostname seguido de `.local`](https://www.raspberrypi.com/documentation/computers/remote-access.html#resolve-raspberrypi-local-with-mdns). Normalmente debe usarse desde la misma LAN, con un cliente que resuelva mDNS.
+
+Si el equipo no encuentra el nombre:
+
+```sh
+# Dentro de la Raspberry
+hostname
+systemctl is-active avahi-daemon
+avahi-resolve-host-name -4 franco-rasp4.local
+curl http://127.0.0.1/health
+```
+
+Si la IP de la Raspberry abre la web pero `.local` no, revisar mDNS/Avahi en el cliente y que la red permita multicast entre equipos. En un cliente Debian/Ubuntu: `sudo apt-get install libnss-mdns avahi-utils`. Las redes de invitados pueden aislar los equipos.
+
+## Configuración
+
+No hace falta crear `.env` para usar el puerto 80 y `franco-rasp4.local`. Para cambiar valores:
+
+```sh
+cp -n .env.example .env
+# Editar .env y volver a ejecutar docker compose up -d --build --wait
+```
+
+| Variable | Predeterminado | Uso |
+| --- | --- | --- |
+| `MINING_HTTP_PORT` | `80` | Puerto publicado en todas las interfaces de la Raspberry. |
+| `MINING_PUBLIC_ORIGIN` | `http://franco-rasp4.local` | Origen adicional permitido por la API. Incluir el puerto si no es 80. |
+| `MINING_DOCKER_SUBNET` | `172.30.84.0/24` | Red privada del proxy y la API. Cambiar si coincide con otra red Docker o con la LAN. |
+
+Si se cambia la subred de una instalación existente, ejecutar `sudo docker compose down` antes de levantarla otra vez para recrear la red; el volumen de datos se conserva.
+
+Ejemplo con un puerto ocupado por otro servicio:
+
+```dotenv
+MINING_HTTP_PORT=8088
+MINING_PUBLIC_ORIGIN=http://franco-rasp4.local:8088
+MINING_DOCKER_SUBNET=172.30.84.0/24
+```
+
+En ese caso, abrir `http://franco-rasp4.local:8088` y usar `ws://franco-rasp4.local:8088/ws/device`. No se fija un hostname en el JavaScript: la web conecta con el mismo origen desde el que se abre, incluso usando la IP. Compose carga `.env` automáticamente; los scripts locales de .NET no lo hacen.
+
+La API acepta encabezados de proxy únicamente desde la red Docker configurada, además de los proxies locales predeterminados de ASP.NET. Nginx conserva el host y puerto originales y permite el cambio de protocolo para ambos WebSockets. Su resolución DNS se renueva si se recrea el contenedor del backend. Los servicios tienen comprobaciones de salud, reinicio automático, límites de memoria y rotación de logs. La API y Nginx ejecutan sin root y con el sistema de archivos de imagen de solo lectura.
+
+## Operación y actualizaciones
+
+```sh
+# Estado y logs
+sudo docker compose ps
+sudo docker compose logs --tail=100 -f
+
+# Tras actualizar el código
+sudo docker compose build --pull
+sudo docker compose up -d --wait
+
+# Detener, conservando los datos
+sudo docker compose down
+
+# Volver a iniciar, sin recompilar
+sudo docker compose up -d --wait
+```
+
+Docker se inicia con el sistema y `restart: unless-stopped` vuelve a levantar los contenedores tras reiniciar la Raspberry, siempre que no se hayan detenido explícitamente. La actualización conserva usuarios, mensajes y claves de sesión. **`docker compose down -v` elimina los datos**: no usarlo para una parada o actualización normal.
+
+## Respaldar e importar datos
+
+Guardar la base y `keys/` juntos. Para obtener una copia consistente, detener temporalmente la API y copiar el volumen mediante un contenedor auxiliar del propio servicio:
+
+```sh
+mkdir -p backups
+chmod 700 backups
+sudo docker compose stop backend
+sudo docker compose run --rm -T --no-deps --entrypoint tar backend \
+  -czf - -C /var/lib/mining-system . > backups/central-data.tar.gz
+chmod 600 backups/central-data.tar.gz
+sudo docker compose up -d --wait
+```
+
+El respaldo incluye credenciales con hash, datos y claves de sesión; guardarlo en un lugar privado. `backups/` queda fuera de Git y de las imágenes.
+
+Para migrar la instalación local existente (`data/mining.db` y `data/keys/`) a Docker, detener primero el proceso .NET que la usa, compilar las imágenes e importar con la API detenida. Usar este procedimiento **solo sobre un volumen nuevo**; no mezclar dos bases de datos:
+
+```sh
+sudo docker compose build
+sudo docker compose create backend
+sudo tar -C data -cf - . | sudo docker compose run --rm -T --no-deps \
+  --entrypoint tar backend --no-same-owner -xf - -C /var/lib/mining-system
+sudo docker compose up -d --wait
+```
+
+Para restaurar `central-data.tar.gz`, con la API detenida y un volumen nuevo/vacío:
+
+```sh
+sudo docker compose run --rm -T --no-deps --entrypoint tar backend \
+  --no-same-owner -xzf - -C /var/lib/mining-system < backups/central-data.tar.gz
+sudo docker compose up -d --wait
+```
+
+La extracción ejecuta con el usuario de la API, conservando el propietario `1654:1654` sin conceder permisos adicionales al contenedor.
+
+## Manilla OLED en Docker (opcional)
+
+La central funciona con `compose.yaml` solamente. `compose.device.yaml` es un despliegue independiente para la Raspberry que tiene físicamente conectados la OLED y los botones; puede ser la Pi Zero 2 W o la propia Pi 4B.
+
+En ese equipo, habilitar I²C con `sudo raspi-config nonint do_i2c 0` y reiniciar si lo solicita. Instalar y activar `avahi-daemon` para resolver `.local`. Verificar que existen `/dev/i2c-1`, `/dev/gpiochip0` y `/run/avahi-daemon/socket`.
+
+```sh
+cp -n device/config/settings.docker.example.json device/config/settings.docker.json
+# Editar connection.api_key con la credencial de esta manilla.
+# Si la central usa otro puerto, editar también connection.url.
+sudo docker compose -f compose.device.yaml up -d --build
+sudo docker compose -f compose.device.yaml logs --tail=100 -f
+```
+
+El JSON privado se monta en solo lectura y no entra en la imagen ni en Git. La cola se guarda en el volumen `mining-device_device-outbox`. El contenedor usa la red del host para acceder al Avahi local y solo recibe los dos dispositivos indicados; no usa `privileged`. Ejecuta como root para abrir los dispositivos GPIO/I²C, con capacidades eliminadas. Este despliegue requiere Linux y hardware físico; el simulador con ventana se sigue ejecutando fuera de Docker.
+
+En la Pi Zero 2 W, usar también un sistema de 64 bits e instalar Docker según la [guía de Debian ARM64](https://docs.docker.com/engine/install/debian/), conservando su propio hostname. El instalador `setup-raspberry-pi.sh` es para la central y cambia el hostname a `franco-rasp4`.
+
+## Verificación del despliegue
+
+```sh
+docker compose config --quiet
+docker compose -f compose.device.yaml config --quiet
+```
+
+Las pruebas del despliegue Docker construyen y levantan una central aislada, comprueban login, rutas React/API, ambos WebSockets y persistencia tras recrear la API. Usan un proyecto/volumen temporal y no tocan el volumen de producción:
+
+```sh
+# Docker funcionando y dependencias Python de las pruebas instaladas
+device/.venv/bin/python -m unittest discover -s tests/docker -v
+```
+
+`.dockerignore` permite solo el código y los archivos necesarios para compilar: quedan fuera los datos, las credenciales, `.env`, la configuración privada del dispositivo y los resultados generados.
