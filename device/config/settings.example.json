@@ -1,0 +1,10 @@
+{
+  "display": {"port": 1, "address": "0x3C", "rotate": 0},
+  "buttons": {"up": 17, "down": 27, "enter": 22, "bounce_seconds": 0.08},
+  "connection": {
+    "url": "ws://localhost:5080/ws/device",
+    "api_key": "",
+    "heartbeat_seconds": 20,
+    "outbox_path": "../state/outbox.db"
+  }
+}

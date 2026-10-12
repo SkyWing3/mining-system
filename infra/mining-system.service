@@ -1,0 +1,26 @@
+[Unit]
+Description=Mining System central
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=mining
+Group=mining
+WorkingDirectory=/opt/mining-system/build/server
+ExecStart=/usr/bin/dotnet /opt/mining-system/build/server/backend.dll --urls http://127.0.0.1:5080
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=Mining__DataDirectory=/var/lib/mining-system
+EnvironmentFile=-/etc/mining-system.env
+StateDirectory=mining-system
+StateDirectoryMode=0700
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

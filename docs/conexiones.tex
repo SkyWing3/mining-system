@@ -1,0 +1,509 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{lmodern}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{graphicx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{circuitikz}
+\usepackage{xurl}
+\usepackage[hidelinks]{hyperref}
+\usetikzlibrary{positioning,arrows.meta}
+\lstset{basicstyle=\ttfamily\small,breaklines=true,columns=fullflexible,
+  keepspaces=true,showstringspaces=false,frame=single,
+  backgroundcolor=\color{gray!5},upquote=true}
+\setlist{nosep}
+\setlength{\emergencystretch}{2em}
+\renewcommand{\arraystretch}{1.2}
+\newcommand{\pin}[1]{\textbf{pin físico #1}}
+\title{\textbf{Conexiones y puesta en marcha}\\[0.3cm]
+  \large Manilla inteligente para mineros --- Raspberry Pi Zero 2 W}
+\author{Franco Parra\\\small Internet de las Cosas --- Universidad Católica Boliviana}
+\date{11 de octubre de 2026}
+
+\begin{document}
+\maketitle
+
+\section{Alcance y componentes asumidos}
+
+Esta guía asigna los cables del proyecto descrito en \texttt{componentes.tex} y
+documenta cómo ejecutar el código existente. \textbf{Actualmente funcionan el
+menú OLED, los tres botones y los mensajes predeterminados por WebSocket a la
+central.} Sensores, audio y vibración todavía requieren implementación;
+conectarlos no activa esas funciones. La central incluye API, login y una
+interfaz React para usuarios, manillas, lecturas recibidas, mensajes y alertas.
+
+Se asumen una OLED \textbf{SSD1306 I\textsuperscript{2}C de 128\,$\times$\,64}
+con cuatro pines, un módulo MQ-135 con \texttt{VCC/GND/AO/DO}, un ADC ADS1115,
+un MLX90614/GY-906 compatible con alimentación de 3,3 V, un módulo MAX9814 y
+tres pulsadores normalmente abiertos. No se conoce la referencia exacta del
+módulo de vibración ni la variante de las placas: confirmar su serigrafía y
+tensión admitida antes de aplicar las conexiones condicionales de esta guía.
+
+\textbf{GPIO BCM y pin físico son números distintos.} Por ejemplo, el botón
+subir se configura como \texttt{17} en Python, pero su cable va al pin físico
+\texttt{11}. La Zero 2 W puede venir sin cabecera soldada; instalar una
+cabecera de 2\,$\times$\,20 si corresponde.\cite{rpi-hardware}
+
+\section{Alimentación y conexiones comunes}
+
+Alimentar la Zero 2 W por el micro-USB marcado \texttt{PWR IN}, con una fuente
+regulada de 5 V y capacidad suficiente para la Pi y los periféricos. La Pi 4
+tiene su propia alimentación USB-C. Para el primer arranque conectar solamente
+OLED y botones; agregar los demás módulos después de comprobar el menú.
+
+\begin{itemize}
+  \item Apagar y desconectar la alimentación antes de modificar el cableado.
+  \item Pin físico 1 o 17: línea de \textbf{3,3 V}; pin 2 o 4: línea de
+  \textbf{5 V}; pin 6, 9, 14, 20, 25, 30, 34 o 39: \textbf{GND}.
+  \item Distribuir alimentación por las líneas de una protoboard; comprobar
+  si están cortadas a la mitad. Un pin puede alimentar varios módulos a través
+  de esa línea, respetando el consumo total.
+  \item Todos los módulos y cualquier fuente auxiliar deben compartir GND.
+  Con una fuente auxiliar, no unir sus positivos a otra fuente que ya alimente
+  la misma línea sin un circuito de distribución adecuado.
+  \item GPIO y bus I\textsuperscript{2}C de la Pi trabajan a 3,3 V. Las
+  resistencias pull-up de SDA/SCL deben ir a 3,3 V, no a 5 V.
+\end{itemize}
+
+\section{Mapa rápido del conector}
+
+El siguiente mapa muestra las parejas del conector de 40 pines. Identificar
+primero el pin 1 mediante el esquema oficial y las marcas de la placa; no
+orientarse únicamente por la posición de una fotografía.
+
+\begin{center}
+\small
+\begin{tabular}{rlrl}
+\toprule
+\textbf{Físico} & \textbf{Función} & \textbf{Físico} & \textbf{Función}\\
+\midrule
+1 & 3,3 V & 2 & 5 V\\
+3 & GPIO 2 / SDA1 & 4 & 5 V\\
+5 & GPIO 3 / SCL1 & 6 & GND\\
+7 & GPIO 4 & 8 & GPIO 14 / TXD\\
+9 & GND & 10 & GPIO 15 / RXD\\
+11 & GPIO 17 / subir & 12 & GPIO 18\\
+13 & GPIO 27 / bajar & 14 & GND\\
+15 & GPIO 22 / enter & 16 & GPIO 23 / vibración prevista\\
+17 & 3,3 V & 18 & GPIO 24\\
+19 & GPIO 10 / MOSI & 20 & GND\\
+21 & GPIO 9 / MISO & 22 & GPIO 25\\
+23 & GPIO 11 / SCLK & 24 & GPIO 8 / CE0\\
+25 & GND & 26 & GPIO 7 / CE1\\
+27 & GPIO 0 / ID\_SD (reservado) & 28 & GPIO 1 / ID\_SC (reservado)\\
+29 & GPIO 5 & 30 & GND\\
+31 & GPIO 6 & 32 & GPIO 12\\
+33 & GPIO 13 & 34 & GND\\
+35 & GPIO 19 & 36 & GPIO 16\\
+37 & GPIO 26 & 38 & GPIO 20\\
+39 & GND & 40 & GPIO 21\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{OLED SSD1306 y botones: conexión para arrancar hoy}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{lllX}
+\toprule
+\textbf{Elemento} & \textbf{Terminal} & \textbf{Pin físico Pi} & \textbf{Función}\\
+\midrule
+OLED & VCC & 1 & Alimentación 3,3 V de módulo compatible.\\
+OLED & GND & 6 & Tierra común.\\
+OLED & SDA & 3 & GPIO BCM 2; datos I\textsuperscript{2}C.\\
+OLED & SCL & 5 & GPIO BCM 3; reloj I\textsuperscript{2}C.\\
+Subir & Contacto A & 11 & GPIO BCM 17.\\
+Subir & Contacto B & 6 / GND común & Cierra hacia tierra al pulsar.\\
+Bajar & Contacto A & 13 & GPIO BCM 27.\\
+Bajar & Contacto B & 6 / GND común & Cierra hacia tierra al pulsar.\\
+Enter & Contacto A & 15 & GPIO BCM 22.\\
+Enter & Contacto B & 6 / GND común & Cierra hacia tierra al pulsar.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Los pulsadores no necesitan conectarse a VCC: el programa habilita las
+resistencias pull-up internas con \texttt{pull\_up=True}.\cite{gpiozero}
+En un pulsador de cuatro patas hay dos pares unidos internamente. Medir
+continuidad y elegir un terminal de cada par: entre los elegidos debe haber
+continuidad solamente al pulsar. El software filtra rebotes durante 80 ms.
+
+La dirección usada es \texttt{0x3C}, en el bus \texttt{1}. Una pantalla SPI,
+SH1106 o de otra resolución requiere adaptar el controlador; no basta cambiar
+la dirección.\cite{luma}
+
+\section{Bus compartido: ADS1115 y temperatura}
+
+OLED, ADS1115 y MLX90614 comparten SDA/SCL \textbf{en paralelo}, con direcciones
+distintas. No se necesitan otros GPIO para cada sensor.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{lllX}
+\toprule
+\textbf{Módulo} & \textbf{Terminal} & \textbf{Conectar a} & \textbf{Observación}\\
+\midrule
+ADS1115 & VDD / VCC & Pi pin 1, 3,3 V & Alimentación del ADC.\\
+ADS1115 & GND & Pi pin 6, GND & Tierra común.\\
+ADS1115 & SDA & Pi pin 3 & Comparte SDA con OLED.\\
+ADS1115 & SCL & Pi pin 5 & Comparte SCL con OLED.\\
+ADS1115 & ADDR & GND & Dirección \texttt{0x48}.\\
+ADS1115 & A0 / AIN0 & Divisor del MQ-135 & Ver la sección siguiente.\\
+ADS1115 & A1 / AIN1 & OUT del MAX9814 & Solo diagnóstico analógico; no voz.\\
+ADS1115 & A2, A3, ALERT & Sin conectar & Reservados; no leer entradas flotantes.\\
+MLX90614 & VCC / VIN & Pi pin 1, 3,3 V & Solo variante/placa compatible.\\
+MLX90614 & GND & Pi pin 6, GND & Tierra común.\\
+MLX90614 & SDA & Pi pin 3 & Dirección habitual \texttt{0x5A}.\\
+MLX90614 & SCL & Pi pin 5 & Comparte el reloj.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Variante de temperatura:} Melexis ofrece MLX90614 de 3 V y de 5 V.
+La indicación comercial GY-906 por sí sola no identifica la alimentación ni
+los pull-up de la placa. Si el módulo necesita 5 V o eleva SDA/SCL a 5 V,
+utilizar su esquema y un adaptador bidireccional de nivel para I\textsuperscript{2}C;
+no conectar esas líneas directamente a la Pi. La tabla asume una placa
+compatible con alimentación y señales de 3,3 V.\cite{mlx}
+
+\section{MQ-135: alimentación y divisor obligatorio}
+
+El módulo MQ-135 se alimenta a 5 V: \texttt{VCC} al \pin{2} y \texttt{GND}
+a la tierra común. Su salida \texttt{AO} puede superar la tensión del ADC;
+\textbf{no conectarla directamente a A0} cuando el ADS1115 se alimenta a
+3,3 V. Dejar \texttt{DO} desconectado en este diseño.
+
+Montar un divisor con dos resistencias de 1\%:
+
+\begin{center}
+\begin{circuitikz}[american]
+\draw (0,0) node[left]{MQ-135 AO}
+  to[R,l=$R_1\,{=}\,10\,\mathrm{k}\Omega$,o-*] (4,0)
+  to[short,-o] (7,0) node[right]{ADS1115 A0};
+\draw (4,0) to[R,l=$R_2\,{=}\,15\,\mathrm{k}\Omega$] (4,-2.2)
+  node[ground]{};
+\end{circuitikz}
+\end{center}
+
+\[
+V_{A0}=V_{AO}\frac{15}{10+15}=0{,}60\,V_{AO},
+\qquad V_{AO}=5{,}0\,\mathrm{V}\Rightarrow V_{A0}=3{,}0\,\mathrm{V}.
+\]
+
+La selección de resistencias es una propuesta de este proyecto. Verificar con
+multímetro el nodo A0 antes de conectar el ADC: debe permanecer entre 0 y 3,3 V
+en las condiciones de alimentación utilizadas. El límite absoluto del ADC
+es VDD + 0,3 V, no una tensión de operación que debamos alcanzar. Al programar
+la lectura usar un rango que cubra 3,0 V, por ejemplo $\pm4{,}096$ V; ese
+rango de escala no permite exceder la alimentación.\cite{ads}
+
+El calentador consume hasta 950 mW según el fabricante, aproximadamente
+190 mA a 5 V: no alimentarlo desde 3,3 V ni desde un GPIO. El fabricante
+especifica más de 48 h de precalentamiento inicial para sus condiciones de
+ensayo. La conversión a concentración requiere calibración y debe incorporar
+el factor del divisor y su efecto sobre la carga de la salida analógica.\cite{mq}
+
+\section{MAX9814 y decisión de audio}
+
+\begin{center}
+\noindent\begin{tabularx}{\linewidth}{llX}
+\toprule
+\textbf{Terminal MAX9814} & \textbf{Conectar a} & \textbf{Observación}\\
+\midrule
+VDD / VCC & Pi pin 1, 3,3 V & Módulo amplificador compatible.\\
+GND & Pi pin 6, GND & Misma tierra que el ADC.\\
+OUT & ADS1115 A1 & Comprobar que la salida esté entre 0 y 3,3 V.\\
+GAIN & Sin conectar & En la placa Adafruit: ganancia predeterminada 60 dB.\\
+A/R & Sin conectar & Mantiene la configuración predeterminada de esa placa.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Esta conexión sirve para experimentar con niveles de señal. En otras placas,
+seguir sus etiquetas y su esquema; la salida típica del módulo Adafruit tiene
+una componente continua de 1,25 V y hasta unos 2 V pico a pico.\cite{max}
+
+\textbf{El ADS1115 no permite grabar voz con la frecuencia de muestreo
+necesaria: su máximo es 860 muestras/s.}\cite{ads} Por eso A1 no se presenta
+como solución de grabación. Para implementar mensajes de voz, una alternativa
+es sustituir el MAX9814 por un micrófono USB compatible con Linux: conectarlo
+al puerto micro-USB \texttt{USB} mediante un adaptador OTG micro-USB a USB-A,
+manteniendo la alimentación en \texttt{PWR IN}. Si se usa un concentrador
+alimentado, debe evitar realimentar la Pi. Un micrófono I\textsuperscript{2}S
+es otra alternativa, con cableado y controlador por definir al elegir modelo.
+Ninguna de estas alternativas de audio está implementada todavía.
+
+\section{Vibración: señal reservada y etapa de potencia}
+
+Se propone \textbf{GPIO BCM 23, pin físico 16}, sin conflicto con los botones.
+Esta asignación es futura: el programa actual no maneja ese GPIO.
+
+\subsection{Si se trata de un módulo con VCC, GND e IN}
+
+\noindent\begin{tabularx}{\linewidth}{llX}
+\toprule
+\textbf{Terminal} & \textbf{Conectar a} & \textbf{Condición}\\
+\midrule
+VCC & Alimentación nominal & 3,3 V o 5 V solamente según la ficha del módulo.\\
+GND & Tierra común & Compartida con la Pi.\\
+IN / SIG & Pi pin 16, GPIO 23 & Entrada compatible con lógica 3,3 V y sin retorno de 5 V.\\
+\bottomrule
+\end{tabularx}
+
+La conexión directa de IN requiere que el módulo incluya su transistor y
+protección del motor; confirmar además si la entrada es activa alta o baja.
+Si no se conoce el circuito, confirmar el modelo antes de conectar IN.
+
+\subsection{Si se trata de un motor de dos cables}
+
+El motor necesita una etapa de potencia y un diodo de rueda libre;
+\textbf{no se conecta directamente al GPIO}.\cite{motor} Propuesta con
+MOSFET N de nivel lógico, cuya resistencia de conducción esté especificada
+para una tensión de compuerta de 2,5 o 3,3 V:
+
+\begin{enumerate}
+  \item Positivo del motor a una alimentación regulada de su tensión nominal.
+  No asumir que un motor de 3 V admite 5 V.
+  \item Negativo del motor al drenador (D) del MOSFET; fuente (S) a GND común.
+  \item GPIO 23, pin 16, a la compuerta (G) mediante una resistencia de
+  100 $\Omega$. Agregar 10 k$\Omega$ entre compuerta y GND para mantenerlo apagado
+  mientras la Pi inicia.
+  \item Diodo en paralelo con el motor: cátodo (lado con banda) al positivo
+  y ánodo al drenador/negativo del motor. Elegir MOSFET y diodo que soporten
+  la corriente de arranque del motor y la tensión de la fuente.
+  \item Identificar G/D/S con la ficha del MOSFET elegido; su orden físico
+  cambia según modelo y encapsulado. La alimentación de potencia también
+  debe soportar el arranque sin provocar caídas en la Pi.
+\end{enumerate}
+
+\section{Raspberry Pi 4: central}
+
+La Pi 4 y la Zero 2 W se comunicarán por red. Conectar ambas a la misma red
+Wi-Fi; la Zero 2 W requiere una red de 2,4 GHz. La Pi 4 también puede usar
+Ethernet al mismo router. No se unen sus GPIO ni se necesitan cables SDA/SCL
+entre las dos placas. La API \texttt{backend/} y la interfaz compilada
+\texttt{web-app/} se ejecutan en la Pi 4. Registrar un minero y una manilla en
+la central, copiar su credencial al campo \texttt{connection.api\_key} e indicar
+\texttt{ws://IP-CENTRAL:5080/ws/device} en \texttt{connection.url}. El menú puede
+iniciarse sin central, pero solo confirma mensajes enviados después de recibir
+la confirmación del servidor. Los reportes sin confirmar permanecen en una cola
+SQLite local. Consultar \texttt{README.md} y \texttt{docs/api.md} para inicio,
+despliegue y contrato. La web recibe mensajes; no responde a las manillas.
+
+\section{Preparar Raspberry Pi OS y acceder por SSH}
+
+\begin{enumerate}
+  \item Con Raspberry Pi Imager instalar Raspberry Pi OS Lite en una microSD,
+  seleccionando la Zero 2 W como dispositivo. El menú usa hardware y no
+  necesita escritorio.
+  \item En las opciones de Imager establecer el hostname
+  \texttt{mining-zero}, un usuario y contraseña propios, país Wi-Fi, SSID
+  de 2,4 GHz y su clave. Activar SSH, preferiblemente con clave pública.
+  \item Insertar la microSD y alimentar la placa. Desde el Mac conectarse
+  con el siguiente comando, reemplazando \texttt{usuario} por el usuario
+  configurado, que no necesariamente se llama \texttt{pi}. Si el nombre
+  \texttt{.local} no resuelve, usar la IP asignada por el router.
+\end{enumerate}
+Estas opciones se configuran antes del primer arranque con Imager.\cite{rpi-start,rpi-remote}
+
+\begin{lstlisting}
+ssh usuario@mining-zero.local
+\end{lstlisting}
+
+\subsection{Instalar herramientas y habilitar el bus}
+
+Ejecutar dentro de la sesión SSH de la Pi:
+
+\begin{lstlisting}
+sudo apt update
+sudo apt install -y python3-venv python3-pip python3-dev \
+  python3-lgpio build-essential swig i2c-tools \
+  libjpeg-dev zlib1g-dev libfreetype6-dev
+sudo raspi-config
+\end{lstlisting}
+
+En \texttt{raspi-config}: \textbf{Interface Options $\rightarrow$ I2C
+$\rightarrow$ Enable}. Reiniciar la Pi y volver a conectarse por SSH.
+La configuración oficial describe esta habilitación.\cite{rpi-config}
+
+\begin{lstlisting}
+sudo reboot
+\end{lstlisting}
+
+\subsection{Copiar el código desde el Mac}
+
+El repositorio local aún no tiene remoto configurado. Desde una terminal
+\textbf{del Mac situada en la raíz de mining-system}, copiar las carpetas
+necesarias (sin transferir entornos virtuales de macOS):
+
+\begin{lstlisting}
+ssh usuario@mining-zero.local 'mkdir -p ~/mining-system/device'
+scp -r device/src device/config device/tests \
+  device/requirements.txt \
+  usuario@mining-zero.local:~/mining-system/device/
+\end{lstlisting}
+
+\subsection{Instalar dependencias y arrancar la interfaz}
+
+Los siguientes comandos vuelven a ejecutarse \textbf{en la Pi por SSH}:
+
+\begin{lstlisting}
+cd ~/mining-system/device
+python3 -m venv --system-site-packages .venv
+.venv/bin/python -m pip install -r requirements.txt
+cp -n config/settings.example.json config/settings.json
+i2cdetect -y 1
+GPIOZERO_PIN_FACTORY=lgpio .venv/bin/python -m src.main \
+  --config config/settings.json
+\end{lstlisting}
+
+La opción \texttt{--system-site-packages} permite usar el \texttt{lgpio}
+instalado por APT; las demás dependencias se resuelven en el entorno virtual.
+Usar una sesión con permisos de acceso a los dispositivos, sin ejecutar
+\texttt{pip} con \texttt{sudo}.
+
+Con solo la OLED, \texttt{i2cdetect} debería mostrar \texttt{3c} (o la dirección
+real del módulo). Con los módulos adicionales conectados se esperan
+\texttt{48} para el ADS1115 y \texttt{5a} para el MLX90614, si mantienen sus
+direcciones habituales. Si la OLED aparece como \texttt{3d}, cambiar
+\texttt{address} a \texttt{0x3D} en la configuración local.
+
+\begin{lstlisting}
+{
+  "display": {"port": 1, "address": "0x3C", "rotate": 0},
+  "buttons": {
+    "up": 17, "down": 27, "enter": 22,
+    "bounce_seconds": 0.08
+  }
+}
+\end{lstlisting}
+
+\texttt{rotate: 2} gira la pantalla 180 grados. Los números de los botones
+son BCM. El archivo local \texttt{settings.json} está excluido de Git.
+No agregar sensores o vibración a ese JSON esperando que funcionen: esos
+campos aún no están soportados por el código.
+
+\subsection{Comprobar el resultado}
+
+Debe aparecer el menú \texttt{MINING SYSTEM} con Estado, Gases, Temperatura,
+Mensajes y Ajustes. Subir/bajar cambia la selección; Enter abre la opción y
+otro Enter vuelve al menú. Ctrl+C termina el proceso. Las pantallas de
+sensores siguen indicando que no hay datos. Para pruebas sin hardware:
+
+\begin{lstlisting}
+.venv/bin/python -m unittest discover -s tests -v
+.venv/bin/python -m src.main --preview /tmp/mining-menu.png
+\end{lstlisting}
+
+El simulador \texttt{--simulate} requiere Tkinter y una sesión gráfica;
+no usarlo para arrancar el dispositivo mediante SSH en Raspberry Pi OS Lite.
+
+\clearpage
+\section{Arranque automático opcional}
+
+Después de comprobar el funcionamiento manual, crear
+\path{/etc/systemd/system/mining-device.service} con \texttt{sudo nano}.
+En el contenido siguiente sustituir \texttt{usuario} y la ruta si se usaron
+otros valores. El servicio usa las opciones estándar de systemd.\cite{systemd}
+
+\begin{lstlisting}
+[Unit]
+Description=Menu OLED de la manilla minera
+After=local-fs.target
+
+[Service]
+Type=simple
+User=usuario
+SupplementaryGroups=i2c gpio
+WorkingDirectory=/home/usuario/mining-system/device
+Environment=GPIOZERO_PIN_FACTORY=lgpio
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/usuario/mining-system/device/.venv/bin/python -m src.main --config /home/usuario/mining-system/device/config/settings.json
+Restart=on-failure
+RestartSec=3
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target
+\end{lstlisting}
+
+Detener antes el proceso manual con Ctrl+C para no iniciar dos instancias.
+Luego habilitar el servicio:
+
+\begin{lstlisting}
+sudo systemctl daemon-reload
+sudo systemctl enable --now mining-device.service
+systemctl status mining-device.service
+journalctl -u mining-device.service -n 50 --no-pager
+\end{lstlisting}
+
+Tras cambiar el código: \texttt{sudo systemctl restart mining-device.service}.
+Para volver al arranque manual:
+\texttt{sudo systemctl disable --now mining-device.service}.
+
+\section{Diagnóstico rápido}
+
+\begin{description}[style=nextline]
+  \item[No existe /dev/i2c-1.] Habilitar I\textsuperscript{2}C, reiniciar y
+  comprobar con \texttt{ls /dev/i2c*}.
+  \item[No aparece la OLED en i2cdetect.] Apagar; revisar alimentación,
+  tierra, SDA/SCL, dirección y tipo de controlador. Probar primero sin los
+  otros módulos del bus.
+  \item[Permission denied.] Comprobar \texttt{groups} y acceso a
+  \texttt{/dev/i2c-1} y \texttt{/dev/gpiochip*}. Si faltan los grupos,
+  ejecutar \texttt{sudo usermod -aG i2c,gpio usuario} y cerrar/iniciar la sesión.
+  \item[No hay pin factory o falta lgpio.] Comprobar
+  \texttt{.venv/bin/python -c "import lgpio, gpiozero"}. Verificar instalación
+  de \texttt{python3-lgpio} y creación del entorno con
+  \texttt{--system-site-packages}.
+  \item[Los botones no responden.] Revisar BCM frente a pin físico, GND,
+  continuidad de los contactos y que otro proceso no use esos GPIO.
+  \item[La Pi se reinicia al agregar módulos.] Revisar fuente, consumo del
+  calentador y arranque del motor. Volver a la prueba con OLED y botones.
+\end{description}
+
+\section{Generar este documento}
+
+Desde la raíz del repositorio:
+
+\begin{lstlisting}
+cd docs
+latexmk -pdf -interaction=nonstopmode -halt-on-error conexiones.tex
+\end{lstlisting}
+
+Se genera \texttt{docs/conexiones.pdf}. Git conserva el fuente \texttt{.tex}
+y excluye el PDF y archivos auxiliares de compilación.
+
+\begin{thebibliography}{12}
+\small
+\bibitem{rpi-hardware} Raspberry Pi, hardware, conector GPIO y Zero 2 W.
+\url{https://www.raspberrypi.com/documentation/computers/raspberry-pi.html}
+\bibitem{rpi-start} Raspberry Pi, preparación del sistema con Imager.
+\url{https://www.raspberrypi.com/documentation/computers/getting-started.html}
+\bibitem{rpi-remote} Raspberry Pi, acceso remoto por SSH.
+\url{https://www.raspberrypi.com/documentation/computers/remote-access.html}
+\bibitem{rpi-config} Raspberry Pi, configuración de interfaces y del bus I\textsuperscript{2}C.
+\url{https://www.raspberrypi.com/documentation/computers/configuration.html}
+\bibitem{gpiozero} GPIO Zero, Button y entradas con pull-up.
+\url{https://gpiozero.readthedocs.io/en/stable/api_input.html#button}
+\bibitem{luma} Luma.OLED, controladores y uso desde Python.
+\url{https://luma-oled.readthedocs.io/en/stable/python-usage.html}
+\bibitem{ads} Texas Instruments, hoja de datos ADS1115.
+\url{https://www.ti.com/lit/ds/symlink/ads1115.pdf}
+\bibitem{mq} Winsen, manual del MQ135.
+\url{https://www.winsen-sensor.com/manual/mq135.html}
+\bibitem{mlx} Melexis, hoja de datos MLX90614 y variantes de alimentación.
+\url{https://www.melexis.com/-/media/files/documents/datasheets/mlx90614-datasheet-melexis.pdf}
+\bibitem{max} Adafruit, módulo MAX9814.
+\url{https://learn.adafruit.com/adafruit-agc-electret-microphone-amplifier-max9814}
+\bibitem{motor} Adafruit, control de cargas inductivas mediante transistores.
+\url{https://learn.adafruit.com/transistors-101/example-uses}
+\bibitem{systemd} Proyecto systemd, manual oficial de unidades de servicio.
+\url{https://github.com/systemd/systemd/blob/main/man/systemd.service.xml}
+\end{thebibliography}
+\end{document}

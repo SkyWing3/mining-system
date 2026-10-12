@@ -1,0 +1,389 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+
+\graphicspath{{imagenes/}}
+\captionsetup{font=small, labelfont=bf}
+
+%------------------------------------------------------------------
+\title{\vspace{-1.5cm}\textbf{Lista de Componentes}\\[0.3cm]
+\large Manilla Inteligente de Seguridad para Mineros}
+\author{Franco Parra \\ \small Internet de las Cosas --- Universidad Católica Boliviana}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+%==================================================================
+\section{Descripción del proyecto}
+
+El proyecto consiste en desarrollar una \textbf{manilla inteligente para mineros}
+que permita monitorear condiciones básicas de seguridad y comunicarse con una
+estación central mediante Wi-Fi.
+
+La manilla utiliza una \textbf{Raspberry Pi Zero 2 W} como controlador principal.
+Esta lee continuamente los sensores, muestra los valores y alertas en una pantalla
+OLED y envía periódicamente la información al servidor. Tres botones permiten
+desplazarse por opciones como estado del sistema, gases, temperatura y grabación
+de mensajes de voz. Cuando se detecta una condición peligrosa o llega una alerta
+desde la central, la manilla activa la vibración y muestra una advertencia en
+pantalla. Los mensajes de voz se graban localmente y se envían a la
+\textbf{Raspberry Pi 4}, que actúa como servidor central recibiendo los datos,
+estados y mensajes de una o varias manillas.
+
+\textbf{Alcance de la versión implementada:} el menú OLED envía mensajes
+predeterminados de ayuda, estado y emergencias mediante WebSocket, con cola
+local y confirmación de recepción. La central incluye login, usuarios,
+asignaciones de manillas, mensajes en tiempo real y lecturas recibidas. La web
+solo recibe reportes y registra revisiones internas; no envía respuestas.
+La mensajería de voz, los controladores físicos de sensores y la vibración
+descritos como objetivos en este documento siguen pendientes de integración.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=0.6cm and 1.4cm,
+  bloque/.style={draw, rounded corners, align=center, font=\small\sffamily,
+                 minimum height=0.85cm, minimum width=2.4cm, fill=gray!8},
+  nucleo/.style={bloque, fill=blue!12, thick},
+  flecha/.style={-{Latex[length=2.5mm]}, thick}]
+
+  \node[nucleo] (zero) {Raspberry Pi\\Zero 2 W};
+  \node[bloque, above left=0.35cm and 1.6cm of zero] (mq)  {MQ-135};
+  \node[bloque, left=1.6cm of zero]                  (ir)  {Sensor IR\\temperatura};
+  \node[bloque, below left=0.35cm and 1.6cm of zero] (mic) {MAX9814};
+  \node[bloque, above right=0.35cm and 1.5cm of zero](oled){OLED SSD1306};
+  \node[bloque, right=1.5cm of zero]                 (btn) {3 botones};
+  \node[bloque, below right=0.35cm and 1.5cm of zero](vib) {Módulo de\\vibración};
+  \node[nucleo, below=1.5cm of zero]                 (pi4) {Raspberry Pi 4\\(servidor central)};
+
+  \draw[flecha] (mq)  -- node[above, font=\tiny, sloped] {ADC} (zero);
+  \draw[flecha] (ir)  -- node[above, font=\tiny] {I\textsuperscript{2}C} (zero);
+  \draw[flecha] (mic) -- node[below, font=\tiny, sloped] {ADC} (zero);
+  \draw[flecha] (zero) -- node[above, font=\tiny, sloped] {I\textsuperscript{2}C} (oled);
+  \draw[flecha] (btn) -- node[above, font=\tiny] {GPIO} (zero);
+  \draw[flecha] (zero) -- node[below, font=\tiny, sloped] {GPIO} (vib);
+  \draw[flecha, {Latex[length=2.5mm]}-{Latex[length=2.5mm]}] (zero) -- node[right, font=\tiny\sffamily] {\ Wi-Fi} (pi4);
+\end{tikzpicture}
+\caption{Arquitectura general del sistema.}
+\end{figure}
+
+%==================================================================
+\section{Lista de componentes}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}clll@{}}
+\toprule
+\textbf{N.\textsuperscript{o}} & \textbf{Componente} & \textbf{Función en el proyecto} & \textbf{Interfaz} \\
+\midrule
+1 & Raspberry Pi 4              & Servidor central                & Wi-Fi / Ethernet \\
+2 & Raspberry Pi Zero 2 W       & Controlador de la manilla       & --- \\
+3 & Pantalla OLED SSD1306       & Interfaz visual y menús         & I\textsuperscript{2}C \\
+4 & 3 botones pulsadores        & Navegación por el menú          & GPIO \\
+5 & Sensor de gas MQ-135        & Detección de gases              & Analógica \\
+6 & Sensor IR de temperatura    & Temperatura sin contacto        & I\textsuperscript{2}C \\
+7 & Micrófono MAX9814           & Grabación de mensajes de voz    & Analógica \\
+8 & Módulo de vibración         & Alertas hápticas                & GPIO \\
+9 & Conversor ADC ADS1115       & Lectura de señales analógicas   & I\textsuperscript{2}C \\
+\bottomrule
+\end{tabular}
+\caption{Resumen de los componentes del sistema.}
+\end{table}
+
+\noindent
+\textbf{Nota:} el componente n.\textsuperscript{o} 9 no estaba en la lista original,
+pero es necesario. Se justifica en la Sección~\ref{sec:adc}.
+
+%==================================================================
+\section{Descripción de cada componente}
+
+%------------------------------------------------------------------
+\subsection{Raspberry Pi 4 --- Servidor central}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.42\textwidth]{rpi4.jpg}
+\caption{Raspberry Pi 4 Modelo B.}
+\end{figure}
+
+Computador de placa única que funciona como \textbf{estación central}. Recibe por
+Wi-Fi los datos, estados y mensajes de voz enviados por una o varias manillas, los
+almacena y permite reproducirlos o visualizarlos.
+
+\begin{itemize}[nosep]
+  \item Procesador Broadcom BCM2711, cuatro núcleos Cortex-A72 a 1{,}5\,GHz.
+  \item Memoria RAM de 2, 4 u 8\,GB (se recomienda 4\,GB).
+  \item Wi-Fi 802.11ac de doble banda y Ethernet Gigabit.
+  \item Alimentación de 5\,V mediante USB-C.
+\end{itemize}
+
+\textbf{Uso previsto:} ejecutar el servidor (broker MQTT o servicio HTTP), la base
+de datos de mediciones y el almacenamiento de los audios recibidos.
+
+%------------------------------------------------------------------
+\subsection{Raspberry Pi Zero 2 W --- Cerebro de la manilla}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.42\textwidth]{rpizero2w.jpg}
+\caption{Raspberry Pi Zero 2 W.}
+\end{figure}
+
+Controlador principal que se lleva en la muñeca. Se eligió por su tamaño reducido,
+su bajo consumo y por incluir Wi-Fi integrado, lo que evita añadir un módulo de
+comunicación adicional.
+
+\begin{itemize}[nosep]
+  \item Procesador cuatro núcleos Cortex-A53 a 1\,GHz, 512\,MB de RAM.
+  \item Wi-Fi 802.11 b/g/n de 2{,}4\,GHz y Bluetooth 4.2.
+  \item 40 pines GPIO con buses I\textsuperscript{2}C, SPI y UART.
+  \item Dimensiones de 65 $\times$ 30\,mm, adecuadas para un dispositivo portátil.
+\end{itemize}
+
+\textbf{Uso previsto:} leer los sensores, dibujar la interfaz en la pantalla OLED,
+atender los botones, activar la vibración, grabar audio y enviar todo al servidor.
+
+%------------------------------------------------------------------
+\subsection{Pantalla OLED SSD1306 --- Interfaz visual}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.40\textwidth]{oled.jpg}
+\caption{Módulo de pantalla OLED de 0{,}96 pulgadas con controlador SSD1306.}
+\end{figure}
+
+Pantalla monocromática que muestra los valores de los sensores, el estado del
+sistema y las advertencias. Al ser OLED no necesita retroiluminación, por lo que
+consume poco y se lee bien en la oscuridad de una mina.
+
+\begin{itemize}[nosep]
+  \item Resolución de 128 $\times$ 64 píxeles, tamaño de 0{,}96\,pulgadas.
+  \item Comunicación por I\textsuperscript{2}C (dirección típica \texttt{0x3C}).
+  \item Alimentación de 3{,}3\,V, compatible directamente con la Raspberry Pi.
+  \item Solo cuatro cables: VCC, GND, SDA y SCL.
+\end{itemize}
+
+\textbf{Uso previsto:} mostrar el menú de navegación (estado, gases, temperatura,
+grabación) y las pantallas de alerta.
+
+%------------------------------------------------------------------
+\subsection{Tres botones pulsadores --- Navegación}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.34\textwidth]{botones.jpg}
+\caption{Pulsadores táctiles del tipo utilizado en la manilla.}
+\end{figure}
+
+Tres pulsadores permiten manejar toda la interfaz sin necesidad de pantalla táctil,
+lo que resulta más práctico con guantes de trabajo.
+
+\begin{itemize}[nosep]
+  \item Botón 1: subir o retroceder en el menú.
+  \item Botón 2: bajar o avanzar en el menú.
+  \item Botón 3: seleccionar, confirmar o iniciar la grabación.
+\end{itemize}
+
+\textbf{Conexión:} cada botón va a un pin GPIO configurado con resistencia
+\emph{pull-up} interna; se recomienda antirrebote (\emph{debounce}) por software.
+
+%------------------------------------------------------------------
+\subsection{Sensor de gas MQ-135 --- Detección de gases}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.40\textwidth]{mq135.jpg}
+\caption{Módulo sensor de gas MQ-135.}
+\end{figure}
+
+Sensor de calidad del aire de tipo semiconductor. Su resistencia interna cambia
+según la concentración de gases presentes, lo que permite detectar variaciones en
+el ambiente de la mina.
+
+\begin{itemize}[nosep]
+  \item Detecta amoníaco (NH\textsubscript{3}), NO\textsubscript{x}, benceno,
+        humo y CO\textsubscript{2}, entre otros.
+  \item Alimentación de 5\,V; el calentador consume alrededor de 150\,mA.
+  \item Salida analógica (AO) proporcional y salida digital (DO) por umbral.
+  \item Requiere un precalentamiento inicial antes de dar lecturas estables.
+\end{itemize}
+
+\textbf{Importante:} su salida es analógica, por lo que necesita el conversor ADC
+descrito en la Sección~\ref{sec:adc}. Además, entrega una medida
+\emph{relativa}: sirve para detectar cambios y disparar alertas, no para dar una
+concentración calibrada en ppm sin una calibración previa.
+
+%------------------------------------------------------------------
+\subsection{Sensor infrarrojo de temperatura}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.38\textwidth]{sensorir.jpg}
+\caption{Módulo de termómetro infrarrojo sin contacto MLX90614 (GY-906).}
+\end{figure}
+
+Mide la temperatura a distancia captando la radiación infrarroja emitida por un
+cuerpo u objeto, sin necesidad de contacto físico.
+
+\begin{itemize}[nosep]
+  \item Modelo sugerido: MLX90614 (placa GY-906).
+  \item Rango típico de $-40$ a $+125\,^{\circ}$C en ambiente y hasta
+        $+380\,^{\circ}$C en objeto.
+  \item Precisión aproximada de $\pm 0{,}5\,^{\circ}$C en el rango corporal.
+  \item Comunicación I\textsuperscript{2}C, alimentación de 3{,}3\,V.
+\end{itemize}
+
+\textbf{Uso previsto:} vigilar la temperatura ambiente del túnel y detectar focos
+de calor anómalos. Comparte el bus I\textsuperscript{2}C con la pantalla OLED.
+
+%------------------------------------------------------------------
+\subsection{Micrófono MAX9814 con amplificador}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.38\textwidth]{max9814.jpg}
+\caption{Módulo de micrófono con amplificador MAX9814.}
+\end{figure}
+
+Micrófono electret acompañado de un amplificador con control automático de
+ganancia (AGC), que ajusta el nivel de la señal según el volumen de la voz.
+
+\begin{itemize}[nosep]
+  \item Control automático de ganancia seleccionable: 40, 50 o 60\,dB.
+  \item Alimentación de 2{,}7 a 5{,}5\,V; salida analógica.
+  \item Bajo ruido, adecuado para captar voz en entornos ruidosos.
+\end{itemize}
+
+\textbf{Uso previsto:} grabar mensajes de voz cortos que se guardan localmente y
+luego se envían a la Raspberry Pi 4.
+
+\textbf{Importante:} su salida también es analógica. Para grabar voz con calidad
+aceptable conviene evaluar si el ADS1115 alcanza la velocidad de muestreo
+necesaria (véase la Sección~\ref{sec:adc}).
+
+%------------------------------------------------------------------
+\subsection{Módulo de vibración --- Retroalimentación háptica}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.38\textwidth]{vibracion.jpg}
+\caption{Motores de vibración del tipo empleado en el módulo.}
+\end{figure}
+
+Pequeño motor con masa excéntrica que genera vibración. Es el canal de aviso más
+fiable en una mina, donde el ruido puede impedir escuchar un sonido y la vista
+puede estar ocupada.
+
+\begin{itemize}[nosep]
+  \item Motor de moneda o cilíndrico de 3 a 5\,V.
+  \item El módulo incluye transistor y diodo de protección, por lo que se puede
+        controlar directamente desde un pin GPIO.
+  \item Consumo aproximado de 60 a 100\,mA en funcionamiento.
+\end{itemize}
+
+\textbf{Uso previsto:} vibración larga ante peligro detectado, vibración doble al
+recibir un mensaje de la central y vibración corta como confirmación al pulsar un
+botón.
+
+%------------------------------------------------------------------
+\subsection{Conversor ADC ADS1115}
+\label{sec:adc}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.40\textwidth]{ads1115.jpg}
+\caption{Módulo conversor analógico-digital ADS1115.}
+\end{figure}
+
+\textbf{Este componente no estaba en la lista inicial, pero es imprescindible.}
+La Raspberry Pi Zero 2 W \emph{no posee entradas analógicas}, mientras que tanto el
+MQ-135 como el MAX9814 entregan señales analógicas. Sin un conversor ADC esas dos
+señales simplemente no se pueden leer.
+
+\begin{itemize}[nosep]
+  \item Resolución de 16 bits y amplificador de ganancia programable.
+  \item Cuatro entradas analógicas simples (o dos diferenciales).
+  \item Comunicación I\textsuperscript{2}C, compartida con la OLED y el sensor IR.
+  \item Alimentación de 2{,}0 a 5{,}5\,V.
+  \item Velocidad de muestreo de hasta 860 muestras por segundo.
+\end{itemize}
+
+\textbf{Consideración sobre el audio:} 860 muestras por segundo son suficientes
+para el MQ-135, pero quedan por debajo de lo deseable para grabar voz con buena
+calidad (lo habitual son 8000\,Hz o más). Si la calidad del audio resulta
+insuficiente, una alternativa es sustituir el MAX9814 por un \textbf{micrófono I2S}
+(por ejemplo un INMP441 o SPH0645), que se conecta digitalmente a la Raspberry Pi
+sin necesitar ADC.
+
+%==================================================================
+\section{Resumen de conexiones}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Componente} & \textbf{Bus / pines} & \textbf{Alimentación} \\
+\midrule
+Pantalla OLED SSD1306   & I\textsuperscript{2}C (SDA, SCL) --- dir. \texttt{0x3C} & 3{,}3\,V \\
+Sensor IR de temperatura& I\textsuperscript{2}C (SDA, SCL) --- dir. \texttt{0x5A} & 3{,}3\,V \\
+ADS1115                 & I\textsuperscript{2}C (SDA, SCL) --- dir. \texttt{0x48} & 3{,}3\,V \\
+MQ-135                  & Entrada A0 del ADS1115                                  & 5{,}0\,V \\
+MAX9814                 & Entrada A1 del ADS1115                                  & 3{,}3\,V \\
+Botón 1 / 2 / 3         & 3 pines GPIO con \emph{pull-up}                          & 3{,}3\,V \\
+Módulo de vibración     & 1 pin GPIO (salida digital o PWM)                        & 3{,}3--5\,V \\
+\bottomrule
+\end{tabular}
+\caption{Interfaz eléctrica de cada componente con la Raspberry Pi Zero 2 W.}
+\end{table}
+
+Los tres dispositivos I\textsuperscript{2}C comparten el mismo par de líneas SDA y
+SCL, ya que cada uno tiene una dirección distinta. Esto ahorra pines y simplifica
+mucho el cableado dentro de la manilla.
+
+%==================================================================
+\section{Conclusión}
+
+La lista propuesta cubre las cuatro funciones del proyecto: \textbf{sensado}
+(MQ-135 y sensor infrarrojo), \textbf{interfaz de usuario} (pantalla OLED, tres
+botones y módulo de vibración), \textbf{comunicación} (Wi-Fi integrado en ambas
+Raspberry Pi) y \textbf{mensajería de voz} (micrófono MAX9814).
+
+La única adición necesaria respecto a la lista original es el conversor
+\textbf{ADS1115}, sin el cual el sensor de gas y el micrófono no podrían leerse.
+Queda pendiente evaluar en la práctica si la velocidad de muestreo del ADS1115
+resulta suficiente para el audio o si conviene migrar a un micrófono I2S.
+
+%==================================================================
+\section*{Créditos de las imágenes}
+\small
+Las fotografías de la Raspberry Pi 4, la Raspberry Pi Zero 2 W, el MAX9814, los
+motores de vibración y los pulsadores provienen de Wikimedia Commons y se
+reproducen bajo sus respectivas licencias:
+
+\begin{itemize}[nosep]
+  \item \textit{Raspberry Pi 4 Model B} --- Laserlicht, CC BY-SA 4.0.
+  \item \textit{Raspberry Pi Zero 2 W} --- Anil Öztas, CC BY 4.0.
+  \item \textit{Adafruit MAX9814 AGC Mic Amp} --- Raimond Spekking, CC BY-SA 4.0.
+  \item \textit{Vibration motors} --- Tiia Monto, CC BY-SA 3.0.
+  \item \textit{Tactile switches} --- Scwerllguy, CC BY-SA 3.0.
+\end{itemize}
+
+Las fotografías de la pantalla OLED SSD1306, el MQ-135, el sensor infrarrojo
+MLX90614 y el ADS1115 fueron aportadas por el autor.
+
+\end{document}

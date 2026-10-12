@@ -1,0 +1,16 @@
+@central = http://localhost:5080
+
+GET {{central}}/health
+Accept: application/json
+
+### Estado de la configuración inicial
+GET {{central}}/api/auth/status
+Accept: application/json
+
+### Descripción del contrato (solo Development)
+GET {{central}}/openapi/v1.json
+Accept: application/json
+
+### Las rutas privadas requieren la cookie del login.
+GET {{central}}/api/overview
+Accept: application/json
