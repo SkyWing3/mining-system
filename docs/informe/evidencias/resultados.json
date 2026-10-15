@@ -2,9 +2,9 @@
   "recordedAt": "2026-10-15T01:31:44.766518+00:00",
   "backend": {
     "engine": "MySQL 9.6.0 local",
-    "tests": 16,
-    "passed": 16,
-    "elapsedSeconds": 3.003,
+    "tests": 17,
+    "passed": 17,
+    "elapsedSeconds": 4.594,
     "source": "tests/backend/test_api.py",
     "caseNames": [
       "test_authentication_and_csrf_required",
@@ -22,8 +22,10 @@
       "test_local_client_delivers_durable_queue",
       "test_revoking_account_ends_session",
       "test_zz_data_and_cookie_keys_survive_server_restart",
-      "test_zy_login_attempts_are_rate_limited"
-    ]
+      "test_zy_login_attempts_are_rate_limited",
+      "test_telemetry_keeps_wearer_after_reassignment"
+    ],
+    "recordedAt": "2026-10-15T03:32:06.237797+00:00"
   },
   "browser": {
     "tests": 8,

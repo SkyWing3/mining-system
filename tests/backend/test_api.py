@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'device'))
 sys.path.insert(0, str(ROOT / 'scripts'))
 from src.communication.client import DeviceClient
-from mysql_test_db import create as create_database, drop as drop_database
+from mysql_test_db import create as create_database, drop as drop_database, sql as run_sql
 
 BASE = 'http://127.0.0.1:5081'
 WS = 'ws://127.0.0.1:5081'
@@ -209,6 +209,43 @@ class BackendTests(unittest.TestCase):
         self.assertTrue(row['online'])
         self.assertEqual(row['reading']['batteryPercent'], 74)
         self.assertNotIn('keyHash', row)
+
+    def test_telemetry_keeps_wearer_after_reassignment(self):
+        first, second = self.create_user(), self.create_user()
+        device, key = self.create_device(first)
+        with self.socket(key) as socket:
+            self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'gasPpm': 35})['type'], 'ack')
+        status, result = self.admin.call('/devices/' + device['id'], 'PUT', {'name': device['name'], 'zone': 'Galería sur', 'userId': second['id'], 'active': True})
+        self.assertEqual(status, 200, result)
+        with self.socket(key) as socket:
+            self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'gasPpm': 12})['type'], 'ack')
+        _, readings = self.admin.call('/devices/' + device['id'] + '/telemetry')
+        latest, earlier = readings
+        self.assertEqual((earlier['minerName'], earlier['zone'], earlier['gasPpm']), (first['name'], 'Galería norte', 35))
+        self.assertEqual((latest['minerName'], latest['zone'], latest['gasPpm']), (second['name'], 'Galería sur', 12))
+
+    def test_database_policies_protect_history(self):
+        device, key = self.create_device()
+        with self.socket(key) as socket:
+            self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'gasPpm': 20})['type'], 'ack')
+            self.assertEqual(self.exchange(socket, self.frame('HELP'))['type'], 'ack')
+        database = '`' + self.database['name'] + '`'
+        rejected = {
+            f"DELETE FROM {database}.Readings;": 'solo admiten inserciones',
+            f"UPDATE {database}.Readings SET GasPpm = 0;": 'solo admiten inserciones',
+            f"UPDATE {database}.Events SET Actor = 'x';": 'solo admite inserciones',
+            f"DELETE FROM {database}.Messages;": 'no se eliminan',
+            f"UPDATE {database}.Messages SET Code = 'OK';": 'una sola vez',
+            f"DELETE FROM {database}.Devices;": 'no se eliminan',
+            f"INSERT INTO {database}.Readings (DeviceId, MinerName, DeviceName, Zone, BatteryPercent, ReceivedAt) VALUES ('{device['id']}', '', '', '', 101, NOW(6));": 'CK_Readings_Battery',
+            f"UPDATE {database}.Users SET Role = 'Root';": 'CK_Users_Role',
+        }
+        for statement, error in rejected.items():
+            with self.subTest(statement=statement):
+                with self.assertRaises(RuntimeError) as failure:
+                    run_sql(statement)
+                self.assertIn(error, str(failure.exception))
+        self.assertEqual(run_sql(f"SELECT COUNT(*) FROM {database}.Readings WHERE DeviceId = '{device['id']}';").strip(), '1')
 
     def test_invalid_and_rotated_credentials_rejected(self):
         with self.assertRaises(InvalidStatus):

@@ -63,7 +63,11 @@ public sealed class DeviceIngestion(MiningDb db, MutationLock mutations, IHubCon
                 ValidateReading(frame.TemperatureC, -50, 150, "temperatura");
                 ValidateReading(frame.GasPpm, 0, 1_000_000, "gas");
                 ValidateReading(frame.BatteryPercent, 0, 100, "batería");
-                reading = new Telemetry { DeviceId = device.Id, TemperatureC = frame.TemperatureC, GasPpm = frame.GasPpm, BatteryPercent = frame.BatteryPercent };
+                reading = new Telemetry
+                {
+                    DeviceId = device.Id, MinerName = device.User?.Name ?? "", DeviceName = device.Name, Zone = device.Zone,
+                    TemperatureC = frame.TemperatureC, GasPpm = frame.GasPpm, BatteryPercent = frame.BatteryPercent
+                };
                 db.Readings.Add(reading);
             }
             device.LastSeenAt = DateTime.UtcNow;

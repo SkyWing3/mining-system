@@ -1,11 +1,11 @@
 # Informe final de Mining System
 
-Fuente principal: `../informe_final.tex`. PDF: `../informe_final.pdf`.
+Fuente principal: `../informe_final_iot_2026.tex`. PDF: `../informe_final_iot_2026.pdf`.
 
 Compilar desde `docs/`, con TeX Live y XeLaTeX:
 
 ```sh
-latexmk -xelatex -interaction=nonstopmode -halt-on-error informe_final.tex
+latexmk -xelatex -interaction=nonstopmode -halt-on-error informe_final_iot_2026.tex
 ```
 
 El documento utiliza TeX Gyre Heros/Cursor incluidos en TeX Live. Las figuras y
@@ -20,7 +20,7 @@ entrega conserva esa estructura y se puede compilar sin el código del servidor.
   ACK e idempotencia, lectura y consulta de claves foráneas en una base temporal.
 - `evidencias/mysql-schema.sql`: esquema generado por EF Core para MySQL.
 - `evidencias/pruebas-dispositivo.txt`: salida real de las 16 pruebas del nodo.
-- `evidencias/resultados.json`: resumen de las 40 pruebas y del entorno validado.
+- `evidencias/resultados.json`: resumen de las 41 pruebas y del entorno validado.
 - `creditos/`: licencia de los dibujos de Wokwi Elements usados en el plano.
 
 El programa del nodo usa CPython y el dashboard usa React; el informe describe

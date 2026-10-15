@@ -77,6 +77,6 @@ public sealed class MonitoringController(MiningDb db, MutationLock mutations, IH
     public async Task<IActionResult> Readings(string id)
     {
         if (!await db.Devices.AnyAsync(x => x.Id == id)) return NotFound();
-        return Ok(await db.Readings.AsNoTracking().Where(x => x.DeviceId == id).OrderByDescending(x => x.Id).Take(100).Select(x => new { x.Id, x.TemperatureC, x.GasPpm, x.BatteryPercent, x.ReceivedAt }).ToListAsync());
+        return Ok(await db.Readings.AsNoTracking().Where(x => x.DeviceId == id).OrderByDescending(x => x.Id).Take(100).Select(x => new { x.Id, x.MinerName, x.Zone, x.TemperatureC, x.GasPpm, x.BatteryPercent, x.ReceivedAt }).ToListAsync());
     }
 }

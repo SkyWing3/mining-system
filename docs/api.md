@@ -26,7 +26,7 @@ El login y la configuración inicial tienen un límite de 12 solicitudes por IP 
 | GET | `/api/overview` | Contadores, ocho últimos mensajes y catálogo. |
 | GET | `/api/messages` | Historial paginado y filtros. |
 | POST | `/api/messages/{id}/review` | Revisión interna de una alerta crítica, idempotente. |
-| GET | `/api/devices/{id}/telemetry` | Últimas 100 lecturas, de reciente a antigua. |
+| GET | `/api/devices/{id}/telemetry` | Últimas 100 lecturas, de reciente a antigua, con `minerName` y `zone` registrados al recibir cada una. |
 | GET | `/api/events` | Últimas 100 acciones administrativas. |
 | GET | `/openapi/v1.json` | Descripción de API, solo en entorno Development. |
 

@@ -88,7 +88,14 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Devices");
+                    b.ToTable("Devices", t =>
+                        {
+                            t.HasCheckConstraint("CK_Devices_KeyHash", "CHAR_LENGTH(`KeyHash`) = 64");
+
+                            t.HasCheckConstraint("CK_Devices_Name", "CHAR_LENGTH(TRIM(`Name`)) >= 2");
+
+                            t.HasCheckConstraint("CK_Devices_Zone", "CHAR_LENGTH(TRIM(`Zone`)) >= 2");
+                        });
                 });
 
             modelBuilder.Entity("MiningSystem.Models.MiningMessage", b =>
@@ -147,7 +154,12 @@ namespace backend.Migrations
                     b.HasIndex("DeviceId", "ClientMessageId")
                         .IsUnique();
 
-                    b.ToTable("Messages");
+                    b.ToTable("Messages", t =>
+                        {
+                            t.HasCheckConstraint("CK_Messages_ClientMessageId", "CHAR_LENGTH(`ClientMessageId`) >= 1");
+
+                            t.HasCheckConstraint("CK_Messages_Review", "(`ReviewedAt` IS NULL) = (`ReviewedBy` IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("MiningSystem.Models.Telemetry", b =>
@@ -164,8 +176,18 @@ namespace backend.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("varchar(32)");
 
+                    b.Property<string>("DeviceName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)");
+
                     b.Property<double?>("GasPpm")
                         .HasColumnType("double");
+
+                    b.Property<string>("MinerName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<DateTime>("ReceivedAt")
                         .HasColumnType("datetime(6)");
@@ -173,11 +195,27 @@ namespace backend.Migrations
                     b.Property<double?>("TemperatureC")
                         .HasColumnType("double");
 
+                    b.Property<string>("Zone")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DeviceId", "ReceivedAt");
 
-                    b.ToTable("Readings");
+                    b.HasIndex("MinerName", "ReceivedAt");
+
+                    b.ToTable("Readings", t =>
+                        {
+                            t.HasCheckConstraint("CK_Readings_Battery", "`BatteryPercent` IS NULL OR `BatteryPercent` BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("CK_Readings_Gas", "`GasPpm` IS NULL OR `GasPpm` BETWEEN 0 AND 1000000");
+
+                            t.HasCheckConstraint("CK_Readings_Measurement", "`TemperatureC` IS NOT NULL OR `GasPpm` IS NOT NULL OR `BatteryPercent` IS NOT NULL");
+
+                            t.HasCheckConstraint("CK_Readings_Temperature", "`TemperatureC` IS NULL OR `TemperatureC` BETWEEN -50 AND 150");
+                        });
                 });
 
             modelBuilder.Entity("MiningSystem.Models.User", b =>
@@ -222,7 +260,14 @@ namespace backend.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", t =>
+                        {
+                            t.HasCheckConstraint("CK_Users_Email", "`Email` LIKE '%_@_%'");
+
+                            t.HasCheckConstraint("CK_Users_Name", "CHAR_LENGTH(TRIM(`Name`)) >= 2");
+
+                            t.HasCheckConstraint("CK_Users_Role", "`Role` IN ('Admin', 'Supervisor', 'Miner')");
+                        });
                 });
 
             modelBuilder.Entity("MiningSystem.Models.MiningDevice", b =>
