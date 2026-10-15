@@ -14,6 +14,10 @@ services:
     devices:
       - /dev/i2c-1:/dev/i2c-1
       - /dev/gpiochip0:/dev/gpiochip0
+      # INMP441 through the googlevoicehat-soundcard overlay.
+      - /dev/snd:/dev/snd
+    group_add:
+      - audio
     volumes:
       - type: bind
         source: ./device/config/settings.docker.json

@@ -4,6 +4,33 @@ La API usa MySQL, EF Core 10 y `MySql.EntityFrameworkCore` 10.0.9. El esquema
 está versionado en `backend/Migrations/`; `Database.MigrateAsync()` aplica los
 cambios al arrancar. SQLite no forma parte de la API ni del programa de la manilla.
 
+| Tabla | Contenido |
+| --- | --- |
+| `Users` | Identidad, rol, estado, hash de contraseña y versión de sesión. |
+| `Devices` | Manillas, zona, minero asignado, hash de credencial y última presencia. |
+| `Messages` | Reportes del menú y alarmas automáticas (`Detail`), con identidad histórica y revisión. |
+| `Readings` | Temperatura ambiente y de objeto, CO en ppm y en voltios, batería, nivel y marca de simulación. |
+| `VoiceMessages` | Metadatos de cada grabación; el audio se guarda en `{DataDirectory}/voice/`. |
+| `Notices` | Avisos de la central por manilla, con entrega, lectura y caducidad. |
+| `Events` | Auditoría de acciones administrativas. |
+
+La migración `LiveTelemetryVoiceNotices` agrega las columnas de lectura, el
+detalle de alarmas y las tablas de voz y avisos; las lecturas anteriores quedan
+con nivel `normal`. Para crear nuevas migraciones se usa la herramienta local:
+
+```sh
+dotnet tool restore
+dotnet dotnet-ef migrations add Nombre --project backend/backend.csproj
+```
+
+## Retención de lecturas
+
+Cada lectura se transmite en vivo, pero MySQL guarda como máximo una por manilla
+cada `Mining__Telemetry__PersistIntervalSeconds` (10 s) y todos los cambios de
+nivel. Un proceso horario elimina las lecturas guardadas con más de
+`Mining__Telemetry__RetentionDays` días (30; 0 las conserva). Los mensajes, la voz,
+los avisos y la auditoría no se eliminan automáticamente.
+
 ## Docker
 
 `./start.sh` levanta MySQL 8.4 LTS, la API y Nginx/React. El servicio MySQL no
@@ -66,7 +93,8 @@ el único archivo que importa el motor anterior; no se carga en la aplicación.
 `connection.outbox_path` apunta ahora a un **directorio**, por ejemplo
 `../state/outbox`. Cada mensaje se guarda en JSON mediante archivo temporal,
 `fsync`, renombrado atómico y bloqueo entre procesos. La cola funciona sin red
-y conserva el identificador hasta recibir un `ack` coincidente. MySQL solo se
+y conserva el identificador hasta recibir un `ack` coincidente. Las grabaciones de
+voz usan otra carpeta, `connection.voice_outbox_path`, con el mismo mecanismo. MySQL solo se
 usa en la central, evitando que la manilla dependa de una base remota para guardar.
 
 Si existe una cola antigua en un archivo, no borrarla ni usar ese archivo como
@@ -93,6 +121,6 @@ crear y eliminar estas bases. Nunca utilizar el nombre de una base de aplicació
 ## Respaldos
 
 Usar `mysqldump --single-transaction --no-tablespaces mining_system` con la cuenta
-de la aplicación. Guardar el volcado, `central-data` y `secrets/` en un lugar
-privado. `docker compose down -v` elimina los volúmenes: no usarlo para actualizar
+de la aplicación. Guardar el volcado, `central-data` (claves y audios) y `secrets/`
+en un lugar privado. `docker compose down -v` elimina los volúmenes: no usarlo para actualizar
 o detener normalmente.

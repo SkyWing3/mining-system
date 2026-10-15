@@ -14,3 +14,20 @@ Accept: application/json
 ### Las rutas privadas requieren la cookie del login.
 GET {{central}}/api/overview
 Accept: application/json
+
+### Lecturas guardadas de una manilla en los últimos minutos (requiere cookie)
+GET {{central}}/api/devices/ID_DE_LA_MANILLA/telemetry?since=2026-10-15T12:00:00Z&limit=600
+Accept: application/json
+
+### Avisos disponibles (requiere cookie)
+GET {{central}}/api/notices/catalog
+Accept: application/json
+
+### Subida de voz desde una manilla (credencial de dispositivo, sin cookie)
+POST {{central}}/api/device/voice
+Content-Type: audio/wav
+X-Device-Key: CREDENCIAL_DE_64_CARACTERES
+X-Client-Message-Id: ejemplo-voz-1
+X-Recorded-At: 2026-10-15T12:00:00Z
+
+< ./ejemplo.wav

@@ -12,8 +12,12 @@ import tempfile
 import time
 import unittest
 import urllib.error
+import urllib.parse
 import urllib.request
+import io
+from contextlib import contextmanager
 import uuid
+import wave
 from datetime import datetime, timezone
 from pathlib import Path
 from queue import Queue
@@ -24,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'device'))
 sys.path.insert(0, str(ROOT / 'scripts'))
 from src.communication.client import DeviceClient
+from src.config import ConnectionConfig
 from mysql_test_db import create as create_database, drop as drop_database
 
 BASE = 'http://127.0.0.1:5081'
@@ -48,6 +53,14 @@ class Api:
         with response:
             text = response.read()
             return response.status, json.loads(text) if text else None
+
+    def raw(self, path):
+        try:
+            response = self.client.open(urllib.request.Request(BASE + '/api' + path), timeout=5)
+        except urllib.error.HTTPError as error:
+            response = error
+        with response:
+            return response.status, response.headers, response.read()
 
     @property
     def cookie_header(self):
@@ -108,6 +121,50 @@ class BackendTests(unittest.TestCase):
     def socket(self, key):
         return connect(WS + '/ws/device', additional_headers={'X-Device-Key': key}, proxy=None, open_timeout=3, close_timeout=1)
 
+    @contextmanager
+    def browser(self):
+        with connect(WS + '/hubs/mining', additional_headers={'Cookie': self.admin.cookie_header}, origin='http://localhost:5173', proxy=None, close_timeout=1) as socket:
+            socket.send('{"protocol":"json","version":1}\x1e')
+            self.assertIn('{}', socket.recv(timeout=3))
+            yield socket
+
+    def events_from(self, browser, target, count=1, timeout=3):
+        found = []
+        deadline = time.monotonic() + timeout
+        while len(found) < count and time.monotonic() < deadline:
+            try:
+                payload = browser.recv(timeout=max(0.05, deadline - time.monotonic()))
+            except TimeoutError:
+                break
+            for part in payload.split('\x1e'):
+                if part:
+                    message = json.loads(part)
+                    if message.get('target') == target:
+                        found.append(message['arguments'][0])
+        return found
+
+    @staticmethod
+    def wav(seconds=1.0, rate=16000):
+        output = io.BytesIO()
+        with wave.open(output, 'wb') as audio:
+            audio.setnchannels(1)
+            audio.setsampwidth(2)
+            audio.setframerate(rate)
+            audio.writeframes(b'\x10\x00' * int(seconds * rate))
+        return output.getvalue()
+
+    def upload_voice(self, key, body, voice_id=None, content_type='audio/wav'):
+        headers = {'X-Device-Key': key, 'X-Client-Message-Id': voice_id or uuid.uuid4().hex,
+                   'X-Recorded-At': datetime.now(timezone.utc).isoformat(), 'Content-Type': content_type}
+        request = urllib.request.Request(BASE + '/api/device/voice', data=body, headers=headers, method='POST')
+        try:
+            response = urllib.request.urlopen(request, timeout=5)
+        except urllib.error.HTTPError as error:
+            response = error
+        with response:
+            text = response.read()
+            return response.status, json.loads(text) if text else None
+
     def exchange(self, socket, payload):
         socket.send(json.dumps(payload))
         return json.loads(socket.recv(timeout=3))
@@ -121,13 +178,19 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(self.admin.call('/auth/setup', 'POST', {'name': 'Another Admin', 'email': 'other@test.invalid', 'password': PASSWORD})[0], 409)
 
     def test_contract_and_catalog_match_the_oled(self):
-        from src.communication.catalog import MESSAGES
+        from src.communication.catalog import AUTOMATIC_MESSAGES, MESSAGES, NOTICES
         with urllib.request.urlopen(BASE + '/openapi/v1.json', timeout=5) as response:
             contract = json.load(response)
-        self.assertIn('/api/auth/login', contract['paths'])
+        for path in ('/api/auth/login', '/api/notices', '/api/voice', '/api/device/voice'):
+            self.assertIn(path, contract['paths'])
         _, overview = self.admin.call('/overview')
-        self.assertEqual({x['code'] for x in overview['catalog']}, {code for code, _ in MESSAGES})
+        self.assertEqual({x['code'] for x in overview['catalog'] if not x['automatic']}, {code for code, _ in MESSAGES})
+        self.assertEqual({x['code'] for x in overview['catalog'] if x['automatic']}, set(AUTOMATIC_MESSAGES))
+        self.assertEqual({x['code']: x['text'] for x in overview['noticeCatalog']}, NOTICES)
+        self.assertTrue(all(len(text) <= 20 for text in NOTICES.values()))
         self.assertTrue(overview['serverTime'].endswith('Z'))
+        for counter in ('liveDanger', 'pendingVoice', 'pendingNotices'):
+            self.assertIn(counter, overview)
 
     def test_cookie_and_account_roles(self):
         supervisor = self.create_user('Supervisor')
@@ -218,9 +281,9 @@ class BackendTests(unittest.TestCase):
             self.exchange(socket, {'type': 'heartbeat'})
             status, result = self.admin.call('/devices/' + device['id'] + '/rotate-key', 'POST')
             self.assertEqual(status, 200)
-            socket.send('{"type":"heartbeat"}')
             with self.assertRaises(ConnectionClosed):
                 socket.recv(timeout=3)
+            self.assertEqual(socket.close_code, 1008)
         with self.assertRaises(InvalidStatus):
             self.socket(key)
         with self.socket(result['apiKey']) as socket:
@@ -255,7 +318,10 @@ class BackendTests(unittest.TestCase):
     def test_local_client_delivers_durable_queue(self):
         device, key = self.create_device()
         events = Queue()
-        client = DeviceClient({'url': WS + '/ws/device', 'api_key': key, 'heartbeat_seconds': 5, 'outbox_path': str(Path(self.folder.name) / 'device-outbox')}, events)
+        folder = Path(self.folder.name) / uuid.uuid4().hex
+        config = ConnectionConfig(url=WS + '/ws/device', api_key=key, heartbeat_seconds=5, telemetry_seconds=1,
+                                  outbox_path=folder / 'outbox', voice_outbox_path=folder / 'voice')
+        client = DeviceClient(config, events)
         message_id = client.send('EVACUATE')
         self.assertEqual(client.outbox.pending, 1)
         client.start()
@@ -279,6 +345,150 @@ class BackendTests(unittest.TestCase):
         client = Api()
         self.assertEqual(client.call('/auth/login', 'POST', {'email': user['email'], 'password': PASSWORD})[0], 200)
         self.assertEqual(self.admin.call('/users/' + user['id'], 'PUT', {**user, 'active': False})[0], 200)
+        self.assertEqual(client.call('/overview')[0], 401)
+
+    def test_live_telemetry_is_broadcast_and_storage_is_throttled(self):
+        device, key = self.create_device()
+        with self.browser() as browser:
+            with self.socket(key) as socket:
+                frames = [
+                    {'type': 'telemetry', 'temperatureC': 24.5, 'objectTemperatureC': 26.0, 'gasVoltage': 0.41, 'level': 'normal', 'simulated': True},
+                    {'type': 'telemetry', 'temperatureC': 24.6, 'gasVoltage': 0.42, 'level': 'normal', 'simulated': True},
+                    {'type': 'telemetry', 'temperatureC': 33.0, 'gasPpm': 48, 'level': 'caution'},
+                ]
+                for frame in frames:
+                    self.assertEqual(self.exchange(socket, frame)['type'], 'ack')
+                self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'temperatureC': 20, 'level': 'panic'})['type'], 'error')
+                self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'gasVoltage': -1})['code'], 'invalid')
+            live = [event for event in self.events_from(browser, 'TelemetryReceived', 3) if event['deviceId'] == device['id']]
+        self.assertEqual([event['reading']['temperatureC'] for event in live], [24.5, 24.6, 33.0])
+        self.assertEqual(live[0]['reading']['objectTemperatureC'], 26.0)
+        self.assertTrue(live[0]['reading']['simulated'])
+        self.assertIsNone(live[1]['reading']['id'])
+        _, stored = self.admin.call('/devices/' + device['id'] + '/telemetry')
+        # First reading and the level change are stored; the repeat within 10 s is live only.
+        self.assertEqual([row['level'] for row in stored], ['caution', 'normal'])
+        _, devices = self.admin.call('/devices')
+        row = next(x for x in devices if x['id'] == device['id'])
+        self.assertEqual(row['reading']['temperatureC'], 33.0)
+        self.assertEqual(row['reading']['level'], 'caution')
+        since = stored[0]['receivedAt']
+        _, recent = self.admin.call('/devices/' + device['id'] + '/telemetry?since=' + urllib.parse.quote(since) + '&limit=5')
+        self.assertEqual(len(recent), 1)
+
+    def test_automatic_alarm_keeps_detail_and_counts_as_alert(self):
+        device, key = self.create_device()
+        with self.socket(key) as socket:
+            ack = self.exchange(socket, {**self.frame('CO_ALARM'), 'detail': 'CO 245 ppm'})
+            self.assertEqual(ack['type'], 'ack')
+            self.assertEqual(self.exchange(socket, {**self.frame('HELP'), 'detail': 'texto libre'})['code'], 'invalid')
+            self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'gasPpm': 245, 'level': 'danger'})['type'], 'ack')
+        _, result = self.admin.call('/messages?severity=critical&pending=true&deviceId=' + device['id'])
+        self.assertEqual(result['items'][0]['text'], 'Alarma de CO')
+        self.assertEqual(result['items'][0]['detail'], 'CO 245 ppm')
+        _, overview = self.admin.call('/overview')
+        self.assertGreaterEqual(overview['liveDanger'], 1)
+        self.assertGreaterEqual(overview['pendingAlerts'], 1)
+
+    def test_search_ignores_accents_and_case(self):
+        device, key = self.create_device()
+        with self.socket(key) as socket:
+            self.exchange(socket, self.frame('INJURY'))
+        for term in ('galeria', 'GALERÍA', 'companero'):
+            _, result = self.admin.call('/messages?deviceId=' + device['id'] + '&search=' + urllib.parse.quote(term))
+            self.assertEqual(result['total'], 1, term)
+
+    def test_unassigned_device_keeps_messages_pending(self):
+        status, result = self.admin.call('/devices', 'POST', {'name': 'Libre ' + uuid.uuid4().hex[:8], 'zone': 'Sur', 'userId': None, 'active': True})
+        self.assertEqual(status, 200)
+        with self.socket(result['apiKey']) as socket:
+            ack = self.exchange(socket, {'type': 'heartbeat'})
+            self.assertEqual(ack['device'], {'name': result['device']['name'], 'zone': 'Sur'})
+            self.assertEqual(self.exchange(socket, self.frame())['code'], 'unassigned')
+            self.assertEqual(self.exchange(socket, {'type': 'bogus'})['code'], 'invalid')
+            self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'temperatureC': 22})['type'], 'ack')
+
+    def test_notices_reach_connected_and_reconnecting_devices(self):
+        device, key = self.create_device()
+        other, other_key = self.create_device()
+        with self.browser() as browser:
+            with self.socket(key) as socket:
+                self.assertEqual(self.exchange(socket, {'type': 'heartbeat'})['device']['name'], device['name'])
+                self.assertEqual(self.admin.call('/notices', 'POST', {'code': 'UNKNOWN', 'deviceIds': [device['id']]})[0], 400)
+                self.assertEqual(self.admin.call('/notices', 'POST', {'code': 'EVACUATE', 'deviceIds': []})[0], 400)
+                status, created = self.admin.call('/notices', 'POST', {'code': 'EVACUATE', 'deviceIds': [device['id'], other['id']]})
+                self.assertEqual(status, 200, created)
+                self.assertEqual({x['status'] for x in created}, {'pending'})
+                pushed = json.loads(socket.recv(timeout=3))
+                self.assertEqual((pushed['type'], pushed['code'], pushed['text'], pushed['severity']), ('notice', 'EVACUATE', 'Evacuar ahora', 'critical'))
+                notice_id = pushed['noticeId']
+                ack = self.exchange(socket, {'type': 'notice-ack', 'noticeId': notice_id, 'stage': 'delivered'})
+                self.assertEqual((ack['type'], ack['noticeId']), ('ack', notice_id))
+                self.assertEqual(self.exchange(socket, {'type': 'notice-ack', 'noticeId': notice_id, 'stage': 'read'})['type'], 'ack')
+                self.assertEqual(self.exchange(socket, {'type': 'notice-ack', 'noticeId': 999999999, 'stage': 'read'})['type'], 'error')
+            updates = self.events_from(browser, 'NoticeUpdated', 4)
+        self.assertIn('read', {x['status'] for x in updates if x['id'] == notice_id})
+        _, page = self.admin.call('/notices?deviceId=' + device['id'])
+        self.assertEqual(page['items'][0]['status'], 'read')
+        self.assertIsNotNone(page['items'][0]['readAt'])
+        # The offline device receives the pending notice after its first frame.
+        with self.socket(other_key) as socket:
+            self.assertEqual(self.exchange(socket, {'type': 'heartbeat'})['type'], 'ack')
+            pending = json.loads(socket.recv(timeout=3))
+            self.assertEqual((pending['type'], pending['code']), ('notice', 'EVACUATE'))
+        _, events = self.admin.call('/events')
+        self.assertTrue(any('Evacuar ahora' in event['description'] for event in events))
+
+    def test_voice_upload_is_validated_idempotent_and_playable(self):
+        device, key = self.create_device()
+        audio = self.wav(1.5)
+        voice_id = uuid.uuid4().hex
+        with self.browser() as browser:
+            status, created = self.upload_voice(key, audio, voice_id)
+            self.assertEqual(status, 201, created)
+            self.assertFalse(created['duplicate'])
+            self.assertEqual(created['voice']['durationMs'], 1500)
+            received = self.events_from(browser, 'VoiceMessageReceived')
+        self.assertEqual(received[0]['id'], created['voice']['id'])
+        status, again = self.upload_voice(key, audio, voice_id)
+        self.assertEqual((status, again['duplicate'], again['voice']['id']), (200, True, created['voice']['id']))
+        self.assertEqual(self.upload_voice('f' * 64, audio)[0], 401)
+        self.assertEqual(self.upload_voice(key, b'not a wav file at all, just text' * 4)[0], 400)
+        self.assertEqual(self.upload_voice(key, self.wav(0.1))[0], 400)
+        self.assertEqual(self.upload_voice(key, audio, content_type='application/octet-stream')[0], 415)
+        self.assertEqual(self.upload_voice(key, audio, voice_id='../../etc/passwd')[0], 400)
+        voice = created['voice']
+        status, headers, body = self.admin.raw(f"/voice/{voice['id']}/audio")
+        self.assertEqual((status, headers['Content-Type'], body), (200, 'audio/wav', audio))
+        self.assertEqual(Api().raw(f"/voice/{voice['id']}/audio")[0], 401)
+        _, listing = self.admin.call('/voice?pending=true&deviceId=' + device['id'])
+        self.assertEqual(listing['total'], 1)
+        status, reviewed = self.admin.call(f"/voice/{voice['id']}/review", 'POST')
+        self.assertEqual((status, reviewed['reviewedBy']), (200, self.admin_user['name']))
+        self.assertEqual(self.admin.call('/voice?pending=true&deviceId=' + device['id'])[1]['total'], 0)
+
+    def test_voice_requires_an_assigned_miner(self):
+        _, result = self.admin.call('/devices', 'POST', {'name': 'Sin minero ' + uuid.uuid4().hex[:8], 'zone': 'Sur', 'userId': None, 'active': True})
+        self.assertEqual(self.upload_voice(result['apiKey'], self.wav())[0], 409)
+
+    def test_disabling_a_device_closes_its_socket(self):
+        device, key = self.create_device()
+        with self.socket(key) as socket:
+            self.exchange(socket, {'type': 'heartbeat'})
+            body = {'name': device['name'], 'zone': device['zone'], 'userId': device['userId'], 'active': False}
+            self.assertEqual(self.admin.call('/devices/' + device['id'], 'PUT', body)[0], 200)
+            with self.assertRaises(ConnectionClosed):
+                socket.recv(timeout=3)
+        with self.assertRaises(InvalidStatus):
+            self.socket(key)
+
+    def test_renaming_a_user_keeps_their_session(self):
+        user = self.create_user('Supervisor')
+        client = Api()
+        self.assertEqual(client.call('/auth/login', 'POST', {'email': user['email'], 'password': PASSWORD})[0], 200)
+        self.assertEqual(self.admin.call('/users/' + user['id'], 'PUT', {**user, 'name': 'Nombre Nuevo'})[0], 200)
+        self.assertEqual(client.call('/auth/me')[1]['name'], 'Nombre Nuevo')
+        self.assertEqual(self.admin.call('/users/' + user['id'], 'PUT', {**user, 'role': 'Admin'})[0], 200)
         self.assertEqual(client.call('/overview')[0], 401)
 
     def test_zz_data_and_cookie_keys_survive_server_restart(self):

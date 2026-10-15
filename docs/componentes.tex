@@ -47,13 +47,17 @@ simultáneos: \textbf{vibración}, \textbf{sonido} (buzzer activo) y
 \textbf{INMP441} y se envían, junto con lecturas y reportes, a la
 \textbf{Raspberry Pi 4}, que actúa como servidor central de una o varias manillas.
 
-\textbf{Alcance de la versión implementada:} el menú OLED y los tres botones
-funcionan, y envían mensajes predeterminados de ayuda, estado y emergencia
-mediante WebSocket, con cola local y confirmación de recepción. La central
-incluye login, usuarios, asignaciones de manillas, mensajes en tiempo real y
-lecturas recibidas. Los controladores de los sensores, el micrófono, el
-buzzer, el LED RGB y el motor vibrador están definidos en este documento y en
-la guía de conexiones, pero aún deben integrarse en el software.
+\textbf{Alcance de la versión implementada:} el software integra todos los
+componentes. La manilla lee el SEN0564 (mediante el ADS1115) y el MLX90614, muestra
+los valores en la OLED, clasifica cada lectura en normal, precaución o peligro
+con umbrales configurables, y avisa con el LED RGB, el buzzer y el motor
+vibrador. Envía reportes predeterminados, alarmas automáticas de CO y
+temperatura, y mensajes de voz grabados con el INMP441, siempre con cola local y
+confirmación de recepción. La central muestra las lecturas en tiempo real,
+recibe los mensajes y la voz, y envía avisos predefinidos que la manilla
+confirma. El CO solo se informa en ppm con una calibración configurada; la
+validación eléctrica, la calibración y la autonomía deben comprobarse con el
+montaje físico.
 
 \begin{figure}[H]
 \centering
@@ -220,9 +224,9 @@ oscuridad de una mina.
   \item Alimentación de 3{,}3\,V. Cuatro terminales: GND, VCC, SCL y SDA.
 \end{itemize}
 
-\textbf{Uso previsto:} menú de navegación (estado, gases, temperatura, mensajes y
-ajustes) y pantallas de alerta. Es el componente que ya funciona con el
-software actual.
+\textbf{Uso en el software:} menú de navegación (estado, gases, temperatura,
+mensajes, voz y ajustes), lecturas en vivo, pantallas de alarma y avisos de la
+central.
 
 %------------------------------------------------------------------
 \subsection{Tres botones pulsadores --- Navegación}

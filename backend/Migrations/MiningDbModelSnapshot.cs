@@ -20,7 +20,7 @@ namespace backend.Migrations
                 .HasAnnotation("ProductVersion", "10.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
-            modelBuilder.Entity("MiningSystem.Models.AuditEvent", b =>
+            modelBuilder.Entity("MiningSystem.Domain.AuditEvent", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -41,10 +41,66 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Events");
+                    b.ToTable("Events", (string)null);
                 });
 
-            modelBuilder.Entity("MiningSystem.Models.MiningDevice", b =>
+            modelBuilder.Entity("MiningSystem.Domain.DeviceNotice", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(24)
+                        .HasColumnType("varchar(24)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime?>("DeliveredAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<string>("DeviceName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("MinerName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Zone")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("DeviceId", "ReadAt");
+
+                    b.ToTable("Notices", (string)null);
+                });
+
+            modelBuilder.Entity("MiningSystem.Domain.MiningDevice", b =>
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(32)
@@ -88,10 +144,10 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Devices");
+                    b.ToTable("Devices", (string)null);
                 });
 
-            modelBuilder.Entity("MiningSystem.Models.MiningMessage", b =>
+            modelBuilder.Entity("MiningSystem.Domain.MiningMessage", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -106,6 +162,10 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("varchar(16)");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(120)
+                        .HasColumnType("varchar(120)");
 
                     b.Property<string>("DeviceId")
                         .IsRequired()
@@ -147,10 +207,10 @@ namespace backend.Migrations
                     b.HasIndex("DeviceId", "ClientMessageId")
                         .IsUnique();
 
-                    b.ToTable("Messages");
+                    b.ToTable("Messages", (string)null);
                 });
 
-            modelBuilder.Entity("MiningSystem.Models.Telemetry", b =>
+            modelBuilder.Entity("MiningSystem.Domain.Reading", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -167,20 +227,36 @@ namespace backend.Migrations
                     b.Property<double?>("GasPpm")
                         .HasColumnType("double");
 
+                    b.Property<double?>("GasVoltage")
+                        .HasColumnType("double");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("varchar(16)");
+
+                    b.Property<double?>("ObjectTemperatureC")
+                        .HasColumnType("double");
+
                     b.Property<DateTime>("ReceivedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("Simulated")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<double?>("TemperatureC")
                         .HasColumnType("double");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ReceivedAt");
+
                     b.HasIndex("DeviceId", "ReceivedAt");
 
-                    b.ToTable("Readings");
+                    b.ToTable("Readings", (string)null);
                 });
 
-            modelBuilder.Entity("MiningSystem.Models.User", b =>
+            modelBuilder.Entity("MiningSystem.Domain.User", b =>
                 {
                     b.Property<string>("Id")
                         .HasMaxLength(32)
@@ -222,12 +298,91 @@ namespace backend.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
-            modelBuilder.Entity("MiningSystem.Models.MiningDevice", b =>
+            modelBuilder.Entity("MiningSystem.Domain.VoiceMessage", b =>
                 {
-                    b.HasOne("MiningSystem.Models.User", "User")
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ClientMessageId")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("varchar(80)");
+
+                    b.Property<string>("DeviceId")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<string>("DeviceName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)");
+
+                    b.Property<int>("DurationMs")
+                        .HasColumnType("int");
+
+                    b.Property<string>("MinerName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<DateTime>("ReceivedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ReviewedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("SampleRate")
+                        .HasColumnType("int");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StoragePath")
+                        .IsRequired()
+                        .HasMaxLength(260)
+                        .HasColumnType("varchar(260)");
+
+                    b.Property<string>("Zone")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceivedAt");
+
+                    b.HasIndex("DeviceId", "ClientMessageId")
+                        .IsUnique();
+
+                    b.ToTable("VoiceMessages", (string)null);
+                });
+
+            modelBuilder.Entity("MiningSystem.Domain.DeviceNotice", b =>
+                {
+                    b.HasOne("MiningSystem.Domain.MiningDevice", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("MiningSystem.Domain.MiningDevice", b =>
+                {
+                    b.HasOne("MiningSystem.Domain.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -235,9 +390,9 @@ namespace backend.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MiningSystem.Models.MiningMessage", b =>
+            modelBuilder.Entity("MiningSystem.Domain.MiningMessage", b =>
                 {
-                    b.HasOne("MiningSystem.Models.MiningDevice", "Device")
+                    b.HasOne("MiningSystem.Domain.MiningDevice", "Device")
                         .WithMany()
                         .HasForeignKey("DeviceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -246,12 +401,23 @@ namespace backend.Migrations
                     b.Navigation("Device");
                 });
 
-            modelBuilder.Entity("MiningSystem.Models.Telemetry", b =>
+            modelBuilder.Entity("MiningSystem.Domain.Reading", b =>
                 {
-                    b.HasOne("MiningSystem.Models.MiningDevice", "Device")
+                    b.HasOne("MiningSystem.Domain.MiningDevice", "Device")
                         .WithMany()
                         .HasForeignKey("DeviceId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Device");
+                });
+
+            modelBuilder.Entity("MiningSystem.Domain.VoiceMessage", b =>
+                {
+                    b.HasOne("MiningSystem.Domain.MiningDevice", "Device")
+                        .WithMany()
+                        .HasForeignKey("DeviceId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Device");
