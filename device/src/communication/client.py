@@ -1,7 +1,10 @@
 """WebSocket en segundo plano. Solo borra mensajes tras la confirmación del servidor."""
 import json
+import fcntl
 import logging
-import sqlite3
+import os
+import re
+import tempfile
 import threading
 import time
 import uuid
@@ -23,18 +26,27 @@ class TransportEvent:
 class Outbox:
     def __init__(self, path):
         self.path = Path(path).resolve()
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        with self.connect() as db:
-            db.execute("CREATE TABLE IF NOT EXISTS outbox (id TEXT PRIMARY KEY, payload TEXT NOT NULL, created_at TEXT NOT NULL)")
+        if self.path.is_file():
+            raise ValueError("outbox_path debe ser un directorio. Conserva y exporta primero la cola antigua; consulta docs/mysql.md.")
+        self.path.mkdir(parents=True, exist_ok=True, mode=0o700)
 
     @contextmanager
-    def connect(self):
-        db = sqlite3.connect(self.path, timeout=5)
+    def locked(self):
+        # Separate instances/processes share the same advisory lock on Linux/macOS.
+        descriptor = os.open(self.path / ".lock", os.O_CREAT | os.O_RDWR, 0o600)
         try:
-            with db:
-                yield db
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            yield
         finally:
-            db.close()
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+            os.close(descriptor)
+
+    def sync_directory(self):
+        descriptor = os.open(self.path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
 
     def enqueue(self, code):
         if code not in dict(MESSAGES):
@@ -42,23 +54,42 @@ class Outbox:
         message_id = uuid.uuid4().hex
         sent_at = datetime.now(timezone.utc).isoformat()
         payload = {"type": "message", "clientMessageId": message_id, "code": code, "sentAt": sent_at}
-        with self.connect() as db:
-            db.execute("INSERT INTO outbox VALUES (?, ?, ?)", (message_id, json.dumps(payload), sent_at))
+        with self.locked():
+            final = self.path / f"{time.time_ns():020d}-{message_id}.json"
+            temporary = None
+            try:
+                with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=self.path, prefix=".", suffix=".tmp", delete=False) as output:
+                    temporary = Path(output.name)
+                    json.dump(payload, output, ensure_ascii=False, allow_nan=False)
+                    output.flush()
+                    os.fsync(output.fileno())
+                os.replace(temporary, final)
+                self.sync_directory()
+            finally:
+                if temporary is not None:
+                    temporary.unlink(missing_ok=True)
         return message_id
 
     def first(self):
-        with self.connect() as db:
-            row = db.execute("SELECT id, payload FROM outbox ORDER BY created_at, id LIMIT 1").fetchone()
-        return (row[0], json.loads(row[1])) if row else None
+        with self.locked():
+            files = sorted(self.path.glob("*.json"))
+            if not files:
+                return None
+            payload = json.loads(files[0].read_text(encoding="utf-8"))
+            return payload["clientMessageId"], payload
 
     def acknowledge(self, message_id):
-        with self.connect() as db:
-            db.execute("DELETE FROM outbox WHERE id = ?", (message_id,))
+        if not isinstance(message_id, str) or re.fullmatch(r"[0-9a-f]{32}", message_id) is None:
+            return
+        with self.locked():
+            for path in self.path.glob(f"*-{message_id}.json"):
+                path.unlink()
+            self.sync_directory()
 
     @property
     def pending(self):
-        with self.connect() as db:
-            return db.execute("SELECT COUNT(*) FROM outbox").fetchone()[0]
+        with self.locked():
+            return len(list(self.path.glob("*.json")))
 
 
 class DeviceClient:

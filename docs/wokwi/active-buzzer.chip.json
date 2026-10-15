@@ -1,0 +1,9 @@
+{
+  "name": "Buzzer activo · módulo de 3 pines",
+  "author": "Franco Parra",
+  "pins": [
+    "VCC",
+    "GND",
+    "IO"
+  ]
+}

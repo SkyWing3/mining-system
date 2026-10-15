@@ -1,0 +1,9 @@
+{
+  "name": "2N2222A · transistor NPN",
+  "author": "Franco Parra",
+  "pins": [
+    "B",
+    "C",
+    "E"
+  ]
+}

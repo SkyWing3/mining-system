@@ -1,0 +1,9 @@
+{
+  "name": "SEN0564 · sensor CO",
+  "author": "Franco Parra",
+  "pins": [
+    "A",
+    "VCC",
+    "GND"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Micro motor vibrador · 3 V",
+  "author": "Franco Parra",
+  "pins": [
+    "POS",
+    "NEG"
+  ]
+}

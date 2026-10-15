@@ -1,7 +1,6 @@
 """Estado de navegación; no accede a sensores ni GPIO."""
 from dataclasses import dataclass
 from enum import Enum
-from sqlite3 import Error as StorageError
 from ..communication.catalog import MESSAGES
 
 
@@ -68,7 +67,7 @@ class Menu:
                     else:
                         self.pending_id = self.sender(MESSAGES[self.message_selected][0])
                         self.delivery_status = "Guardado en cola"
-                except (OSError, ValueError, StorageError):
+                except (OSError, ValueError):
                     self.delivery_status = "Error al guardar"
                 self.message_mode = "result"
             return

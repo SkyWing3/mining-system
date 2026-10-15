@@ -1,0 +1,8 @@
+{
+  "name": "100 nF · filtro del motor",
+  "author": "Franco Parra",
+  "pins": [
+    "1",
+    "2"
+  ]
+}

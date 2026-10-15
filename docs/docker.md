@@ -1,8 +1,8 @@
 # Docker en Ubuntu Server LTS
 
-La central se ejecuta en dos contenedores: `web-app` sirve React con Nginx y `backend` ejecuta ASP.NET Core. Solo Nginx publica un puerto en la Raspberry. La web, `/api`, `/hubs/mining` y `/ws/device` comparten **http://franco-rasp4.local**. No se necesitan Node.js, Python ni .NET instalados en la Raspberry para ejecutar la central.
+La central se ejecuta en tres contenedores: `mysql` almacena los datos, `web-app` sirve React con Nginx y `backend` ejecuta ASP.NET Core. Solo Nginx publica un puerto en la Raspberry. La web, `/api`, `/hubs/mining` y `/ws/device` comparten **http://franco-rasp4.local**. No se necesitan Node.js, Python ni .NET instalados en la Raspberry para ejecutar la central.
 
-Las imágenes se construyen para la arquitectura de la máquina: ARM64 en una Raspberry Pi con sistema de 64 bits, ARM64 en Apple Silicon y AMD64 en un PC x86. No hay una arquitectura x86 fijada en Compose. La base de datos SQLite y las claves de sesión viven en el volumen `mining-system_central-data`, fuera de las imágenes.
+Las imágenes se construyen para la arquitectura de la máquina: ARM64 en una Raspberry Pi con sistema de 64 bits, ARM64 en Apple Silicon y AMD64 en un PC x86. No hay una arquitectura x86 fijada en Compose. Los datos MySQL viven en `mining-system_mysql-data`; las claves de sesión, en `mining-system_central-data`, fuera de las imágenes. Las contraseñas se generan en `secrets/` y MySQL no publica puertos.
 
 ## Arranque en franco-rasp4
 
@@ -14,7 +14,7 @@ Desde la raíz del proyecto, el único comando necesario es:
 ./start.sh
 ```
 
-Si tu usuario no tiene acceso a Docker, ejecutar `sudo ./start.sh`. El script usa el directorio del proyecto aunque se invoque desde otra carpeta, compila las imágenes, inicia ambos servicios en segundo plano y espera a que estén saludables. Al terminar muestra la URL y el estado de los contenedores; si falla, muestra el estado y los últimos logs. La compilación inicial requiere Internet para descargar imágenes y dependencias.
+Si tu usuario no tiene acceso a Docker, ejecutar `sudo ./start.sh`. El script usa el directorio del proyecto aunque se invoque desde otra carpeta, compila las imágenes, inicia los tres servicios en segundo plano y espera a que estén saludables. Al terminar muestra la URL y el estado de los contenedores; si falla, muestra el estado y los últimos logs. La compilación inicial requiere Internet para descargar imágenes y dependencias.
 
 El mismo comando sirve para arranques posteriores y para aplicar cambios del código. No requiere archivos de configuración adicionales y conserva la base de datos y las claves de sesión.
 
@@ -86,39 +86,11 @@ Docker se inicia con el sistema y `restart: unless-stopped` vuelve a levantar lo
 
 ## Respaldar e importar datos
 
-Guardar la base y `keys/` juntos. Para obtener una copia consistente, detener temporalmente la API y copiar el volumen mediante un contenedor auxiliar del propio servicio:
-
-```sh
-mkdir -p backups
-chmod 700 backups
-sudo docker compose stop backend
-sudo docker compose run --rm -T --no-deps --entrypoint tar backend \
-  -czf - -C /var/lib/mining-system . > backups/central-data.tar.gz
-chmod 600 backups/central-data.tar.gz
-sudo docker compose up -d --wait
-```
-
-El respaldo incluye credenciales con hash, datos y claves de sesión; guardarlo en un lugar privado. `backups/` queda fuera de Git y de las imágenes.
-
-Para migrar la instalación local existente (`data/mining.db` y `data/keys/`) a Docker, detener primero el proceso .NET que la usa, compilar las imágenes e importar con la API detenida. Usar este procedimiento **solo sobre un volumen nuevo**; no mezclar dos bases de datos:
-
-```sh
-sudo docker compose build
-sudo docker compose create backend
-sudo tar -C data -cf - . | sudo docker compose run --rm -T --no-deps \
-  --entrypoint tar backend --no-same-owner -xf - -C /var/lib/mining-system
-sudo docker compose up -d --wait
-```
-
-Para restaurar `central-data.tar.gz`, con la API detenida y un volumen nuevo/vacío:
-
-```sh
-sudo docker compose run --rm -T --no-deps --entrypoint tar backend \
-  --no-same-owner -xzf - -C /var/lib/mining-system < backups/central-data.tar.gz
-sudo docker compose up -d --wait
-```
-
-La extracción ejecuta con el usuario de la API, conservando el propietario `1654:1654` sin conceder permisos adicionales al contenedor.
+Respaldar MySQL mediante `mysqldump --single-transaction --no-tablespaces` y
+conservar aparte `central-data` (claves de sesión) y `secrets/` (credenciales).
+La configuración, el procedimiento de exportación y la importación transaccional
+se describen en [MySQL](mysql.md). La base anterior se conserva como respaldo;
+no copiar sus archivos al directorio de datos MySQL ni mezclarlos con su volumen.
 
 ## Manilla OLED en Docker (opcional)
 

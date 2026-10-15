@@ -34,6 +34,9 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 compose=(docker compose --project-directory "$repo_root" --file "$repo_root/compose.yaml")
+if [[ "$action" == up ]]; then
+  "$repo_root/scripts/init-mysql-secrets.sh"
+fi
 "${compose[@]}" config --quiet
 
 if [[ "$action" == down ]]; then
@@ -43,7 +46,7 @@ if [[ "$action" == down ]]; then
 fi
 
 printf 'Compilando e iniciando Mining System...\n'
-if ! "${compose[@]}" up --detach --build --wait --wait-timeout 180; then
+if ! "${compose[@]}" up --detach --build --wait --wait-timeout 300; then
   printf '\nNo se pudo completar el arranque. Estado y últimos logs:\n' >&2
   "${compose[@]}" ps >&2 || true
   "${compose[@]}" logs --tail=40 >&2 || true

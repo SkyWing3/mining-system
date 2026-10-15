@@ -10,11 +10,24 @@ using Microsoft.EntityFrameworkCore;
 using MiningSystem.Data;
 using MiningSystem.Models;
 using MiningSystem.Services;
+using MySql.Data.MySqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 var dataDirectory = Path.GetFullPath(builder.Configuration["Mining:DataDirectory"] ?? Path.Combine(builder.Environment.ContentRootPath, "../data"));
 Directory.CreateDirectory(dataDirectory);
-builder.Services.AddDbContext<MiningDb>(options => options.UseSqlite($"Data Source={Path.Combine(dataDirectory, "mining.db")};Foreign Keys=True"));
+var connectionString = builder.Configuration["Mining:ConnectionString"];
+var localDatabaseSettings = Path.Combine(dataDirectory, "mysql.json");
+if (string.IsNullOrWhiteSpace(connectionString) && File.Exists(localDatabaseSettings))
+{
+    using var settings = System.Text.Json.JsonDocument.Parse(File.ReadAllText(localDatabaseSettings));
+    connectionString = settings.RootElement.GetProperty("connectionString").GetString();
+}
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("Configura Mining__ConnectionString con el servidor, base y usuario de MySQL. Consulta docs/mysql.md.");
+var mysql = new MySqlConnectionStringBuilder(connectionString);
+var passwordFile = builder.Configuration["Mining:PasswordFile"];
+if (!string.IsNullOrWhiteSpace(passwordFile)) mysql.Password = File.ReadAllText(passwordFile).TrimEnd('\r', '\n');
+builder.Services.AddDbContext<MiningDb>(options => options.UseMySQL(mysql.ConnectionString));
 builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(dataDirectory, "keys"))).SetApplicationName("MiningSystem");
 builder.Services.AddSingleton<MutationLock>();
 builder.Services.AddSingleton<LiveSessions>();
@@ -65,8 +78,17 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<MiningDb>();
-    await db.Database.EnsureCreatedAsync();
-    await db.Database.ExecuteSqlRawAsync("PRAGMA journal_mode=WAL;");
+    if (builder.Configuration["export-schema"] is { } schemaPath)
+    {
+        await File.WriteAllTextAsync(schemaPath, db.Database.GenerateCreateScript());
+        return;
+    }
+    await db.Database.MigrateAsync();
+    if (builder.Configuration["import-legacy"] is { } importPath)
+    {
+        await LegacyImport.Run(db, importPath);
+        return;
+    }
 }
 app.UseExceptionHandler(error => error.Run(async context =>
 {

@@ -1,0 +1,7 @@
+{
+  "type": "ack",
+  "clientMessageId": "informe-mensaje-001",
+  "messageId": 1,
+  "duplicate": false,
+  "serverTime": "2026-10-15T01:30:26.037356Z"
+}

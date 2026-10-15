@@ -5,6 +5,6 @@
     "url": "ws://localhost:5080/ws/device",
     "api_key": "",
     "heartbeat_seconds": 20,
-    "outbox_path": "../state/outbox.db"
+    "outbox_path": "../state/outbox"
   }
 }

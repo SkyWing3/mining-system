@@ -1,0 +1,12 @@
+{
+  "name": "INMP441 · micrófono I2S",
+  "author": "Franco Parra",
+  "pins": [
+    "VDD",
+    "GND",
+    "SCK",
+    "WS",
+    "SD",
+    "L/R"
+  ]
+}

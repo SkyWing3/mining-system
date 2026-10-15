@@ -56,7 +56,7 @@ El usuario debe tener acceso a I²C y GPIO mediante los grupos `i2c` y `gpio`; R
 - Una pulsación produce una acción; mantener pulsado no repite. Antirrebote: 80 ms, configurable.
 - Ctrl+C termina el proceso y limpia pantalla y GPIO.
 
-Opciones: Estado, Gases, Temperatura, Mensajes y Ajustes. Estado muestra la conexión real con la central. Mensajes está conectado por WebSocket y utiliza una cola SQLite local para reintentar sin duplicados. Gases, Temperatura y Ajustes conservan las vistas iniciales pendientes de sus controladores físicos; no generan mediciones simuladas ni grabaciones.
+Opciones: Estado, Gases, Temperatura, Mensajes y Ajustes. Estado muestra la conexión real con la central. Mensajes está conectado por WebSocket y utiliza una cola local de archivos JSON para reintentar sin duplicados. Gases, Temperatura y Ajustes conservan las vistas iniciales pendientes de sus controladores físicos; no generan mediciones simuladas ni grabaciones.
 
 Antes de iniciar, registrar un minero y una manilla en la web, guardar su credencial e indicar `connection.url` y `connection.api_key` en `config/settings.json`. Usar la IP de la Raspberry Pi 4 en la URL desde otra máquina. [Inicio rápido y configuración](../../README.md#dispositivo-y-simulador); [protocolo de mensajes](../api.md).
 

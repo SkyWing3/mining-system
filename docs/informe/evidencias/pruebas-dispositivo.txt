@@ -1,0 +1,22 @@
+test_duplicate_and_bus_pins_rejected (test_interface.InterfaceTests.test_duplicate_and_bus_pins_rejected) ... ok
+test_every_page_returns_to_same_selection (test_interface.InterfaceTests.test_every_page_returns_to_same_selection) ... ok
+test_example_config_loads (test_interface.InterfaceTests.test_example_config_loads) ... ok
+test_frames_are_native_monochrome_and_change_on_navigation (test_interface.InterfaceTests.test_frames_are_native_monochrome_and_change_on_navigation) ... ok
+test_gpio_callbacks_queue_correct_actions_and_close (test_interface.InterfaceTests.test_gpio_callbacks_queue_correct_actions_and_close) ... ok
+test_wrap_and_scroll_keep_selection_visible (test_interface.InterfaceTests.test_wrap_and_scroll_keep_selection_visible) ... ok
+test_cancel_never_enqueues (test_messages.MessageTests.test_cancel_never_enqueues) ... ok
+test_concurrent_writers_preserve_all_messages_and_ack_isolated (test_messages.MessageTests.test_concurrent_writers_preserve_all_messages_and_ack_isolated) ... ok
+test_every_code_can_be_selected_and_returned (test_messages.MessageTests.test_every_code_can_be_selected_and_returned) ... ok
+test_failed_storage_never_claims_queue_or_delivery (test_messages.MessageTests.test_failed_storage_never_claims_queue_or_delivery) ... ok
+test_legacy_file_is_preserved_and_rejected_as_queue_directory (test_messages.MessageTests.test_legacy_file_is_preserved_and_rejected_as_queue_directory) ... ok
+test_mismatched_ack_keeps_message_in_outbox (test_messages.MessageTests.test_mismatched_ack_keeps_message_in_outbox) ... ok
+test_outbox_survives_restart_and_only_removes_acknowledged_message (test_messages.MessageTests.test_outbox_survives_restart_and_only_removes_acknowledged_message) ... ok
+test_selection_does_not_send_until_confirmed (test_messages.MessageTests.test_selection_does_not_send_until_confirmed) ... ok
+test_unconfigured_menu_does_not_claim_delivery (test_messages.MessageTests.test_unconfigured_menu_does_not_claim_delivery) ... ok
+test_wrap_keeps_message_selection_visible (test_messages.MessageTests.test_wrap_keeps_message_selection_visible) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.055s
+
+OK
+

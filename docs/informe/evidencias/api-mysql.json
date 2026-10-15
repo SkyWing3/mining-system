@@ -1,0 +1,287 @@
+{
+  "recordedAt": "2026-10-15T01:30:25.120846+00:00",
+  "environment": "MySQL local real; base temporal; datos inyectados para pruebas, no mediciones físicas",
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/api/overview",
+      "status": 401,
+      "request": null,
+      "response": null
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/setup",
+      "status": 200,
+      "request": {
+        "name": "Administración de prueba",
+        "email": "admin@informe.invalid",
+        "password": "[REDACTADO]"
+      },
+      "response": {
+        "id": "2d2244d33dc549238eff691d0e56d478",
+        "name": "Administración de prueba",
+        "email": "admin@informe.invalid",
+        "role": "Admin",
+        "active": true,
+        "createdAt": "2026-10-15T01:30:25.759007Z"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 401,
+      "request": {
+        "email": "admin@informe.invalid",
+        "password": "[REDACTADO]"
+      },
+      "response": {
+        "message": "Correo o contraseña incorrectos."
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "status": 200,
+      "request": {
+        "name": "Minero de demostración",
+        "email": "minero@informe.invalid",
+        "password": "[REDACTADO]",
+        "role": "Miner",
+        "active": true
+      },
+      "response": {
+        "id": "de6b3a63c5d442889689236a77a8a0d1",
+        "name": "Minero de demostración",
+        "email": "minero@informe.invalid",
+        "role": "Miner",
+        "active": true,
+        "createdAt": "2026-10-15T01:30:25.935103Z"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/users",
+      "status": 409,
+      "request": {
+        "name": "Duplicado",
+        "email": "minero@informe.invalid",
+        "password": "[REDACTADO]",
+        "role": "Miner"
+      },
+      "response": {
+        "message": "Este correo ya está registrado."
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/devices",
+      "status": 200,
+      "request": {
+        "name": "Manilla de prueba",
+        "zone": "Galería de demostración",
+        "userId": "de6b3a63c5d442889689236a77a8a0d1",
+        "active": true
+      },
+      "response": {
+        "device": {
+          "id": "77630204b9444a278f721618ecaf2c35",
+          "name": "Manilla de prueba",
+          "zone": "Galería de demostración",
+          "userId": "de6b3a63c5d442889689236a77a8a0d1",
+          "minerName": null,
+          "active": true,
+          "lastSeenAt": null,
+          "createdAt": "2026-10-15T01:30:25.983564Z",
+          "online": false,
+          "reading": null
+        },
+        "apiKey": "[REDACTADO]"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/messages",
+      "status": 200,
+      "request": null,
+      "response": {
+        "items": [
+          {
+            "id": 1,
+            "deviceId": "77630204b9444a278f721618ecaf2c35",
+            "code": "COLLAPSE",
+            "text": "Hay derrumbe",
+            "severity": "critical",
+            "minerName": "Minero de demostración",
+            "deviceName": "Manilla de prueba",
+            "zone": "Galería de demostración",
+            "sentAt": "2026-10-15T01:30:26.01889Z",
+            "receivedAt": "2026-10-15T01:30:26.025486Z",
+            "reviewedAt": null,
+            "reviewedBy": null
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "pageSize": 25
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/devices/77630204b9444a278f721618ecaf2c35/telemetry",
+      "status": 200,
+      "request": null,
+      "response": [
+        {
+          "id": 1,
+          "temperatureC": 28.6,
+          "gasPpm": 410,
+          "batteryPercent": 86,
+          "receivedAt": "2026-10-15T01:30:26.042944Z"
+        }
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/api/messages/1/review",
+      "status": 200,
+      "request": null,
+      "response": {
+        "id": 1,
+        "deviceId": "77630204b9444a278f721618ecaf2c35",
+        "code": "COLLAPSE",
+        "text": "Hay derrumbe",
+        "severity": "critical",
+        "minerName": "Minero de demostración",
+        "deviceName": "Manilla de prueba",
+        "zone": "Galería de demostración",
+        "sentAt": "2026-10-15T01:30:26.01889Z",
+        "receivedAt": "2026-10-15T01:30:26.025486Z",
+        "reviewedAt": "2026-10-15T01:30:26.083524Z",
+        "reviewedBy": "Administración de prueba"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/overview",
+      "status": 200,
+      "request": null,
+      "response": {
+        "totalDevices": 1,
+        "onlineDevices": 1,
+        "activeMiners": 1,
+        "messagesToday": 1,
+        "pendingAlerts": 0,
+        "serverTime": "2026-10-15T01:30:26.101563Z",
+        "recentMessages": [
+          {
+            "id": 1,
+            "deviceId": "77630204b9444a278f721618ecaf2c35",
+            "code": "COLLAPSE",
+            "text": "Hay derrumbe",
+            "severity": "critical",
+            "minerName": "Minero de demostración",
+            "deviceName": "Manilla de prueba",
+            "zone": "Galería de demostración",
+            "sentAt": "2026-10-15T01:30:26.01889Z",
+            "receivedAt": "2026-10-15T01:30:26.025486Z",
+            "reviewedAt": "2026-10-15T01:30:26.083524Z",
+            "reviewedBy": "Administración de prueba"
+          }
+        ],
+        "catalog": [
+          {
+            "code": "HELP",
+            "text": "Ayuda",
+            "severity": "critical"
+          },
+          {
+            "code": "OK",
+            "text": "Todo bien",
+            "severity": "info"
+          },
+          {
+            "code": "COLLAPSE",
+            "text": "Hay derrumbe",
+            "severity": "critical"
+          },
+          {
+            "code": "GAS",
+            "text": "Presencia de gas",
+            "severity": "critical"
+          },
+          {
+            "code": "INJURY",
+            "text": "Compañero herido",
+            "severity": "critical"
+          },
+          {
+            "code": "EVACUATE",
+            "text": "Necesito evacuar",
+            "severity": "critical"
+          },
+          {
+            "code": "SUPPLIES",
+            "text": "Necesito suministros",
+            "severity": "warning"
+          },
+          {
+            "code": "EXIT",
+            "text": "Saliendo de la mina",
+            "severity": "info"
+          }
+        ]
+      }
+    }
+  ],
+  "websocket": {
+    "frame": {
+      "type": "message",
+      "code": "COLLAPSE",
+      "clientMessageId": "informe-mensaje-001",
+      "sentAt": "2026-10-15T01:30:26.018890+00:00"
+    },
+    "ack": {
+      "type": "ack",
+      "clientMessageId": "informe-mensaje-001",
+      "messageId": 1,
+      "duplicate": false,
+      "serverTime": "2026-10-15T01:30:26.037356Z"
+    },
+    "browserEvent": {
+      "type": 1,
+      "target": "MessageReceived",
+      "arguments": [
+        {
+          "id": 1,
+          "deviceId": "77630204b9444a278f721618ecaf2c35",
+          "code": "COLLAPSE",
+          "text": "Hay derrumbe",
+          "severity": "critical",
+          "minerName": "Minero de demostración",
+          "deviceName": "Manilla de prueba",
+          "zone": "Galería de demostración",
+          "sentAt": "2026-10-15T01:30:26.01889Z",
+          "receivedAt": "2026-10-15T01:30:26.025486Z",
+          "reviewedAt": null,
+          "reviewedBy": null
+        }
+      ]
+    },
+    "localLatencyMs": 19.797,
+    "retryAck": {
+      "type": "ack",
+      "clientMessageId": "informe-mensaje-001",
+      "messageId": 1,
+      "duplicate": true,
+      "serverTime": "2026-10-15T01:30:26.041691Z"
+    },
+    "invalidTelemetry": {
+      "type": "error",
+      "message": "Valor de batería inválido."
+    }
+  },
+  "mysqlVersion": "9.6.0",
+  "persistedCounts": "Users\t2\nMessages\t1\nReadings\t1",
+  "foreignKeys": "Devices\tUserId\tUsers\tId\nMessages\tDeviceId\tDevices\tId\nReadings\tDeviceId\tDevices\tId"
+}

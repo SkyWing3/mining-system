@@ -1,6 +1,34 @@
 name: mining-system
 
 services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: mining_system
+      MYSQL_USER: mining
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+    secrets:
+      - mysql_password
+      - mysql_root_password
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - central
+    healthcheck:
+      test: [CMD-SHELL, "mysqladmin ping -h 127.0.0.1 --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    mem_limit: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
   backend:
     image: mining-system-backend:local
     build:
@@ -11,10 +39,17 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Urls: http://0.0.0.0:8080
       Mining__DataDirectory: /var/lib/mining-system
+      Mining__ConnectionString: Server=mysql;Port=3306;Database=mining_system;User ID=mining;SslMode=Preferred;CharSet=utf8mb4
+      Mining__PasswordFile: /run/secrets/mysql_password
       Mining__AllowedOrigins__0: ${MINING_PUBLIC_ORIGIN:-http://franco-rasp4.local}
       Mining__KnownProxyNetworks__0: ${MINING_DOCKER_SUBNET:-172.30.84.0/24}
     volumes:
       - central-data:/var/lib/mining-system
+    secrets:
+      - mysql_password
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - central
     read_only: true
@@ -56,6 +91,13 @@ services:
 
 volumes:
   central-data:
+  mysql-data:
+
+secrets:
+  mysql_password:
+    file: ${MINING_SECRETS_DIRECTORY:-./secrets}/mysql_password
+  mysql_root_password:
+    file: ${MINING_SECRETS_DIRECTORY:-./secrets}/mysql_root_password
 
 networks:
   central:

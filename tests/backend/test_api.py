@@ -1,7 +1,7 @@
-"""Integration tests against the real API, SQLite and both WebSocket transports.
+"""Integration tests against the real API, MySQL and both WebSocket transports.
 
 Run: device/.venv/bin/python -m unittest discover -s tests/backend -v
-Build backend first. All test data is stored in a temporary directory.
+Build backend first. Rows use an isolated temporary MySQL database; session keys use a temporary directory.
 """
 import http.cookiejar
 import json
@@ -22,7 +22,9 @@ from websockets.exceptions import InvalidStatus, ConnectionClosed
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'device'))
+sys.path.insert(0, str(ROOT / 'scripts'))
 from src.communication.client import DeviceClient
+from mysql_test_db import create as create_database, drop as drop_database
 
 BASE = 'http://127.0.0.1:5081'
 WS = 'ws://127.0.0.1:5081'
@@ -55,7 +57,7 @@ class Api:
 class BackendTests(unittest.TestCase):
     @classmethod
     def start_server(cls):
-        env = {**os.environ, 'Mining__DataDirectory': cls.folder.name, 'Logging__LogLevel__Default': 'Warning', 'ASPNETCORE_ENVIRONMENT': 'Development'}
+        env = {**os.environ, 'Mining__DataDirectory': cls.folder.name, 'Mining__ConnectionString': cls.database['connectionString'], 'Logging__LogLevel__Default': 'Warning', 'ASPNETCORE_ENVIRONMENT': 'Development'}
         cls.server = subprocess.Popen(['dotnet', str(ROOT / 'backend/bin/Debug/net10.0/backend.dll'), '--urls', BASE, '--contentRoot', str(ROOT / 'backend')], env=env, stdout=cls.logs, stderr=cls.logs)
         for _ in range(80):
             try:
@@ -69,6 +71,8 @@ class BackendTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.folder = tempfile.TemporaryDirectory(prefix='mining-api-tests-')
+        cls.database = create_database('api')
+        cls.addClassCleanup(drop_database, cls.database['name'])
         cls.logs = open(Path(cls.folder.name) / 'server.log', 'w')
         cls.start_server()
         cls.admin = Api()
@@ -251,7 +255,7 @@ class BackendTests(unittest.TestCase):
     def test_local_client_delivers_durable_queue(self):
         device, key = self.create_device()
         events = Queue()
-        client = DeviceClient({'url': WS + '/ws/device', 'api_key': key, 'heartbeat_seconds': 5, 'outbox_path': str(Path(self.folder.name) / 'device-outbox.db')}, events)
+        client = DeviceClient({'url': WS + '/ws/device', 'api_key': key, 'heartbeat_seconds': 5, 'outbox_path': str(Path(self.folder.name) / 'device-outbox')}, events)
         message_id = client.send('EVACUATE')
         self.assertEqual(client.outbox.pending, 1)
         client.start()

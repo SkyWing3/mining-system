@@ -1,0 +1,599 @@
+{
+  "version": 1,
+  "author": "Franco Parra",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-text",
+      "id": "title",
+      "top": 0,
+      "left": 100,
+      "attrs": {
+        "text": "MINING SYSTEM · Manilla inteligente para mineros"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "scope",
+      "top": 40,
+      "left": 100,
+      "attrs": {
+        "text": "Cableado según docs/conexiones.pdf · Pi Zero 2 W · GPIO BCM y pin físico"
+      }
+    },
+    {
+      "type": "chip-rpi-zero-2w",
+      "id": "pi",
+      "top": 450,
+      "left": 780,
+      "attrs": {}
+    },
+    {
+      "type": "chip-power-rails",
+      "id": "rails",
+      "top": 310,
+      "left": 80,
+      "attrs": {}
+    },
+    {
+      "type": "board-ssd1306",
+      "id": "oled",
+      "top": 150,
+      "left": 110,
+      "attrs": {
+        "i2cAddress": "0x3c"
+      }
+    },
+    {
+      "type": "chip-ads1115",
+      "id": "adc",
+      "top": 130,
+      "left": 530,
+      "attrs": {}
+    },
+    {
+      "type": "chip-sen0564",
+      "id": "co",
+      "top": 130,
+      "left": 1010,
+      "attrs": {}
+    },
+    {
+      "type": "chip-mlx90614",
+      "id": "temp",
+      "top": 130,
+      "left": 1470,
+      "attrs": {}
+    },
+    {
+      "type": "chip-inmp441",
+      "id": "mic",
+      "top": 1010,
+      "left": 1450,
+      "attrs": {}
+    },
+    {
+      "type": "chip-active-buzzer",
+      "id": "buzzer",
+      "top": 450,
+      "left": 1450,
+      "attrs": {}
+    },
+    {
+      "type": "chip-vibration-motor",
+      "id": "motor",
+      "top": 680,
+      "left": 1530,
+      "attrs": {}
+    },
+    {
+      "type": "chip-npn",
+      "id": "q1",
+      "top": 850,
+      "left": 1500,
+      "attrs": {}
+    },
+    {
+      "type": "chip-flyback-diode",
+      "id": "d1",
+      "top": 680,
+      "left": 1240,
+      "attrs": {}
+    },
+    {
+      "type": "chip-ceramic-capacitor",
+      "id": "c1",
+      "top": 680,
+      "left": 1770,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "up",
+      "top": 530,
+      "left": 290,
+      "attrs": {
+        "color": "green",
+        "bounce": "1"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "down",
+      "top": 630,
+      "left": 290,
+      "attrs": {
+        "color": "blue",
+        "bounce": "1"
+      }
+    },
+    {
+      "type": "wokwi-pushbutton-6mm",
+      "id": "enter",
+      "top": 730,
+      "left": 290,
+      "attrs": {
+        "color": "yellow",
+        "bounce": "1"
+      }
+    },
+    {
+      "type": "wokwi-rgb-led",
+      "id": "rgb",
+      "top": 1080,
+      "left": 170,
+      "attrs": {
+        "common": "cathode"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rb",
+      "top": 885,
+      "left": 1230,
+      "attrs": {
+        "value": "1000"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rpd",
+      "top": 970,
+      "left": 1400,
+      "attrs": {
+        "value": "10000"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rr",
+      "top": 1050,
+      "left": 430,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rg",
+      "top": 1110,
+      "left": 430,
+      "attrs": {
+        "value": "100"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "rblue",
+      "top": 1170,
+      "left": 430,
+      "attrs": {
+        "value": "100"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "buttons_label",
+      "top": 460,
+      "left": 120,
+      "attrs": {
+        "text": "BOTONES: Subir / Bajar / Enter\nPull-up internos; cada pulsador cierra a GND"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "rgb_label",
+      "top": 1000,
+      "left": 110,
+      "attrs": {
+        "text": "LED RGB · cátodo común\nResistencias externas si el módulo no las integra"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "motor_label",
+      "top": 600,
+      "left": 1220,
+      "attrs": {
+        "text": "MOTOR: NPN + 1 kΩ + pull-down 10 kΩ\nDiodo y condensador en paralelo con el motor"
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "network",
+      "top": 1240,
+      "left": 650,
+      "attrs": {
+        "text": "Raspberry Pi 4 · CENTRAL\nWi-Fi / Ethernet → WebSocket\nAlimentación propia USB-C. Sin cables GPIO a la manilla."
+      }
+    },
+    {
+      "type": "wokwi-text",
+      "id": "note",
+      "top": 1360,
+      "left": 110,
+      "attrs": {
+        "text": "Todas las alimentaciones de módulos: 3,3 V (pin 1) y GND (pin 6). Pines 2 y 4 de 5 V sin conectar.\nPines 36 / GPIO16 y 40 / GPIO21 reservados por audio I2S.\nRepresentación de cableado: los chips personalizados no simulan Raspberry Pi OS ni los sensores."
+      }
+    }
+  ],
+  "connections": [
+    [
+      "pi:P1_3V3",
+      "rails:3V3",
+      "#d97706",
+      [
+        "h-80",
+        "v-100"
+      ]
+    ],
+    [
+      "pi:P6_GND",
+      "rails:GND",
+      "#475569",
+      [
+        "h60",
+        "v-130"
+      ]
+    ],
+    [
+      "rails:3V3",
+      "oled:VCC",
+      "#d97706",
+      []
+    ],
+    [
+      "rails:3V3",
+      "adc:VDD",
+      "#d97706",
+      []
+    ],
+    [
+      "rails:3V3",
+      "co:VCC",
+      "#d97706",
+      []
+    ],
+    [
+      "rails:3V3",
+      "temp:VIN",
+      "#d97706",
+      []
+    ],
+    [
+      "rails:3V3",
+      "mic:VDD",
+      "#d97706",
+      []
+    ],
+    [
+      "rails:3V3",
+      "buzzer:VCC",
+      "#d97706",
+      []
+    ],
+    [
+      "rails:3V3",
+      "motor:POS",
+      "#d97706",
+      []
+    ],
+    [
+      "rails:GND",
+      "oled:GND",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "adc:GND",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "adc:ADDR",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "co:GND",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "temp:GND",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "mic:GND",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "mic:L/R",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "buzzer:GND",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "rgb:COM",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "q1:E",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "rpd:2",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "up:2.l",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "down:2.l",
+      "#475569",
+      []
+    ],
+    [
+      "rails:GND",
+      "enter:2.l",
+      "#475569",
+      []
+    ],
+    [
+      "pi:P3_GPIO2_SDA",
+      "oled:SDA",
+      "#2563eb",
+      [
+        "h-100",
+        "v-140"
+      ]
+    ],
+    [
+      "pi:P3_GPIO2_SDA",
+      "adc:SDA",
+      "#2563eb",
+      [
+        "h-100",
+        "v-140"
+      ]
+    ],
+    [
+      "pi:P3_GPIO2_SDA",
+      "temp:SDA",
+      "#2563eb",
+      [
+        "h-100",
+        "v-140"
+      ]
+    ],
+    [
+      "pi:P5_GPIO3_SCL",
+      "oled:SCL",
+      "#0891b2",
+      [
+        "h-120",
+        "v-130"
+      ]
+    ],
+    [
+      "pi:P5_GPIO3_SCL",
+      "adc:SCL",
+      "#0891b2",
+      [
+        "h-120",
+        "v-130"
+      ]
+    ],
+    [
+      "pi:P5_GPIO3_SCL",
+      "temp:SCL",
+      "#0891b2",
+      [
+        "h-120",
+        "v-130"
+      ]
+    ],
+    [
+      "co:A",
+      "adc:A0",
+      "#e11d48",
+      [
+        "v100",
+        "*",
+        "h80"
+      ]
+    ],
+    [
+      "pi:P11_GPIO17",
+      "up:1.l",
+      "#16a34a",
+      [
+        "h-80"
+      ]
+    ],
+    [
+      "pi:P13_GPIO27",
+      "down:1.l",
+      "#16a34a",
+      [
+        "h-80"
+      ]
+    ],
+    [
+      "pi:P15_GPIO22",
+      "enter:1.l",
+      "#16a34a",
+      [
+        "h-80"
+      ]
+    ],
+    [
+      "pi:P12_GPIO18_SCK",
+      "mic:SCK",
+      "#9333ea",
+      [
+        "h100"
+      ]
+    ],
+    [
+      "pi:P35_GPIO19_WS",
+      "mic:WS",
+      "#9333ea",
+      [
+        "h100"
+      ]
+    ],
+    [
+      "pi:P38_GPIO20_SD",
+      "mic:SD",
+      "#9333ea",
+      [
+        "h100"
+      ]
+    ],
+    [
+      "pi:P18_GPIO24",
+      "buzzer:IO",
+      "#0d9488",
+      [
+        "h120"
+      ]
+    ],
+    [
+      "pi:P16_GPIO23",
+      "rb:1",
+      "#0d9488",
+      [
+        "h80"
+      ]
+    ],
+    [
+      "rb:2",
+      "q1:B",
+      "#0d9488",
+      []
+    ],
+    [
+      "q1:B",
+      "rpd:1",
+      "#0d9488",
+      []
+    ],
+    [
+      "motor:NEG",
+      "q1:C",
+      "#0d9488",
+      []
+    ],
+    [
+      "motor:POS",
+      "d1:K",
+      "#d97706",
+      []
+    ],
+    [
+      "motor:NEG",
+      "d1:A",
+      "#0d9488",
+      []
+    ],
+    [
+      "motor:POS",
+      "c1:1",
+      "#d97706",
+      []
+    ],
+    [
+      "motor:NEG",
+      "c1:2",
+      "#0d9488",
+      []
+    ],
+    [
+      "pi:P29_GPIO5",
+      "rr:1",
+      "#0d9488",
+      [
+        "h-80"
+      ]
+    ],
+    [
+      "rr:2",
+      "rgb:R",
+      "#0d9488",
+      []
+    ],
+    [
+      "pi:P31_GPIO6",
+      "rg:1",
+      "#0d9488",
+      [
+        "h-80"
+      ]
+    ],
+    [
+      "rg:2",
+      "rgb:G",
+      "#0d9488",
+      []
+    ],
+    [
+      "pi:P33_GPIO13",
+      "rblue:1",
+      "#0d9488",
+      [
+        "h-80"
+      ]
+    ],
+    [
+      "rblue:2",
+      "rgb:B",
+      "#0d9488",
+      []
+    ]
+  ],
+  "dependencies": {}
+}

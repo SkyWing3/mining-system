@@ -1,0 +1,8 @@
+{
+  "motor": "9.6.0",
+  "solicitudes_http": 10,
+  "mensajes_persistidos": 1,
+  "lecturas_persistidas": 1,
+  "reintento_duplicado": true,
+  "origen_mediciones": "Valores inyectados para pruebas de software"
+}

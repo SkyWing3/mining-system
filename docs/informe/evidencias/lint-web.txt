@@ -1,0 +1,3 @@
+npm notice run web-app@0.0.0 lint
+npm notice run oxlint
+

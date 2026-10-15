@@ -5,6 +5,6 @@
     "url": "ws://franco-rasp4.local/ws/device",
     "api_key": "",
     "heartbeat_seconds": 20,
-    "outbox_path": "/var/lib/mining-device/outbox.db"
+    "outbox_path": "/var/lib/mining-device/outbox"
   }
 }

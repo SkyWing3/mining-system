@@ -7,6 +7,8 @@ from src.communication.client import DeviceClient, Outbox, TransportEvent
 from src.display.menu import Action, Menu
 from src.display.renderer import Renderer
 from queue import Queue
+from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import patch
 
 
 class MessageTests(unittest.TestCase):
@@ -71,7 +73,7 @@ class MessageTests(unittest.TestCase):
 
     def test_outbox_survives_restart_and_only_removes_acknowledged_message(self):
         with tempfile.TemporaryDirectory() as folder:
-            path = Path(folder) / 'outbox.db'
+            path = Path(folder) / 'outbox'
             outbox = Outbox(path)
             first = outbox.enqueue('HELP')
             second = outbox.enqueue('COLLAPSE')
@@ -95,11 +97,41 @@ class MessageTests(unittest.TestCase):
             def recv(self, **kwargs):
                 return json.dumps({'type': 'ack', 'clientMessageId': 'wrong', 'messageId': 1})
         with tempfile.TemporaryDirectory() as folder:
-            client = DeviceClient({'outbox_path': str(Path(folder) / 'queue.db')}, Queue())
+            client = DeviceClient({'outbox_path': str(Path(folder) / 'queue')}, Queue())
             client.send('HELP')
             with self.assertRaises(ValueError):
                 client._exchange(WrongAck(), client.outbox.first()[1])
             self.assertEqual(client.outbox.pending, 1)
+
+    def test_concurrent_writers_preserve_all_messages_and_ack_isolated(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'outbox'
+            queues = [Outbox(path) for _ in range(4)]
+            with ThreadPoolExecutor(max_workers=4) as pool:
+                identifiers = list(pool.map(lambda i: queues[i % 4].enqueue('HELP'), range(32)))
+            self.assertEqual(len(set(identifiers)), 32)
+            self.assertEqual(Outbox(path).pending, 32)
+            queues[0].acknowledge(identifiers[0])
+            self.assertEqual(Outbox(path).pending, 31)
+            self.assertEqual(len(list(path.glob('*.json'))), 31)
+
+    def test_failed_storage_never_claims_queue_or_delivery(self):
+        with tempfile.TemporaryDirectory() as folder:
+            client = DeviceClient({'outbox_path': str(Path(folder) / 'outbox')}, Queue())
+            menu = self.open_messages(client.send)
+            menu.handle(Action.ENTER)
+            with patch('src.communication.client.os.replace', side_effect=OSError('disco no disponible')):
+                menu.handle(Action.ENTER)
+            self.assertEqual(menu.delivery_status, 'Error al guardar')
+            self.assertEqual(client.outbox.pending, 0)
+
+    def test_legacy_file_is_preserved_and_rejected_as_queue_directory(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'old.db'
+            path.write_bytes(b'legacy-content')
+            with self.assertRaises(ValueError):
+                Outbox(path)
+            self.assertEqual(path.read_bytes(), b'legacy-content')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,16 @@
+{
+  "name": "ADS1115 · 0x48",
+  "author": "Franco Parra",
+  "pins": [
+    "VDD",
+    "GND",
+    "SCL",
+    "SDA",
+    "ADDR",
+    "ALRT",
+    "A0",
+    "A1",
+    "A2",
+    "A3"
+  ]
+}

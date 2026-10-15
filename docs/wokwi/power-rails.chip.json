@@ -1,0 +1,8 @@
+{
+  "name": "Distribución común 3,3 V / GND",
+  "author": "Franco Parra",
+  "pins": [
+    "3V3",
+    "GND"
+  ]
+}

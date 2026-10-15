@@ -1,6 +1,6 @@
 # Mining System
 
-Central de operaciones para la manilla minera: ASP.NET Core 10, React 19 + TypeScript y software Python para Raspberry Pi Zero 2 W. La Raspberry Pi 4 puede alojar la central. La interfaz utiliza blanco y la paleta `#DEC1AF`, `#491A06`, `#373946`, `#852A3B`, `#6C4B68`, en modo claro y sin gradientes.
+Central de operaciones para la manilla minera: ASP.NET Core 10, MySQL y React 19 + TypeScript y software Python para Raspberry Pi Zero 2 W. La Raspberry Pi 4 puede alojar la central. La interfaz utiliza blanco y la paleta `#DEC1AF`, `#491A06`, `#373946`, `#852A3B`, `#6C4B68`, en modo claro y sin gradientes.
 
 ## Ubuntu Server LTS con Docker
 
@@ -22,7 +22,7 @@ Consultar [despliegue Docker](docs/docker.md) para configuración, actualizacion
 
 Requisitos: SDK .NET 10, Node.js 22.12+ (o 24+), npm y Python 3.10+ para el dispositivo y las pruebas.
 
-Desde la raíz:
+Configurar primero MySQL según [docs/mysql.md](docs/mysql.md). Desde la raíz:
 
 ```sh
 ./scripts/dev.sh
@@ -80,12 +80,12 @@ Ejemplo de conexión en la manilla, conservando los campos `display` y `buttons`
     "url": "ws://192.168.1.20:5080/ws/device",
     "api_key": "COPIAR_LA_CREDENCIAL_GENERADA_EN_LA_WEB",
     "heartbeat_seconds": 20,
-    "outbox_path": "../state/outbox.db"
+    "outbox_path": "../state/outbox"
   }
 }
 ```
 
-La ruta de la cola se resuelve respecto al archivo JSON. Sin credencial configurada, el menú muestra **Sin configurar** y no declara mensajes enviados. Con credencial, cada mensaje se guarda primero en SQLite local: **Guardado en cola**. Solo pasa a **Enviado a central** cuando recibe confirmación persistida por el servidor. Si no hay red, permanece en cola y se reintenta al reconectar, incluso después de reiniciar el proceso. El identificador estable evita mensajes duplicados.
+La ruta de la cola se resuelve respecto al archivo JSON. Sin credencial configurada, el menú muestra **Sin configurar** y no declara mensajes enviados. Con credencial, cada mensaje se guarda primero en una cola local de archivos JSON con escritura atómica: **Guardado en cola**. Solo pasa a **Enviado a central** cuando recibe confirmación persistida por el servidor. Si no hay red, permanece en cola y se reintenta al reconectar, incluso después de reiniciar el proceso. El identificador estable evita mensajes duplicados.
 
 En hardware:
 
@@ -108,10 +108,11 @@ Abrir **http://localhost:5080**: el mismo proceso ASP.NET sirve React, API y amb
 
 ## Datos y configuración
 
-- `data/mining.db`: usuarios, asignaciones, mensajes, lecturas y actividad. SQLite con WAL, claves foráneas e índices.
+- MySQL: usuarios, asignaciones, mensajes, lecturas y actividad. Esquema versionado con EF Core, claves foráneas e índices. En Docker utiliza el volumen `mysql-data`.
 - `data/keys/`: claves persistentes para las cookies; conservar junto a la base de datos al reiniciar o respaldar.
-- `device/state/outbox.db`: mensajes aún no confirmados. Datos y secretos quedan fuera de Git.
-- `Mining__DataDirectory`: cambia la carpeta del servidor. Fuera de los scripts, la carpeta predeterminada es `../data` respecto al directorio de contenido de ASP.NET.
+- `device/state/outbox/`: mensajes aún no confirmados. Datos y secretos quedan fuera de Git.
+- `Mining__ConnectionString`: conexión a MySQL; admite contraseña separada mediante `Mining__PasswordFile`.
+- `Mining__DataDirectory`: cambia la carpeta de claves de sesión y configuración local del servidor. Fuera de los scripts, la carpeta predeterminada es `../data` respecto al directorio de contenido de ASP.NET.
 - `Mining__AllowedOrigins__0`: origen adicional/autorizado para un frontend separado. En el despliegue integrado, el mismo origen funciona automáticamente.
 - Docker Compose carga `.env` automáticamente. Los scripts locales no: usar variables de entorno, User Secrets o `/etc/mining-system.env` con el servicio incluido.
 
@@ -123,7 +124,7 @@ Las sesiones usan cookies HttpOnly, SameSite Strict, expiración de ocho horas y
 ./scripts/test.sh
 ```
 
-El script compila la API y React, ejecuta lint, pruebas del dispositivo, pruebas de integración contra SQLite y WebSockets reales, y pruebas de navegador con Playwright. Utiliza bases de datos temporales y no crea usuarios de prueba en `data/`.
+El script compila la API y React, ejecuta lint, pruebas del dispositivo, pruebas de integración contra MySQL y WebSockets reales, y pruebas de navegador con Playwright. Requiere MySQL y el cliente `mysql`; consultar [configuración y migración](docs/mysql.md). Utiliza bases de datos temporales y no crea usuarios de prueba en `data/`.
 
 Pruebas por separado:
 
@@ -148,7 +149,7 @@ Los mensajes sí están conectados desde la OLED/simulador hasta la web. La entr
 
 | Carpeta | Contenido |
 | --- | --- |
-| `backend/` | API, autenticación, SQLite, ingestión del dispositivo y SignalR. |
+| `backend/` | API, autenticación, MySQL, ingestión del dispositivo y SignalR. |
 | `web-app/` | Central React, formularios, monitoreo y pruebas de navegador. |
 | `device/` | Menú OLED, botones, simulador y transporte con cola persistente. |
 | `tests/backend/` | Pruebas de integración de API y WebSockets. |

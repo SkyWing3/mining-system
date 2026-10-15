@@ -1,0 +1,47 @@
+# Diagrama de cableado: no hay firmware para simular Raspberry Pi OS.
+[wokwi]
+version = 1
+
+[[chip]]
+name = "rpi-zero-2w"
+binary = "rpi-zero-2w.chip.wasm"
+
+[[chip]]
+name = "power-rails"
+binary = "power-rails.chip.wasm"
+
+[[chip]]
+name = "ads1115"
+binary = "ads1115.chip.wasm"
+
+[[chip]]
+name = "sen0564"
+binary = "sen0564.chip.wasm"
+
+[[chip]]
+name = "mlx90614"
+binary = "mlx90614.chip.wasm"
+
+[[chip]]
+name = "inmp441"
+binary = "inmp441.chip.wasm"
+
+[[chip]]
+name = "active-buzzer"
+binary = "active-buzzer.chip.wasm"
+
+[[chip]]
+name = "vibration-motor"
+binary = "vibration-motor.chip.wasm"
+
+[[chip]]
+name = "npn"
+binary = "npn.chip.wasm"
+
+[[chip]]
+name = "flyback-diode"
+binary = "flyback-diode.chip.wasm"
+
+[[chip]]
+name = "ceramic-capacitor"
+binary = "ceramic-capacitor.chip.wasm"

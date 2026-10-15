@@ -42,6 +42,8 @@ class DockerStackTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.project = 'mining-docker-test-' + uuid.uuid4().hex[:10]
+        cls.secrets = tempfile.TemporaryDirectory(prefix='mining-mysql-secrets-')
+        cls.addClassCleanup(cls.secrets.cleanup)
         with socket.socket() as available:
             available.bind(('127.0.0.1', 0))
             cls.port = available.getsockname()[1]
@@ -49,6 +51,7 @@ class DockerStackTests(unittest.TestCase):
             **os.environ,
             'COMPOSE_PROJECT_NAME': cls.project,
             'MINING_HTTP_PORT': str(cls.port),
+            'MINING_SECRETS_DIRECTORY': cls.secrets.name,
             # Same-origin access must work without relying on a CORS exception.
             'MINING_PUBLIC_ORIGIN': 'http://unused-origin.invalid',
             'MINING_DOCKER_SUBNET': os.environ.get('MINING_TEST_SUBNET', '172.30.85.0/24'),
@@ -240,17 +243,29 @@ class DockerStackTests(unittest.TestCase):
             'backend', '-czf', '-', '-C', '/var/lib/mining-system', '.',
         ], cwd=ROOT, env=self.environment, capture_output=True, check=True, timeout=30)
         with tarfile.open(fileobj=io.BytesIO(backup.stdout), mode='r:gz') as archive:
-            self.assertIn('./mining.db', archive.getnames())
             self.assertTrue(any(name.startswith('./keys/key-') for name in archive.getnames()))
         # Restore into a separate directory within this temporary test volume.
         restored = subprocess.run([
             *command, 'run', '--rm', '-T', '--no-deps', '--entrypoint', 'sh', 'backend', '-c',
             'mkdir /var/lib/mining-system/restore-check && '
             'tar --no-same-owner -xzf - -C /var/lib/mining-system/restore-check && '
-            'test -f /var/lib/mining-system/restore-check/mining.db && '
             'test -d /var/lib/mining-system/restore-check/keys',
         ], cwd=ROOT, env=self.environment, input=backup.stdout, capture_output=True, timeout=30)
         self.assertEqual(restored.returncode, 0, restored.stderr.decode())
+        dump = subprocess.run([
+            *command, 'exec', '-T', 'mysql', 'sh', '-c',
+            'export MYSQL_PWD="$(cat /run/secrets/mysql_password)"; '
+            'exec mysqldump --user=mining --single-transaction --no-tablespaces mining_system',
+        ], cwd=ROOT, env=self.environment, capture_output=True, check=True, timeout=30)
+        self.assertIn(b'CREATE TABLE', dump.stdout)
+        restore_sql = b'CREATE DATABASE mining_restore_test; USE mining_restore_test;\n' + dump.stdout
+        restore_sql += b'\nSELECT COUNT(*) FROM Messages; DROP DATABASE mining_restore_test;'
+        result = subprocess.run([
+            *command, 'exec', '-T', 'mysql', 'sh', '-c',
+            'export MYSQL_PWD="$(cat /run/secrets/mysql_root_password)"; exec mysql --user=root --batch --skip-column-names',
+        ], cwd=ROOT, env=self.environment, input=restore_sql, capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(b'1', result.stdout)
 
     def test_06_script_down_and_restart_preserve_data_and_sessions(self):
         with tempfile.TemporaryDirectory(prefix='mining-down-test-') as outside_repository:
@@ -266,6 +281,7 @@ class DockerStackTests(unittest.TestCase):
                 capture_output=True, timeout=10,
             )
             self.assertEqual(volume.returncode, 0, volume.stderr.decode())
+            self.assertEqual(subprocess.run(['docker', 'volume', 'inspect', self.project + '_mysql-data'], capture_output=True, timeout=10).returncode, 0)
             restarted = subprocess.run(
                 [str(ROOT / 'start.sh')], cwd=outside_repository, env=self.environment,
                 capture_output=True, text=True, timeout=900,
