@@ -93,7 +93,7 @@ En hardware:
 GPIOZERO_PIN_FACTORY=lgpio .venv/bin/python -m src.main --config config/settings.json
 ```
 
-Consultar [OLED y botones](docs/hardware/oled-buttons.md) y [cableado completo](docs/conexiones.tex). Para conectar otra Raspberry Pi, servir la central en su interfaz de red: `MINING_BIND_URL=http://0.0.0.0:5080 ./scripts/serve.sh`.
+Consultar [OLED y botones](docs/hardware/oled-buttons.md), [lista de componentes](docs/componentes.tex), [cableado completo](docs/conexiones.tex) y [diagrama de cableado](docs/imagenes/cableado.png). Para conectar otra Raspberry Pi, servir la central en su interfaz de red: `MINING_BIND_URL=http://0.0.0.0:5080 ./scripts/serve.sh`.
 
 ## Aplicación compilada
 
@@ -138,7 +138,9 @@ Las pruebas de navegador verifican creación del administrador, registro y edici
 
 ## Alcance de sensores
 
-El servidor recibe, guarda y transmite temperatura, gas calibrado en ppm y batería. La web muestra la última lectura y su historial; no inventa datos ni aplica umbrales de riesgo sin calibración. `DeviceClient` admite un proveedor `telemetry` para conectar los controladores físicos. Los controladores de MQ-135/ADS1115, MLX90614 y batería, así como audio y vibración, no estaban implementados en este repositorio y todavía requieren integración y validación en hardware. El menú mantiene esas lecturas como pendientes hasta conectarlos.
+El servidor recibe, guarda y transmite temperatura, gas calibrado en ppm y batería. La web muestra la última lectura y su historial; no inventa datos ni aplica umbrales de riesgo sin calibración. `DeviceClient` admite un proveedor `telemetry` para conectar los controladores físicos.
+
+Hardware de la manilla: OLED SSD1306, tres botones, sensor de monóxido de carbono Fermion SEN0564 leído mediante un ADS1115, termómetro infrarrojo MLX90614, micrófono I²S INMP441, buzzer activo, LED RGB y micro motor vibrador. [Componentes](docs/componentes.tex) describe cada uno y [conexiones](docs/conexiones.tex) asigna sus pines y las pruebas por etapas. Los controladores de sensores, micrófono, buzzer, LED RGB, motor y batería todavía requieren integración y validación en hardware. El campo de gas de la telemetría corresponde al CO del SEN0564. Todos los módulos se alimentan a 3,3 V y se conectan sin resistencias adicionales, salvo el motor si es de dos cables. El menú mantiene esas lecturas como pendientes hasta conectarlos. La configuración rechaza botones en los GPIO reservados para I²C (2, 3) e I²S (16, 18–21).
 
 Los mensajes sí están conectados desde la OLED/simulador hasta la web. La entrega inmediata requiere una conexión de red disponible; sin ella se utiliza la cola local.
 

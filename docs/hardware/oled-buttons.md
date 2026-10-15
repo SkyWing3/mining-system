@@ -2,7 +2,7 @@
 
 Implementación inicial para Raspberry Pi Zero 2 W, SSD1306 I²C de 128×64 y tres pulsadores. La interfaz es monocromática: iconos simples, selección invertida, tres filas visibles, barra de desplazamiento y contador de opciones, inspirados en la referencia del menú.
 
-Consultar también [el documento de cableado completo y puesta en marcha](../conexiones.tex), que incluye sensores, alimentación, vibración y opciones de audio.
+Consultar también [la lista de componentes](../componentes.tex) y [el diagrama de cableado](../imagenes/cableado.png) y [el documento de cableado completo y puesta en marcha](../conexiones.tex), que incluye mapa de pines, sensores de gas y temperatura, micrófono INMP441, buzzer, LED RGB, motor vibrador, alimentación y pruebas por etapas.
 
 ![Vista previa del menú OLED](../imagenes/oled-menu-preview.png)
 
@@ -21,7 +21,7 @@ Con la Raspberry Pi apagada:
 | Botón enter | Un contacto | 22 | 15 |
 | Cada botón | Contacto opuesto | GND | 6 u otro GND |
 
-Los botones usan resistencias pull-up internas: al pulsar conectan el GPIO a GND. En pulsadores de cuatro patas, usar contactos de lados eléctricamente opuestos; comprobar continuidad antes de conectar. No aplicar 5 V a los GPIO. La dirección predeterminada de la OLED es `0x3C`; confirmar la del módulo con `i2cdetect`.
+Si se reasignan los botones, no usar GPIO 2/3 (I²C) ni 16, 18–21 (micrófono I²S); el resto del mapa de pines está en `conexiones.tex`. Los botones usan resistencias pull-up internas: al pulsar conectan el GPIO a GND. En pulsadores de cuatro patas, usar contactos de lados eléctricamente opuestos; comprobar continuidad antes de conectar. No aplicar 5 V a los GPIO. La dirección predeterminada de la OLED es `0x3C`; confirmar la del módulo con `i2cdetect`.
 
 ## Preparación de la Raspberry Pi
 

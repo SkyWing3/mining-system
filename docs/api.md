@@ -119,7 +119,7 @@ Esta confirmación se envía después del guardado y significa **recibido por la
 }
 ```
 
-Los campos de lectura son opcionales, pero se requiere al menos uno. Los ausentes se guardan como `null`. Límites de validación de transporte: temperatura −50..150 °C, gas 0..1000000 ppm y batería 0..100 %. Estos límites no son umbrales de seguridad. Gas solo debe enviarse como ppm después de calibrar el sensor. El backend guarda y transmite lecturas; no diagnostica riesgo a partir de un MQ-135 sin calibración.
+Los campos de lectura son opcionales, pero se requiere al menos uno. Los ausentes se guardan como `null`. Límites de validación de transporte: temperatura −50..150 °C, gas 0..1000000 ppm y batería 0..100 %. Estos límites no son umbrales de seguridad. Gas solo debe enviarse como ppm después de calibrar el sensor. El backend guarda y transmite lecturas; no diagnostica riesgo a partir de un SEN0564 sin calibración.
 
 Un heartbeat no crea una lectura. La última lectura y su fecha se conservan cuando una manilla queda sin conexión. La UI distingue la presencia de la disponibilidad de mediciones.
 

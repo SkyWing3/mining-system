@@ -48,7 +48,7 @@ public sealed class Telemetry
     public string DeviceId { get; set; } = "";
     public MiningDevice Device { get; set; } = null!;
     public double? TemperatureC { get; set; }
-    // MQ-135 values must be calibrated before reporting actual ppm.
+    // SEN0564 (CO) values must be calibrated before reporting actual ppm.
     public double? GasPpm { get; set; }
     public double? BatteryPercent { get; set; }
     public DateTime ReceivedAt { get; set; } = DateTime.UtcNow;

@@ -1,0 +1,14 @@
+% Genera el diagrama de cableado como imagen independiente:
+%   cd docs && latexmk -pdf cableado.tex
+%   pdftoppm -png -r 220 -singlefile cableado.pdf imagenes/cableado
+%   pdftocairo -svg cableado.pdf imagenes/cableado.svg
+\documentclass[border=10pt]{standalone}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{circuitikz}
+\usetikzlibrary{calc}
+
+\begin{document}
+\input{diagramas/cableado.tikz}
+\end{document}

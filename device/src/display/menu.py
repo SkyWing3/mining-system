@@ -19,7 +19,7 @@ class Page:
 
 PAGES = (
     Page("Estado", ("Sensores: pendiente", "Central: sin enlace")),
-    Page("Gases", ("MQ-135 / ADS1115", "Lectura: sin datos")),
+    Page("Gases", ("Sensor CO SEN0564", "Lectura: sin datos")),
     Page("Temperatura", ("Sensor MLX90614", "Lectura: sin datos")),
     Page("Mensajes", ("Reportes a central", "Selecciona mensaje")),
     Page("Ajustes", ("Arriba / abajo", "Enter: seleccionar")),

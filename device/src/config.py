@@ -4,6 +4,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 DEFAULT_CONFIG = Path(__file__).resolve().parents[1] / "config" / "settings.example.json"
+# I2C (OLED, ADS1115, MLX90614) e I2S del INMP441, incluido el GPIO 16 del overlay googlevoicehat-soundcard.
+RESERVED_PINS = (2, 3, 16, 18, 19, 20, 21)
 
 
 def load_config(path=DEFAULT_CONFIG):
@@ -12,8 +14,8 @@ def load_config(path=DEFAULT_CONFIG):
     address = display["address"]
     display["address"] = int(address, 0) if isinstance(address, str) else address
     pins = [buttons[key] for key in ("up", "down", "enter")]
-    if any(type(pin) is not int or pin not in range(2, 28) or pin in (2, 3) for pin in pins) or len(set(pins)) != 3:
-        raise ValueError("Usa tres GPIO BCM distintos entre 4 y 27; GPIO 2/3 están reservados para I2C.")
+    if any(type(pin) is not int or pin not in range(2, 28) or pin in RESERVED_PINS for pin in pins) or len(set(pins)) != 3:
+        raise ValueError("Usa tres GPIO BCM distintos entre 4 y 27; GPIO 2/3 (I2C) y 16, 18-21 (I2S) están reservados.")
     if not 0 < buttons["bounce_seconds"] <= 1:
         raise ValueError("bounce_seconds debe estar entre 0 y 1 segundo.")
     if type(display["port"]) is not int or display["port"] < 0:

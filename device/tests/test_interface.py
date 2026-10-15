@@ -61,8 +61,8 @@ class InterfaceTests(unittest.TestCase):
         self.assertEqual(config['display']['address'], 0x3C)
         self.assertEqual(config['buttons']['enter'], 22)
 
-    def test_duplicate_and_i2c_pins_rejected(self):
-        for pin in [17, 2, 3, 28]:
+    def test_duplicate_and_bus_pins_rejected(self):
+        for pin in [17, 2, 3, 16, 18, 21, 28]:
             config = load_config()
             config['buttons']['enter'] = pin
             with tempfile.TemporaryDirectory() as folder:
