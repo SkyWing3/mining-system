@@ -10,6 +10,10 @@ public sealed record UserDto(string Id, string Name, string Email, string Role, 
 
 public sealed record ReadingDto(
     long? Id,
+    // Wearer and zone recorded when the reading was received.
+    string MinerName,
+    string DeviceName,
+    string Zone,
     double? TemperatureC,
     double? ObjectTemperatureC,
     double? GasPpm,
@@ -20,7 +24,7 @@ public sealed record ReadingDto(
     DateTime ReceivedAt)
 {
     public static ReadingDto From(Reading reading, bool persisted = true) => new(
-        persisted ? reading.Id : null, reading.TemperatureC, reading.ObjectTemperatureC, reading.GasPpm,
+        persisted ? reading.Id : null, reading.MinerName, reading.DeviceName, reading.Zone, reading.TemperatureC, reading.ObjectTemperatureC, reading.GasPpm,
         reading.GasVoltage, reading.BatteryPercent, reading.Level, reading.Simulated, reading.ReceivedAt);
 }
 

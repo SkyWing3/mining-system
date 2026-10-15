@@ -15,6 +15,10 @@ export interface User {
 
 export interface Reading {
   id: number | null
+  // Wearer, device and zone recorded when the reading was received.
+  minerName: string
+  deviceName: string
+  zone: string
   temperatureC: number | null
   objectTemperatureC: number | null
   gasPpm: number | null

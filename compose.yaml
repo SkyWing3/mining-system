@@ -4,6 +4,8 @@ services:
   mysql:
     image: mysql:8.4
     restart: unless-stopped
+    # Lets the non-administrative API account create the policy triggers while binary logging stays on.
+    command: ["--log-bin-trust-function-creators=1"]
     environment:
       MYSQL_DATABASE: mining_system
       MYSQL_USER: mining

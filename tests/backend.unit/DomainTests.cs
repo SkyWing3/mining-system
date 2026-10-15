@@ -9,19 +9,23 @@ public sealed class DomainTests
     private static readonly DateTime Now = new(2026, 10, 15, 12, 0, 0, DateTimeKind.Utc);
 
     [Fact]
-    public void PersistencePolicyKeepsOnePerIntervalAndEveryLevelChange()
+    public void PersistencePolicyKeepsOnePerIntervalAndEveryContextChange()
     {
         var policy = new TelemetryPersistencePolicy();
         var interval = TimeSpan.FromSeconds(10);
-        Assert.True(policy.ShouldPersist("a", AlertLevels.Normal, Now, interval));
-        Assert.False(policy.ShouldPersist("a", AlertLevels.Normal, Now.AddSeconds(2), interval));
-        Assert.True(policy.ShouldPersist("b", AlertLevels.Normal, Now.AddSeconds(2), interval));
-        Assert.True(policy.ShouldPersist("a", AlertLevels.Danger, Now.AddSeconds(3), interval));
-        Assert.False(policy.ShouldPersist("a", AlertLevels.Danger, Now.AddSeconds(12), interval));
-        Assert.True(policy.ShouldPersist("a", AlertLevels.Danger, Now.AddSeconds(13), interval));
+        var normal = new ReadingContext(AlertLevels.Normal, "Ana", "Manilla 01", "Norte");
+        var danger = normal with { Level = AlertLevels.Danger };
+        Assert.True(policy.ShouldPersist("a", normal, Now, interval));
+        Assert.False(policy.ShouldPersist("a", normal, Now.AddSeconds(2), interval));
+        Assert.True(policy.ShouldPersist("b", normal, Now.AddSeconds(2), interval));
+        Assert.True(policy.ShouldPersist("a", danger, Now.AddSeconds(3), interval));
+        Assert.False(policy.ShouldPersist("a", danger, Now.AddSeconds(12), interval));
+        Assert.True(policy.ShouldPersist("a", danger, Now.AddSeconds(13), interval));
+        // A reassignment is always stored, even within the interval.
+        Assert.True(policy.ShouldPersist("a", danger with { MinerName = "Luis", Zone = "Sur" }, Now.AddSeconds(14), interval));
         policy.Forget("a");
-        Assert.True(policy.ShouldPersist("a", AlertLevels.Danger, Now.AddSeconds(14), interval));
-        Assert.True(policy.ShouldPersist("a", AlertLevels.Danger, Now.AddSeconds(14), TimeSpan.Zero));
+        Assert.True(policy.ShouldPersist("a", danger, Now.AddSeconds(15), interval));
+        Assert.True(policy.ShouldPersist("a", danger, Now.AddSeconds(15), TimeSpan.Zero));
     }
 
     [Fact]

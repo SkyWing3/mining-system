@@ -32,7 +32,7 @@ El login y la configuración inicial tienen un límite por IP por minuto (`Minin
 | POST | `/api/devices` | `{ name, zone, userId, active }`; `{ device, apiKey }`, credencial solo una vez. |
 | PUT | `/api/devices/{id}` | Actualiza asignación, zona y estado; deshabilitar cierra su WebSocket. |
 | POST | `/api/devices/{id}/rotate-key` | Devuelve nueva credencial, invalida la anterior y cierra su WebSocket. |
-| GET | `/api/devices/{id}/telemetry?since=&limit=` | Lecturas guardadas, de reciente a antigua; `limit` 1–1000 (100 por defecto). |
+| GET | `/api/devices/{id}/telemetry?since=&limit=` | Lecturas guardadas, de reciente a antigua, con `minerName`, `deviceName` y `zone` registrados al recibir cada una; `limit` 1–1000 (100 por defecto). |
 | GET | `/api/overview` | Contadores, ocho últimos mensajes, catálogo de mensajes y de avisos. |
 | GET | `/api/messages` | Historial paginado y filtros. |
 | POST | `/api/messages/{id}/review` | Revisión interna de una alerta crítica, idempotente. |
@@ -179,7 +179,7 @@ Esta confirmación se envía después del guardado y significa **recibido por la
 
 Los campos de lectura son opcionales, pero se requiere al menos uno. Los ausentes se guardan como `null`. Los límites son de validación de datos, no umbrales de seguridad. Gas solo se envía en ppm después de calibrar el sensor; sin calibración se envía la tensión.
 
-Cada lectura se difunde **inmediatamente** a la web. MySQL guarda como máximo una lectura por manilla cada `Mining:Telemetry:PersistIntervalSeconds` (10 s por defecto) y, además, cada cambio de `level`; así el historial conserva las transiciones sin crecer con cada muestra. Las lecturas guardadas se eliminan después de `Mining:Telemetry:RetentionDays` (30 días; 0 las conserva). Un heartbeat no crea una lectura. La última lectura y su fecha se conservan cuando una manilla queda sin conexión.
+Cada lectura se difunde **inmediatamente** a la web. MySQL guarda como máximo una lectura por manilla cada `Mining:Telemetry:PersistIntervalSeconds` (10 s por defecto; 0 guarda todas) y, además, cada cambio de `level`, de minero o de zona; así el historial conserva las transiciones y reasignaciones sin crecer con cada muestra. Cada lectura guardada registra el minero, la manilla y la zona del momento en que se recibió, y la base la conserva como historial de solo inserción (no se modifica ni se elimina). Un heartbeat no crea una lectura. La última lectura y su fecha se conservan cuando una manilla queda sin conexión.
 
 ### Avisos de la central
 

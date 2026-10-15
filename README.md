@@ -118,13 +118,13 @@ Abrir **http://localhost:5080**: el mismo proceso ASP.NET sirve React, API y amb
 
 ## Datos y configuración
 
-- MySQL: usuarios, asignaciones, mensajes, lecturas, mensajes de voz, avisos y actividad. Esquema versionado con EF Core, claves foráneas e índices. En Docker utiliza el volumen `mysql-data`.
+- MySQL: usuarios, asignaciones, mensajes, lecturas (con minero, manilla y zona del momento), mensajes de voz, avisos y actividad. Esquema versionado con EF Core, claves foráneas, índices, restricciones `CHECK` y triggers que impiden borrar o alterar el historial. En Docker utiliza el volumen `mysql-data`.
 - `data/keys/`: claves persistentes para las cookies; `data/voice/`: grabaciones. Conservar ambas junto a la base de datos al reiniciar o respaldar.
 - `device/state/outbox/` y `device/state/voice/`: mensajes y grabaciones aún no confirmados. Datos y secretos quedan fuera de Git.
 - `Mining__ConnectionString`: conexión a MySQL; admite contraseña separada mediante `Mining__PasswordFile`.
 - `Mining__DataDirectory`: cambia la carpeta de claves de sesión, audios y configuración local del servidor. Fuera de los scripts, la carpeta predeterminada es `../data` respecto al directorio de contenido de ASP.NET.
 - `Mining__AllowedOrigins__0`: origen adicional/autorizado para un frontend separado. En el despliegue integrado, el mismo origen funciona automáticamente.
-- `Mining__Telemetry__PersistIntervalSeconds` (10) y `Mining__Telemetry__RetentionDays` (30): frecuencia de guardado y retención de lecturas. Todas se transmiten en vivo.
+- `Mining__Telemetry__PersistIntervalSeconds` (10): frecuencia de guardado de lecturas; además se guarda cada cambio de nivel, minero o zona. Todas se transmiten en vivo. El historial de lecturas es de solo inserción (ver [MySQL](docs/mysql.md#políticas-de-integridad)).
 - `Mining__Voice__MaxBytes`, `Mining__Voice__MaxSeconds`, `Mining__Notices__ExpirationMinutes`, `Mining__PresenceWindowSeconds` y `Mining__LoginAttemptsPerMinute`: límites operativos; se validan al iniciar.
 - Docker Compose carga `.env` automáticamente. Los scripts locales no: usar variables de entorno, User Secrets o `/etc/mining-system.env` con el servicio incluido.
 

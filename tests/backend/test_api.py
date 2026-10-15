@@ -29,7 +29,7 @@ sys.path.insert(0, str(ROOT / 'device'))
 sys.path.insert(0, str(ROOT / 'scripts'))
 from src.communication.client import DeviceClient
 from src.config import ConnectionConfig
-from mysql_test_db import create as create_database, drop as drop_database
+from mysql_test_db import create as create_database, drop as drop_database, sql as run_sql
 
 BASE = 'http://127.0.0.1:5081'
 WS = 'ws://127.0.0.1:5081'
@@ -272,6 +272,84 @@ class BackendTests(unittest.TestCase):
         self.assertTrue(row['online'])
         self.assertEqual(row['reading']['batteryPercent'], 74)
         self.assertNotIn('keyHash', row)
+
+    def test_telemetry_keeps_wearer_after_reassignment(self):
+        first, second = self.create_user(), self.create_user()
+        device, key = self.create_device(first)
+        with self.socket(key) as socket:
+            self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'gasPpm': 35})['type'], 'ack')
+        status, result = self.admin.call('/devices/' + device['id'], 'PUT', {'name': device['name'], 'zone': 'Galería sur', 'userId': second['id'], 'active': True})
+        self.assertEqual(status, 200, result)
+        with self.socket(key) as socket:
+            self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'gasPpm': 12})['type'], 'ack')
+        _, readings = self.admin.call('/devices/' + device['id'] + '/telemetry')
+        latest, earlier = readings
+        self.assertEqual((earlier['minerName'], earlier['zone'], earlier['gasPpm']), (first['name'], 'Galería norte', 35))
+        self.assertEqual((latest['minerName'], latest['zone'], latest['gasPpm']), (second['name'], 'Galería sur', 12))
+
+    def test_database_policies_protect_history(self):
+        device, key = self.create_device()
+        with self.socket(key) as socket:
+            self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'gasPpm': 20})['type'], 'ack')
+            self.assertEqual(self.exchange(socket, self.frame('HELP'))['type'], 'ack')
+        database = '`' + self.database['name'] + '`'
+        rejected = {
+            f"DELETE FROM {database}.Readings;": 'solo admiten inserciones',
+            f"UPDATE {database}.Readings SET GasPpm = 0;": 'solo admiten inserciones',
+            f"UPDATE {database}.Events SET Actor = 'x';": 'solo admite inserciones',
+            f"DELETE FROM {database}.Messages;": 'no se eliminan',
+            f"UPDATE {database}.Messages SET Code = 'OK';": 'una sola vez',
+            f"DELETE FROM {database}.Devices;": 'no se eliminan',
+            f"INSERT INTO {database}.Readings (DeviceId, MinerName, DeviceName, Zone, BatteryPercent, ReceivedAt) VALUES ('{device['id']}', '', '', '', 101, NOW(6));": 'CK_Readings_Battery',
+            f"UPDATE {database}.Users SET Role = 'Root';": 'CK_Users_Role',
+        }
+        for statement, error in rejected.items():
+            with self.subTest(statement=statement):
+                with self.assertRaises(RuntimeError) as failure:
+                    run_sql(statement)
+                self.assertIn(error, str(failure.exception))
+        self.assertEqual(run_sql(f"SELECT COUNT(*) FROM {database}.Readings WHERE DeviceId = '{device['id']}';").strip(), '1')
+
+    def test_partial_readings_satisfy_the_measurement_constraint(self):
+        device, key = self.create_device()
+        with self.socket(key) as socket:
+            self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'gasVoltage': 0.41, 'level': 'normal'})['type'], 'ack')
+            self.assertEqual(self.exchange(socket, {'type': 'telemetry', 'objectTemperatureC': 61.5, 'level': 'caution'})['type'], 'ack')
+        _, readings = self.admin.call('/devices/' + device['id'] + '/telemetry')
+        self.assertEqual([(x['gasVoltage'], x['objectTemperatureC']) for x in readings], [(None, 61.5), (0.41, None)])
+        self.assertEqual({x['deviceName'] for x in readings}, {device['name']})
+
+    def test_database_policies_protect_voice_notices_and_alarm_detail(self):
+        device, key = self.create_device()
+        with self.socket(key) as socket:
+            self.assertEqual(self.exchange(socket, {**self.frame('CO_ALARM'), 'detail': 'CO 210 ppm'})['type'], 'ack')
+        self.assertEqual(self.upload_voice(key, self.wav())[0], 201)
+        _, notices = self.admin.call('/notices', 'POST', {'code': 'REPORT', 'deviceIds': [device['id']]})
+        database = '`' + self.database['name'] + '`'
+        notice = notices[0]['id']
+        rejected = {
+            f"UPDATE {database}.Messages SET Detail = 'CO 0 ppm' WHERE DeviceId = '{device['id']}';": 'una sola vez',
+            f"DELETE FROM {database}.VoiceMessages WHERE DeviceId = '{device['id']}';": 'no se eliminan',
+            f"UPDATE {database}.VoiceMessages SET DurationMs = 1 WHERE DeviceId = '{device['id']}';": 'una sola vez',
+            f"DELETE FROM {database}.Notices WHERE Id = {notice};": 'no se eliminan',
+            f"UPDATE {database}.Notices SET Code = 'EVACUATE' WHERE Id = {notice};": 'una sola vez',
+            f"UPDATE {database}.Notices SET ReadAt = NOW(6) WHERE Id = {notice};": 'CK_Notices_ReadAfterDelivery',
+            f"UPDATE {database}.Readings SET Level = 'danger';": 'solo admiten inserciones',
+        }
+        for statement, error in rejected.items():
+            with self.subTest(statement=statement):
+                with self.assertRaises(RuntimeError) as failure:
+                    run_sql(statement)
+                self.assertIn(error, str(failure.exception))
+        # The API's own updates are exactly what the policies allow.
+        with self.socket(key) as socket:
+            self.assertEqual(self.exchange(socket, {'type': 'heartbeat'})['type'], 'ack')
+            self.assertEqual(json.loads(socket.recv(timeout=3))['noticeId'], notice)
+            self.assertEqual(self.exchange(socket, {'type': 'notice-ack', 'noticeId': notice, 'stage': 'read'})['type'], 'ack')
+        _, page = self.admin.call('/notices?deviceId=' + device['id'])
+        self.assertEqual(page['items'][0]['status'], 'read')
+        _, voices = self.admin.call('/voice?deviceId=' + device['id'])
+        self.assertEqual(self.admin.call(f"/voice/{voices['items'][0]['id']}/review", 'POST')[0], 200)
 
     def test_invalid_and_rotated_credentials_rejected(self):
         with self.assertRaises(InvalidStatus):

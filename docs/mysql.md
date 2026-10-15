@@ -9,27 +9,54 @@ cambios al arrancar. SQLite no forma parte de la API ni del programa de la manil
 | `Users` | Identidad, rol, estado, hash de contraseña y versión de sesión. |
 | `Devices` | Manillas, zona, minero asignado, hash de credencial y última presencia. |
 | `Messages` | Reportes del menú y alarmas automáticas (`Detail`), con identidad histórica y revisión. |
-| `Readings` | Temperatura ambiente y de objeto, CO en ppm y en voltios, batería, nivel y marca de simulación. |
+| `Readings` | Temperatura ambiente y de objeto, CO en ppm y en voltios, batería, nivel, marca de simulación, y minero, manilla y zona del momento de la lectura. |
 | `VoiceMessages` | Metadatos de cada grabación; el audio se guarda en `{DataDirectory}/voice/`. |
 | `Notices` | Avisos de la central por manilla, con entrega, lectura y caducidad. |
 | `Events` | Auditoría de acciones administrativas. |
 
-La migración `LiveTelemetryVoiceNotices` agrega las columnas de lectura, el
-detalle de alarmas y las tablas de voz y avisos; las lecturas anteriores quedan
-con nivel `normal`. Para crear nuevas migraciones se usa la herramienta local:
+Migraciones, en orden:
+
+| Migración | Cambios |
+| --- | --- |
+| `InitialMySql` | Tablas, claves foráneas e índices iniciales. |
+| `AddTelemetryTraceability` | Minero, manilla y zona en cada lectura, e índice por minero y fecha. |
+| `AddDatabaseSecurityPolicies` | Restricciones `CHECK` y triggers que vuelven el historial de solo inserción. |
+| `LiveTelemetryVoiceNotices` | Temperatura de objeto, voltaje de CO, nivel y simulación en lecturas; detalle de alarmas; tablas de voz y avisos con sus restricciones y políticas. Las lecturas anteriores quedan con nivel `normal`. |
+
+Para crear nuevas migraciones se usa la herramienta local:
 
 ```sh
 dotnet tool restore
 dotnet dotnet-ef migrations add Nombre --project backend/backend.csproj
 ```
 
-## Retención de lecturas
+## Políticas de integridad
+
+La base rechaza datos inválidos aunque no pasen por la API (restricciones
+`CHECK`: roles, nombres, correos, credenciales, rangos de lecturas, niveles,
+duración de la voz, lectura de un aviso solo tras su entrega). MySQL no ofrece
+seguridad por filas, así que los triggers aplican estas políticas:
+
+| Tabla | Política |
+| --- | --- |
+| `Readings`, `Events` | Solo inserción: no se modifican ni se eliminan. |
+| `Messages` | No se eliminan; solo admiten registrar su revisión, una vez. |
+| `VoiceMessages` | No se eliminan; solo admiten registrar que fueron escuchados, una vez. |
+| `Notices` | No se eliminan; solo admiten registrar su entrega y su lectura, una vez. |
+| `Users`, `Devices` | No se eliminan; se desactivan. |
+
+En Docker, MySQL arranca con `--log-bin-trust-function-creators=1` para que la
+cuenta de la API pueda crear los triggers con el registro binario activo.
+`infra/mysql/analyst-account.sql` crea una cuenta de solo lectura para análisis
+de exposición, sin acceso a correos, hashes ni credenciales.
+
+## Crecimiento de las lecturas
 
 Cada lectura se transmite en vivo, pero MySQL guarda como máximo una por manilla
-cada `Mining__Telemetry__PersistIntervalSeconds` (10 s) y todos los cambios de
-nivel. Un proceso horario elimina las lecturas guardadas con más de
-`Mining__Telemetry__RetentionDays` días (30; 0 las conserva). Los mensajes, la voz,
-los avisos y la auditoría no se eliminan automáticamente.
+cada `Mining__Telemetry__PersistIntervalSeconds` (10 s) y, además, cada cambio de
+nivel, de minero o de zona. Como el historial es de solo inserción, no hay una
+limpieza automática: planificar el espacio en disco y los respaldos según la
+cantidad de manillas (con 10 s, unas 8 640 lecturas por manilla y día).
 
 ## Docker
 

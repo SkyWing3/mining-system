@@ -97,7 +97,14 @@ namespace backend.Migrations
 
                     b.HasIndex("DeviceId", "ReadAt");
 
-                    b.ToTable("Notices", (string)null);
+                    b.ToTable("Notices", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Notices_Code", "CHAR_LENGTH(`Code`) >= 1");
+
+                            t.HasCheckConstraint("CK_Notices_Expiry", "`ExpiresAt` > `CreatedAt`");
+
+                            t.HasCheckConstraint("CK_Notices_ReadAfterDelivery", "`ReadAt` IS NULL OR `DeliveredAt` IS NOT NULL");
+                        });
                 });
 
             modelBuilder.Entity("MiningSystem.Domain.MiningDevice", b =>
@@ -144,7 +151,14 @@ namespace backend.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Devices", (string)null);
+                    b.ToTable("Devices", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Devices_KeyHash", "CHAR_LENGTH(`KeyHash`) = 64");
+
+                            t.HasCheckConstraint("CK_Devices_Name", "CHAR_LENGTH(TRIM(`Name`)) >= 2");
+
+                            t.HasCheckConstraint("CK_Devices_Zone", "CHAR_LENGTH(TRIM(`Zone`)) >= 2");
+                        });
                 });
 
             modelBuilder.Entity("MiningSystem.Domain.MiningMessage", b =>
@@ -207,7 +221,12 @@ namespace backend.Migrations
                     b.HasIndex("DeviceId", "ClientMessageId")
                         .IsUnique();
 
-                    b.ToTable("Messages", (string)null);
+                    b.ToTable("Messages", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Messages_ClientMessageId", "CHAR_LENGTH(`ClientMessageId`) >= 1");
+
+                            t.HasCheckConstraint("CK_Messages_Review", "(`ReviewedAt` IS NULL) = (`ReviewedBy` IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("MiningSystem.Domain.Reading", b =>
@@ -224,6 +243,11 @@ namespace backend.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("varchar(32)");
 
+                    b.Property<string>("DeviceName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("varchar(60)");
+
                     b.Property<double?>("GasPpm")
                         .HasColumnType("double");
 
@@ -234,6 +258,11 @@ namespace backend.Migrations
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("varchar(16)");
+
+                    b.Property<string>("MinerName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<double?>("ObjectTemperatureC")
                         .HasColumnType("double");
@@ -247,13 +276,33 @@ namespace backend.Migrations
                     b.Property<double?>("TemperatureC")
                         .HasColumnType("double");
 
-                    b.HasKey("Id");
+                    b.Property<string>("Zone")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
-                    b.HasIndex("ReceivedAt");
+                    b.HasKey("Id");
 
                     b.HasIndex("DeviceId", "ReceivedAt");
 
-                    b.ToTable("Readings", (string)null);
+                    b.HasIndex("MinerName", "ReceivedAt");
+
+                    b.ToTable("Readings", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Readings_Battery", "`BatteryPercent` IS NULL OR `BatteryPercent` BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("CK_Readings_Gas", "`GasPpm` IS NULL OR `GasPpm` BETWEEN 0 AND 1000000");
+
+                            t.HasCheckConstraint("CK_Readings_GasVoltage", "`GasVoltage` IS NULL OR `GasVoltage` BETWEEN 0 AND 5.5");
+
+                            t.HasCheckConstraint("CK_Readings_Level", "`Level` IN ('normal', 'caution', 'danger')");
+
+                            t.HasCheckConstraint("CK_Readings_Measurement", "`TemperatureC` IS NOT NULL OR `ObjectTemperatureC` IS NOT NULL OR `GasPpm` IS NOT NULL OR `GasVoltage` IS NOT NULL OR `BatteryPercent` IS NOT NULL");
+
+                            t.HasCheckConstraint("CK_Readings_ObjectTemperature", "`ObjectTemperatureC` IS NULL OR `ObjectTemperatureC` BETWEEN -70 AND 380");
+
+                            t.HasCheckConstraint("CK_Readings_Temperature", "`TemperatureC` IS NULL OR `TemperatureC` BETWEEN -50 AND 150");
+                        });
                 });
 
             modelBuilder.Entity("MiningSystem.Domain.User", b =>
@@ -298,7 +347,14 @@ namespace backend.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Users_Email", "`Email` LIKE '%_@_%'");
+
+                            t.HasCheckConstraint("CK_Users_Name", "CHAR_LENGTH(TRIM(`Name`)) >= 2");
+
+                            t.HasCheckConstraint("CK_Users_Role", "`Role` IN ('Admin', 'Supervisor', 'Miner')");
+                        });
                 });
 
             modelBuilder.Entity("MiningSystem.Domain.VoiceMessage", b =>
@@ -366,7 +422,16 @@ namespace backend.Migrations
                     b.HasIndex("DeviceId", "ClientMessageId")
                         .IsUnique();
 
-                    b.ToTable("VoiceMessages", (string)null);
+                    b.ToTable("VoiceMessages", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_VoiceMessages_ClientMessageId", "CHAR_LENGTH(`ClientMessageId`) >= 1");
+
+                            t.HasCheckConstraint("CK_VoiceMessages_Duration", "`DurationMs` > 0");
+
+                            t.HasCheckConstraint("CK_VoiceMessages_Review", "(`ReviewedAt` IS NULL) = (`ReviewedBy` IS NULL)");
+
+                            t.HasCheckConstraint("CK_VoiceMessages_Size", "`SizeBytes` > 0");
+                        });
                 });
 
             modelBuilder.Entity("MiningSystem.Domain.DeviceNotice", b =>

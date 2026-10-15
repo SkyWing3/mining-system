@@ -35,13 +35,10 @@ public sealed class MiningOptions
 
 public sealed class TelemetryOptions
 {
-    // Every reading is broadcast live; MySQL keeps at most one per interval and device, plus level changes. 0 keeps all.
+    // Every reading is broadcast live; MySQL keeps at most one per interval and device, plus every
+    // change of level, wearer or zone. 0 stores all. Stored readings are append-only (never deleted).
     [Range(0, 3600)]
     public int PersistIntervalSeconds { get; set; } = 10;
-
-    // Stored readings older than this are deleted. 0 keeps them forever.
-    [Range(0, 3650)]
-    public int RetentionDays { get; set; } = 30;
 }
 
 public sealed class VoiceOptions

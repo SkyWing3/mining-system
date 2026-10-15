@@ -10,18 +10,25 @@ using MiningSystem.Realtime;
 
 namespace MiningSystem.Services;
 
-// Decides which live readings are stored: one per interval and device, plus every level change.
+// What a stored reading records besides its measurements; any change is always stored.
+public readonly record struct ReadingContext(string Level, string MinerName, string DeviceName, string Zone)
+{
+    public static ReadingContext Of(Reading reading) => new(reading.Level, reading.MinerName, reading.DeviceName, reading.Zone);
+}
+
+// Decides which live readings are stored: one per interval and device, plus every change of
+// level, wearer or zone, so the history keeps every transition and reassignment.
 public sealed class TelemetryPersistencePolicy
 {
-    private sealed record Entry(DateTime At, string Level);
+    private sealed record Entry(DateTime At, ReadingContext Context);
 
     private readonly ConcurrentDictionary<string, Entry> entries = new();
 
-    public bool ShouldPersist(string deviceId, string level, DateTime now, TimeSpan interval)
+    public bool ShouldPersist(string deviceId, ReadingContext context, DateTime now, TimeSpan interval)
     {
-        if (interval > TimeSpan.Zero && entries.TryGetValue(deviceId, out var last) && last.Level == level && now - last.At < interval)
+        if (interval > TimeSpan.Zero && entries.TryGetValue(deviceId, out var last) && last.Context == context && now - last.At < interval)
             return false;
-        entries[deviceId] = new Entry(now, level);
+        entries[deviceId] = new Entry(now, context);
         return true;
     }
 
@@ -79,6 +86,9 @@ public sealed class TelemetryService(
         var reading = new Reading
         {
             DeviceId = device.Id,
+            MinerName = device.User?.Name ?? "",
+            DeviceName = device.Name,
+            Zone = device.Zone,
             TemperatureC = frame.TemperatureC,
             ObjectTemperatureC = frame.ObjectTemperatureC,
             GasPpm = frame.GasPpm,
@@ -89,7 +99,7 @@ public sealed class TelemetryService(
             ReceivedAt = now,
         };
         var interval = TimeSpan.FromSeconds(options.Value.Telemetry.PersistIntervalSeconds);
-        var persist = policy.ShouldPersist(device.Id, reading.Level, now, interval);
+        var persist = policy.ShouldPersist(device.Id, ReadingContext.Of(reading), now, interval);
         if (persist) db.Readings.Add(reading);
         device.LastSeenAt = now;
         try

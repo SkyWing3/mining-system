@@ -90,13 +90,14 @@ function ReadingTable({ readings, metric }: { readings: Reading[]; metric: Retur
   return (
     <div className="table-scroll reading-table">
       <table>
-        <thead><tr><th>HORA</th><th>{metric.label.toUpperCase()}</th><th>NIVEL</th></tr></thead>
+        <thead><tr><th>HORA</th><th>{metric.label.toUpperCase()}</th><th>NIVEL</th><th>PORTADOR · ZONA</th></tr></thead>
         <tbody>
           {rows.map(reading => (
             <tr key={reading.receivedAt}>
               <td>{date(reading.receivedAt)}</td>
               <td>{metric.value(reading)!.toFixed(metric.decimals)} {metric.unit}</td>
               <td>{levelName[reading.level]}</td>
+              <td className="muted">{reading.minerName || 'Sin asignar'} · {reading.zone}</td>
             </tr>
           ))}
         </tbody>

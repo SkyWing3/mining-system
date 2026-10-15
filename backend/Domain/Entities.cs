@@ -54,6 +54,10 @@ public sealed class Reading
     public long Id { get; set; }
     public string DeviceId { get; set; } = "";
     public MiningDevice Device { get; set; } = null!;
+    // Preserve who wore the device and where it was, even after reassignment.
+    public string MinerName { get; set; } = "";
+    public string DeviceName { get; set; } = "";
+    public string Zone { get; set; } = "";
     // MLX90614 ambient temperature (tunnel air).
     public double? TemperatureC { get; set; }
     // MLX90614 object temperature (surface the sensor points at).
