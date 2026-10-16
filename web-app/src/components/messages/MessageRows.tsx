@@ -26,11 +26,9 @@ function MessageRow({ message, review, compact }: { message: Message; review?: (
           {message.detail && <span className="message-detail">{message.detail}</span>}
         </div>
         <div className="message-source">
-          <span className="mini-avatar">{initials(message.minerName)}</span>
-          <span>{message.minerName}</span>
-          <span className="dot-separator">·</span>
-          <span>{message.zone}</span>
-          {!compact && <><span className="dot-separator">·</span><span>{message.deviceName}</span></>}
+          <span className="source-item"><span className="mini-avatar">{initials(message.minerName)}</span>{message.minerName}</span>
+          <span className="source-item"><span className="dot-separator">·</span>{message.zone}</span>
+          {!compact && <span className="source-item"><span className="dot-separator">·</span>{message.deviceName}</span>}
         </div>
         {!compact && (
           <div className="message-metadata">

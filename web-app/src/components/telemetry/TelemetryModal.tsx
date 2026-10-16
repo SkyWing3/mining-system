@@ -62,7 +62,7 @@ export function TelemetryModal({ device, live, close, onError }: {
               <span className="chart-meta">
                 {readings.at(-1) && <LevelBadge level={readings.at(-1)!.level} />}
                 {simulated && <SimulatedTag />}
-                <span>Últimas {values.length} lecturas · se actualiza en vivo</span>
+                <span>{values.length === 1 ? 'Última lectura' : `Últimas ${values.length} lecturas`} · se actualiza en vivo</span>
               </span>
             </div>
             {view === 'chart'
@@ -89,15 +89,15 @@ function ReadingTable({ readings, metric }: { readings: Reading[]; metric: Retur
   const rows = readings.filter(reading => metric.value(reading) !== null).slice(-TABLE_ROWS).reverse()
   return (
     <div className="table-scroll reading-table">
-      <table>
+      <table className="data-table compact">
         <thead><tr><th>HORA</th><th>{metric.label.toUpperCase()}</th><th>NIVEL</th><th>PORTADOR · ZONA</th></tr></thead>
         <tbody>
           {rows.map(reading => (
             <tr key={reading.receivedAt}>
-              <td>{date(reading.receivedAt)}</td>
-              <td>{metric.value(reading)!.toFixed(metric.decimals)} {metric.unit}</td>
-              <td>{levelName[reading.level]}</td>
-              <td className="muted">{reading.minerName || 'Sin asignar'} · {reading.zone}</td>
+              <td className="cell-main" data-label="Hora"><strong>{date(reading.receivedAt)}</strong></td>
+              <td data-label={metric.label}>{metric.value(reading)!.toFixed(metric.decimals)} {metric.unit}</td>
+              <td data-label="Nivel">{levelName[reading.level]}</td>
+              <td className="muted cell-wrap" data-label="Portador">{reading.minerName || 'Sin asignar'} · {reading.zone}</td>
             </tr>
           ))}
         </tbody>

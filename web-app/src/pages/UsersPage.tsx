@@ -30,21 +30,23 @@ export function UsersPage({ version, edit, onError }: { version: number; edit: (
       </div>
       {items.length ? (
         <div className="table-scroll">
-          <table>
+          <table className="data-table">
             <thead><tr><th>USUARIO</th><th>ROL</th><th>ESTADO</th><th>FECHA DE REGISTRO</th><th><span className="sr-only">Acciones</span></th></tr></thead>
             <tbody>
               {items.map(user => (
                 <tr key={user.id}>
-                  <td>
+                  <td className="cell-main" data-label="Usuario">
                     <div className="table-person">
                       <span className="avatar neutral">{initials(user.name)}</span>
                       <div><strong>{user.name}</strong><small>{user.email}</small></div>
                     </div>
                   </td>
-                  <td><span className={`role-badge ${user.role.toLowerCase()}`}>{roleName[user.role]}</span></td>
-                  <td><span className={`account-status ${user.active ? 'active' : ''}`}><span />{user.active ? 'Activo' : 'Inactivo'}</span></td>
-                  <td className="muted">{date(user.createdAt, true)}</td>
-                  <td><button className="button secondary small-button" onClick={() => edit(user)}><Edit3 size={15} />Editar</button></td>
+                  <td data-label="Rol"><span className={`role-badge ${user.role.toLowerCase()}`}>{roleName[user.role]}</span></td>
+                  <td data-label="Estado"><span className={`account-status ${user.active ? 'active' : ''}`}><span />{user.active ? 'Activo' : 'Inactivo'}</span></td>
+                  <td className="muted" data-label="Registro">{date(user.createdAt, true)}</td>
+                  <td className="cell-actions" data-label="Acciones">
+                    <button className="button secondary small-button" onClick={() => edit(user)}><Edit3 size={15} />Editar</button>
+                  </td>
                 </tr>
               ))}
             </tbody>

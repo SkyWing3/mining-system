@@ -579,6 +579,29 @@ INSERT INTO Messages (DeviceId, ClientMessageId, Code, MinerName, DeviceName, Zo
     expect(errors).toEqual([])
   })
 
+  test('layout fits a short laptop screen and a phone without horizontal scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 })
+    await signIn(page)
+    const logout = page.getByRole('button', { name: 'Cerrar sesión', exact: true })
+    await expect(logout).toBeInViewport()
+    for (const section of ['Manillas', 'Usuarios', 'Avisos']) {
+      await page.locator('.sidebar').getByRole('button', { name: section }).click()
+      await expect(page.locator('.table-scroll').first()).toBeVisible()
+      expect(await page.locator('.table-scroll').first().evaluate(table => table.scrollWidth <= table.clientWidth + 1), section).toBeTruthy()
+    }
+    await page.locator('.sidebar').getByRole('button', { name: 'Manillas' }).click()
+    await expect(page.getByRole('button', { name: 'Renovar credencial de Manilla 01' })).toBeInViewport()
+    await page.setViewportSize({ width: 360, height: 740 })
+    for (const section of ['Manillas', 'Usuarios', 'Avisos']) {
+      await page.getByRole('button', { name: 'Abrir navegación' }).click()
+      await page.locator('.sidebar').getByRole('button', { name: section }).click()
+      await expect(page.locator('.table-scroll').first()).toBeVisible()
+      expect(await page.locator('.table-scroll').first().evaluate(table => table.scrollWidth <= table.clientWidth + 1), section).toBeTruthy()
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy()
+    }
+    await page.screenshot({ path: 'test-results/notices-mobile.png', fullPage: true })
+  })
+
   test('user updates, activity and password change', async ({ page }) => {
     await signIn(page)
     await page.getByRole('button', { name: 'Usuarios', exact: true }).click()

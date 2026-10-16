@@ -34,9 +34,10 @@ function buildScale(points: ChartPoint[], values: number[], width: number): Scal
     min -= 1
     max += 1
   }
-  const span = Math.max(1, last - first)
+  const span = last - first
   return {
-    x: time => LEFT + ((time - first) / span) * (right - LEFT),
+    // A single reading is drawn in the middle of the chart.
+    x: time => (span > 0 ? LEFT + ((time - first) / span) * (right - LEFT) : (LEFT + right) / 2),
     y: value => BOTTOM - ((value - min) / (max - min)) * (BOTTOM - TOP),
     min,
     max,
@@ -144,7 +145,10 @@ export function LineChart({ points, unit, decimals, label, gapMs = DEFAULT_GAP_M
             <circle className="chart-dot" cx={scale.x(highlighted.time)} cy={scale.y(highlighted.value)} r={5} />
           </>
         )}
-        {points.length > 0 && (
+        {points.length > 0 && points[0].time === points.at(-1)!.time && (
+          <text x={(LEFT + right) / 2} y={HEIGHT - 16} textAnchor="middle">{date(new Date(points[0].time).toISOString())}</text>
+        )}
+        {points.length > 0 && points[0].time !== points.at(-1)!.time && (
           <>
             <text x={LEFT} y={HEIGHT - 16}>{date(new Date(points[0].time).toISOString())}</text>
             <text x={right} y={HEIGHT - 16} textAnchor="end">{date(new Date(points.at(-1)!.time).toISOString())}</text>

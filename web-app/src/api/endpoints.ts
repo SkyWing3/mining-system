@@ -41,8 +41,7 @@ function query(values: object) {
 }
 
 export const authApi = {
-  status: (signal?: AbortSignal) => get<{ setupRequired: boolean }>('/auth/status', signal),
-  me: (signal?: AbortSignal) => get<User>('/auth/me', signal),
+  status: (signal?: AbortSignal) => get<{ setupRequired: boolean; user: User | null }>('/auth/status', signal),
   setup: (body: { name: string; email: string; password: string }) => post<User>('/auth/setup', body),
   login: (body: { email: string; password: string }) => post<User>('/auth/login', body),
   logout: () => post<void>('/auth/logout'),

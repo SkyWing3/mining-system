@@ -26,29 +26,43 @@ export function DevicesPage({ devices, edit, rotate, inspect, notify, add }: {
       </div>
       {items.length ? (
         <div className="table-scroll">
-          <table>
+          <table className="data-table wide">
             <thead>
               <tr>
-                <th>MANILLA / MINERO</th><th>ZONA</th><th>CONEXIÓN</th><th>NIVEL</th><th>TEMPERATURA</th><th>GAS</th><th>BATERÍA</th>
+                <th>MANILLA / MINERO</th><th>ESTADO</th><th>LECTURAS</th>
                 <th><span className="sr-only">Acciones</span></th>
               </tr>
             </thead>
             <tbody>
               {items.map(device => (
                 <tr key={device.id}>
-                  <td>
+                  <td className="cell-main cell-wrap" data-label="Manilla">
                     <div className="table-person">
                       <span className="table-device-icon"><Cpu size={19} /></span>
-                      <div><strong>{device.name}</strong><small>{device.minerName ?? 'Sin asignar'}</small></div>
+                      <div>
+                        <strong>{device.name}</strong>
+                        <small>{device.minerName ?? 'Sin asignar'}</small>
+                        <small className="zone-cell"><MapPin size={13} />{device.zone}</small>
+                      </div>
                     </div>
                   </td>
-                  <td><span className="zone-cell"><MapPin size={14} />{device.zone}</span></td>
-                  <td><DeviceStatus device={device} /><small className="last-seen">{date(device.lastSeenAt, true)}</small></td>
-                  <td>{device.reading ? <LevelBadge level={device.reading.level} /> : <span className="muted">—</span>}</td>
-                  <td><span className="reading-cell"><Thermometer size={15} />{temperature(device.reading?.temperatureC)}</span></td>
-                  <td><span className="reading-cell"><Wind size={15} />{gas(device.reading)}</span></td>
-                  <td><span className="reading-cell"><Battery size={16} />{percent(device.reading?.batteryPercent)}</span></td>
-                  <td>
+                  <td data-label="Estado">
+                    <div className="cell-stack">
+                      <div className="badge-row">
+                        <DeviceStatus device={device} />
+                        {device.reading && <LevelBadge level={device.reading.level} />}
+                      </div>
+                      <small className="last-seen">{date(device.lastSeenAt, true)}</small>
+                    </div>
+                  </td>
+                  <td data-label="Lecturas">
+                    <div className="reading-group">
+                      <span className="reading-cell"><Thermometer size={15} />{temperature(device.reading?.temperatureC)}</span>
+                      <span className="reading-cell"><Wind size={15} />{gas(device.reading)}</span>
+                      <span className="reading-cell"><Battery size={16} />{!device.reading ? '—' : device.reading.batteryPercent == null ? 'Sin sensor' : percent(device.reading.batteryPercent)}</span>
+                    </div>
+                  </td>
+                  <td className="cell-actions" data-label="Acciones">
                     <div className="row-actions">
                       <RowAction label="Ver lecturas" target={device.name} icon={<Eye size={17} />} run={() => inspect(device)} />
                       <RowAction label="Enviar aviso" accessibleLabel={`Enviar aviso a ${device.name}`} icon={<Megaphone size={17} />} run={() => notify(device)} disabled={!device.active} />

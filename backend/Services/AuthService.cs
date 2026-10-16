@@ -40,8 +40,10 @@ public sealed class AuthService(MiningDb db, PasswordHasher<User> hasher, Mutati
     }
 
     public async Task<User> GetAsync(string userId, CancellationToken cancellationToken) =>
-        await db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId, cancellationToken)
-        ?? throw DomainException.Unauthorized("Tu sesión ha terminado. Inicia sesión nuevamente.");
+        await FindAsync(userId, cancellationToken) ?? throw DomainException.Unauthorized("Tu sesión ha terminado. Inicia sesión nuevamente.");
+
+    public Task<User?> FindAsync(string userId, CancellationToken cancellationToken) =>
+        db.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
 
     public async Task LogoutAsync(string userId, CancellationToken cancellationToken)
     {

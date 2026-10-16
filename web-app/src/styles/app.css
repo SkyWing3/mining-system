@@ -429,7 +429,13 @@
 .sidebar nav {
   display:flex;
   flex-direction:column;
-  gap:5px
+  gap:5px;
+  min-height:0;
+  overflow-y:auto;
+  /* Room for the focus outline inside the scrolling area. */
+  margin:0 -6px;
+  padding:0 6px 6px;
+  scrollbar-color:#ffffff40 transparent
 }
 .nav-item {
   display:flex;
@@ -466,7 +472,8 @@
 }
 .sidebar-bottom {
   margin-top:auto;
-  padding-top:50px
+  padding-top:24px;
+  flex:none
 }
 .sidebar-user {
   display:flex;
@@ -881,9 +888,10 @@
   padding:0 23px 10px
 }
 .team-row {
-  display:flex;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto auto;
   align-items:center;
-  gap:11px;
+  column-gap:11px;
   width:100%;
   text-align:left;
   padding:14px 0;
@@ -900,9 +908,7 @@
   font-size:13px;
   font-weight:650;
   color:var(--ink);
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis
+  overflow-wrap:anywhere
 }
 .team-person small {
   display:block;
@@ -919,8 +925,7 @@
   white-space:nowrap
 }
 .team-row .device-status {
-  font-size:11px;
-  margin-left:5px
+  font-size:11px
 }
 .team-row:hover .team-person strong {
   color:var(--wine)
@@ -1269,6 +1274,7 @@
 .table-scroll {
   overflow-x:auto;
   max-width:100%;
+  container-type:inline-size;
   contain:inline-size layout paint
 }
 table {
@@ -1866,9 +1872,6 @@ tbody tr:hover {
     grid-template-columns:minmax(0,1.7fr) minmax(235px,1fr);
     gap:17px
   }
-  .team-reading {
-    display:none
-  }
   .panel-heading {
     padding-left:19px;
     padding-right:19px;
@@ -1955,9 +1958,6 @@ tbody tr:hover {
     grid-row:3;
     margin:0 10px;
     width:calc(100% - 20px)
-  }
-  .team-reading {
-    display:flex
   }
   .settings-grid {
     grid-template-columns:1fr
@@ -2311,9 +2311,6 @@ tbody tr:hover {
   .team-list {
     padding-left:16px;
     padding-right:16px
-  }
-  .team-reading {
-    display:none
   }
   .team-row .avatar {
     width:31px;
