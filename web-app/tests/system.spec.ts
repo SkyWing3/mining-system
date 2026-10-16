@@ -28,7 +28,57 @@ async function send(code: string, telemetry = false) {
   } finally { socket.close() }
 }
 
-// Historical rows cannot arrive through the device socket (it stamps the current time), so they are inserted directly.
+type Frame = Record<string, unknown>
+
+// A device that stays connected, like a real manilla: requests get ack/error, notices arrive at any time.
+async function connectDevice() {
+  const socket = new WebSocket('ws://127.0.0.1:5082/ws/device', { headers: { 'X-Device-Key': key } })
+  await new Promise<void>((resolve, reject) => { socket.once('open', resolve); socket.once('error', reject) })
+  const frames: Frame[] = []
+  const waiters: Array<{ match: (frame: Frame) => boolean; resolve: (frame: Frame) => void }> = []
+  socket.on('message', data => {
+    const frame = JSON.parse(data.toString()) as Frame
+    const waiter = waiters.find(item => item.match(frame))
+    if (waiter) { waiters.splice(waiters.indexOf(waiter), 1); waiter.resolve(frame) } else frames.push(frame)
+  })
+  function next(match: (frame: Frame) => boolean, timeout = 5000) {
+    const queued = frames.find(match)
+    if (queued) { frames.splice(frames.indexOf(queued), 1); return Promise.resolve(queued) }
+    return new Promise<Frame>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Sin respuesta de la central')), timeout)
+      waiters.push({ match, resolve: frame => { clearTimeout(timer); resolve(frame) } })
+    })
+  }
+  return {
+    async request(frame: Frame) {
+      const response = next(item => item.type === 'ack' || item.type === 'error')
+      socket.send(JSON.stringify(frame))
+      return response
+    },
+    notice: () => next(item => item.type === 'notice'),
+    close: () => socket.close(),
+  }
+}
+
+function wav(seconds: number, rate = 16000) {
+  const data = Buffer.alloc(seconds * rate * 2)
+  for (let index = 0; index < seconds * rate; index++) data.writeInt16LE(Math.round(8000 * Math.sin(2 * Math.PI * 440 * index / rate)), index * 2)
+  const header = Buffer.alloc(44)
+  header.write('RIFF', 0); header.writeUInt32LE(36 + data.length, 4); header.write('WAVE', 8)
+  header.write('fmt ', 12); header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20); header.writeUInt16LE(1, 22)
+  header.writeUInt32LE(rate, 24); header.writeUInt32LE(rate * 2, 28); header.writeUInt16LE(2, 32); header.writeUInt16LE(16, 34)
+  header.write('data', 36); header.writeUInt32LE(data.length, 40)
+  return Buffer.concat([header, data])
+}
+
+async function uploadVoice(request: APIRequestContext, voiceId: string) {
+  const response = await request.post('http://127.0.0.1:5082/api/device/voice', {
+    data: wav(1),
+    headers: { 'Content-Type': 'audio/wav', 'X-Device-Key': key, 'X-Client-Message-Id': voiceId, 'X-Recorded-At': new Date().toISOString() },
+  })
+  expect(response.status()).toBe(201)
+}
+
 function seed(statements: string) {
   execFileSync('python3', ['../scripts/mysql_test_db.py', 'seed', process.env.MINING_E2E_DATABASE!], { input: statements, encoding: 'utf8' })
 }
@@ -285,6 +335,113 @@ test.describe.serial('Mining System', () => {
       await expectApplicationControls(mobile)
       expect(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy()
     } finally { await context.close() }
+  })
+
+  test('live readings update in place without reloading the device list', async ({ page }) => {
+    await signIn(page)
+    const device = await connectDevice()
+    try {
+      expect((await device.request({ type: 'heartbeat' })).type).toBe('ack')
+      await page.locator('.sidebar').getByRole('button', { name: 'En vivo' }).click()
+      await expect(page.getByRole('heading', { name: 'Monitoreo en vivo' })).toBeVisible()
+      const card = page.getByRole('article', { name: 'Lecturas en vivo de Manilla 01' })
+      await expect(card).toBeVisible()
+      await page.waitForTimeout(500)
+      const reloads: string[] = []
+      page.on('request', request => { if (/\/api\/devices$/.test(new URL(request.url()).pathname)) reloads.push(request.url()) })
+      for (const [temperature, voltage] of [[30.1, 0.401], [31.2, 0.412]]) {
+        expect((await device.request({ type: 'telemetry', temperatureC: temperature, objectTemperatureC: 33.4, gasVoltage: voltage, level: 'normal', simulated: true })).type).toBe('ack')
+      }
+      await expect(card).toContainText('31.2 °C')
+      await expect(card).toContainText('0.412 V')
+      await expect(card).toContainText('CO (sin calibrar)')
+      await expect(card).toContainText('Simulado')
+      await expect(card.locator('.sparkline polyline').first()).toBeVisible()
+      expect((await device.request({ type: 'telemetry', temperatureC: 39.5, gasPpm: 250, gasVoltage: 0.5, level: 'danger' })).type).toBe('ack')
+      await expect(card.locator('.level-badge')).toHaveText('Peligro')
+      await expect(page.locator('.sidebar').getByRole('button', { name: 'En vivo' })).toContainText('1')
+      expect(reloads).toEqual([])
+      await card.getByRole('button', { name: 'Ver gráfico' }).click()
+      await expect(page.getByRole('heading', { name: 'Lecturas · Manilla 01' })).toBeVisible()
+      await expect(page.locator('.chart-label')).toContainText('39.5')
+      expect((await device.request({ type: 'telemetry', temperatureC: 36.0, gasPpm: 180, level: 'caution' })).type).toBe('ack')
+      await expect(page.locator('.chart-label')).toContainText('36.0')
+      const chart = page.getByRole('img', { name: /Historial de temperatura/ })
+      await chart.hover()
+      await expect(page.locator('.chart-tooltip')).toBeVisible()
+      await page.screenshot({ path: 'test-results/live-chart.png', fullPage: true })
+      await page.getByRole('button', { name: 'Tabla' }).click()
+      await expect(page.getByRole('cell', { name: '36.0 °C' })).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expectApplicationControls(page)
+      await page.screenshot({ path: 'test-results/live.png', fullPage: true })
+      await page.locator('.sidebar').getByRole('button', { name: 'Vista general' }).click()
+      await expect(page.locator('.team-reading')).toContainText('36.0 °C')
+    } finally { device.close() }
+  })
+
+  test('notices reach the manilla and show its confirmation live', async ({ page }) => {
+    await signIn(page)
+    await page.getByRole('button', { name: 'Manillas', exact: true }).click()
+    await page.getByRole('button', { name: 'Enviar aviso a Manilla 01' }).click()
+    const notice = page.getByRole('combobox', { name: 'Aviso' })
+    await notice.click()
+    await page.getByRole('option', { name: 'Volver a superficie' }).click()
+    await expect(page.getByRole('combobox', { name: 'Destino' })).toContainText('Manilla 01')
+    await expectApplicationControls(page)
+    await page.getByRole('button', { name: 'Enviar aviso', exact: true }).click()
+    await expect(page.getByText('Aviso enviado a la manilla.')).toBeVisible()
+    await page.locator('.sidebar').getByRole('button', { name: 'Avisos' }).click()
+    const row = page.getByRole('row').filter({ hasText: 'Volver a superficie' }).first()
+    await expect(row).toContainText('Pendiente')
+    const device = await connectDevice()
+    try {
+      expect((await device.request({ type: 'heartbeat' })).type).toBe('ack')
+      const pushed = await device.notice()
+      expect(pushed.text).toBe('Volver a superficie')
+      expect((await device.request({ type: 'notice-ack', noticeId: pushed.noticeId, stage: 'delivered' })).type).toBe('ack')
+      await expect(row).toContainText('Entregado')
+      expect((await device.request({ type: 'notice-ack', noticeId: pushed.noticeId, stage: 'read' })).type).toBe('ack')
+      await expect(row).toContainText('Leído')
+      await page.screenshot({ path: 'test-results/notices.png', fullPage: true })
+    } finally { device.close() }
+    await page.locator('.sidebar').getByRole('button', { name: 'Actividad' }).click()
+    await expect(page.getByText(/Envió el aviso "Volver a superficie"/)).toBeVisible()
+  })
+
+  test('voice messages arrive live, play and are marked as listened', async ({ page, request }) => {
+    await uploadVoice(request, `browser-voice-${Date.now()}`)
+    await signIn(page)
+    await page.locator('.sidebar').getByRole('button', { name: 'Voz' }).click()
+    await expect(page.getByRole('heading', { name: 'Mensajes de voz' })).toBeVisible()
+    await expect(page.locator('.voice-row')).toHaveCount(1)
+    await uploadVoice(request, `browser-voice-${Date.now()}-live`)
+    await expect(page.getByText(/envió un mensaje de voz/)).toBeVisible()
+    await expect(page.locator('.voice-row')).toHaveCount(2)
+    const first = page.locator('.voice-row').first()
+    await expect(first).toContainText('0:01')
+    const latest = (await (await page.request.get('/api/voice?pageSize=1')).json()).items[0]
+    const audio = await page.request.get(`/api/voice/${latest.id}/audio`)
+    expect(audio.status()).toBe(200)
+    expect(audio.headers()['content-type']).toBe('audio/wav')
+    const slider = first.getByRole('slider')
+    await expect(slider).toHaveAttribute('aria-valuemax', '1')
+    await expectApplicationControls(page)
+    await page.screenshot({ path: 'test-results/voice.png', fullPage: true })
+    await first.getByRole('button', { name: 'Marcar como escuchado' }).click()
+    await expect(page.locator('.voice-row')).toHaveCount(1)
+    await page.getByRole('button', { name: 'Todos', exact: true }).click()
+    await expect(page.getByText(/Escuchado por Administración Central/)).toBeVisible()
+  })
+
+  test('live monitor fits a phone screen', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await signIn(page)
+    await page.getByRole('button', { name: 'Abrir navegación' }).click()
+    await page.locator('.sidebar').getByRole('button', { name: 'En vivo' }).click()
+    await expect(page.getByRole('article', { name: 'Lecturas en vivo de Manilla 01' })).toBeVisible()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy()
+    await page.screenshot({ path: 'test-results/live-mobile.png', fullPage: true })
   })
 
   test('analysis page: shared filters, cross-filtering, tooltips, errors and live refresh', async ({ page, request }) => {

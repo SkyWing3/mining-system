@@ -17,6 +17,7 @@ import unittest
 import urllib.error
 import urllib.request
 import uuid
+import wave
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -97,7 +98,13 @@ class DockerStackTests(unittest.TestCase):
             response = error
         with response:
             content = response.read()
-            body = json.loads(content) if 'application/json' in response.headers.get('Content-Type', '') else content.decode()
+            content_type = response.headers.get('Content-Type', '')
+            if 'application/json' in content_type:
+                body = json.loads(content)
+            elif content_type.startswith('audio/'):
+                body = content
+            else:
+                body = content.decode()
             return response.status, response.headers, body
 
     @classmethod
@@ -183,6 +190,26 @@ class DockerStackTests(unittest.TestCase):
         status, _, messages = self.call('/api/messages?deviceId=' + self.device['id'])
         self.assertEqual(status, 200)
         self.assertEqual(messages['total'], 1)
+
+    def test_02b_voice_upload_passes_the_proxy_and_is_playable(self):
+        # 45 s of 16 kHz audio is larger than Nginx's default 1 MB body limit.
+        output = io.BytesIO()
+        with wave.open(output, 'wb') as audio:
+            audio.setnchannels(1)
+            audio.setsampwidth(2)
+            audio.setframerate(16000)
+            audio.writeframes(b'\x10\x00' * 16000 * 45)
+        recording = output.getvalue()
+        request = urllib.request.Request(self.base + '/api/device/voice', data=recording, method='POST', headers={
+            'Host': self.host, 'Content-Type': 'audio/wav', 'X-Device-Key': self.device_key,
+            'X-Client-Message-Id': uuid.uuid4().hex, 'X-Recorded-At': datetime.now(timezone.utc).isoformat(),
+        })
+        with urllib.request.build_opener(urllib.request.ProxyHandler({})).open(request, timeout=15) as response:
+            self.assertEqual(response.status, 201)
+            voice = json.loads(response.read())['voice']
+        self.assertEqual(voice['durationMs'], 45000)
+        status, headers, body = self.call(f"/api/voice/{voice['id']}/audio")
+        self.assertEqual((status, headers['Content-Type'], len(body)), (200, 'audio/wav', len(recording)))
 
     def test_03_unauthenticated_websockets_are_rejected(self):
         with self.assertRaises(InvalidStatus) as browser:

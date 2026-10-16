@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MiningSystem.Data;
-using MiningSystem.Models;
+using MiningSystem.Domain;
 using MySql.Data.MySqlClient;
 
 namespace MiningSystem.Controllers;

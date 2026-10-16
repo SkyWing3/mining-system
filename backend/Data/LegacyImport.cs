@@ -1,13 +1,13 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using MiningSystem.Models;
+using MiningSystem.Domain;
 
 namespace MiningSystem.Data;
 
 // One-time import of an offline JSON export. No legacy database provider is loaded.
 public static class LegacyImport
 {
-    private sealed record Export(User[] Users, MiningDevice[] Devices, MiningMessage[] Messages, Telemetry[] Readings, AuditEvent[] Events);
+    private sealed record Export(User[] Users, MiningDevice[] Devices, MiningMessage[] Messages, Reading[] Readings, AuditEvent[] Events);
 
     public static async Task Run(MiningDb db, string path)
     {

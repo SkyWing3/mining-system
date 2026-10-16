@@ -5,6 +5,36 @@
     "url": "ws://franco-rasp4.local/ws/device",
     "api_key": "",
     "heartbeat_seconds": 20,
-    "outbox_path": "/var/lib/mining-device/outbox"
+    "telemetry_seconds": 2,
+    "outbox_path": "/var/lib/mining-device/outbox",
+    "voice_outbox_path": "/var/lib/mining-device/voice"
+  },
+  "sensors": {
+    "i2c_port": 1,
+    "sample_seconds": 1,
+    "ads1115": {"address": "0x48"},
+    "co": {"enabled": true, "channel": 0, "samples": 4, "warmup_seconds": 180, "calibration": null},
+    "mlx90614": {"enabled": true, "address": "0x5A"}
+  },
+  "alerts": {
+    "enabled": true,
+    "led": {"red": 5, "green": 6, "blue": 13, "active_high": true},
+    "buzzer": {"pin": 24, "active_high": false},
+    "motor": {"pin": 23},
+    "button_feedback": true,
+    "silence_seconds": 60,
+    "confirm_samples": 3,
+    "thresholds": {
+      "co_ppm": {"caution": 35, "danger": 200},
+      "ambient_c": {"caution": 32, "danger": 38},
+      "object_c": {"caution": 60, "danger": 90}
+    }
+  },
+  "voice": {
+    "enabled": true,
+    "alsa_device": "plughw:CARD=sndrpigooglevoi,DEV=0",
+    "sample_rate": 16000,
+    "max_seconds": 30,
+    "max_pending": 20
   }
 }

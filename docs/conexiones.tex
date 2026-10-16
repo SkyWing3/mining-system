@@ -46,11 +46,13 @@ Fermion SEN0564 (\texttt{A/VCC/GND}), termómetro infrarrojo MLX90614 (GY-906), 
 micrófono INMP441, módulo buzzer activo, módulo LED RGB y micro motor vibrador.
 La Raspberry Pi 4 actúa como central y se comunica solo por red.
 
-\textbf{Estado del software:} actualmente funcionan el menú OLED, los tres
-botones y el envío de mensajes predeterminados por WebSocket a la central.
-Sensores, micrófono, buzzer, LED RGB y motor quedan cableados y verificables con
-las pruebas de la Sección~\ref{sec:pruebas}, pero el programa de la manilla
-todavía no los utiliza.
+\textbf{Estado del software:} el programa de la manilla utiliza todos los
+componentes: menú OLED y botones, lectura del SEN0564 (vía ADS1115) y del
+MLX90614, alertas con LED RGB, buzzer y motor, grabación de voz con el INMP441 y
+enlace WebSocket con la central para lecturas en vivo, mensajes y avisos. Las
+pruebas de la Sección~\ref{sec:pruebas} verifican cada grupo antes de iniciar el
+programa completo. La configuración de pines, polaridades, umbrales y
+calibración se describe en \texttt{docs/hardware/oled-buttons.md}.
 
 \textbf{GPIO BCM y pin físico son números distintos.} Por ejemplo, el botón
 subir se configura como \texttt{17} en Python, pero su cable va al pin físico
@@ -512,7 +514,7 @@ GPIOZERO_PIN_FACTORY=lgpio .venv/bin/python -m src.main \
 \end{lstlisting}
 
 \texttt{i2cdetect} debe mostrar \texttt{3c}. Debe aparecer el menú
-\texttt{MINING SYSTEM} con Estado, Gases, Temperatura, Mensajes y Ajustes.
+\texttt{MINING SYSTEM} con Estado, Gases, Temperatura, Mensajes, Voz y Ajustes.
 Subir/bajar cambia la selección y Enter abre la opción. Ctrl+C termina el
 proceso.
 
@@ -583,7 +585,7 @@ Sustituir \texttt{usuario} y la ruta si se usaron otros valores.\cite{systemd}
 
 \begin{lstlisting}
 [Unit]
-Description=Menu OLED de la manilla minera
+Description=Manilla minera: OLED, sensores, alertas y voz
 After=local-fs.target
 
 [Service]

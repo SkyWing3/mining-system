@@ -1,8 +1,8 @@
 # Docker en Ubuntu Server LTS
 
-La central se ejecuta en tres contenedores: `mysql` almacena los datos, `web-app` sirve React con Nginx y `backend` ejecuta ASP.NET Core. Solo Nginx publica un puerto en la Raspberry. La web, `/api`, `/hubs/mining` y `/ws/device` comparten **http://franco-rasp4.local**. No se necesitan Node.js, Python ni .NET instalados en la Raspberry para ejecutar la central.
+La central se ejecuta en tres contenedores: `mysql` almacena los datos, `web-app` sirve React con Nginx y `backend` ejecuta ASP.NET Core. Solo Nginx publica un puerto en la Raspberry. La web, `/api`, `/hubs/mining`, `/ws/device` y la subida de voz `/api/device/voice` comparten **http://franco-rasp4.local**. No se necesitan Node.js, Python ni .NET instalados en la Raspberry para ejecutar la central.
 
-Las imágenes se construyen para la arquitectura de la máquina: ARM64 en una Raspberry Pi con sistema de 64 bits, ARM64 en Apple Silicon y AMD64 en un PC x86. No hay una arquitectura x86 fijada en Compose. Los datos MySQL viven en `mining-system_mysql-data`; las claves de sesión, en `mining-system_central-data`, fuera de las imágenes. Las contraseñas se generan en `secrets/` y MySQL no publica puertos.
+Las imágenes se construyen para la arquitectura de la máquina: ARM64 en una Raspberry Pi con sistema de 64 bits, ARM64 en Apple Silicon y AMD64 en un PC x86. No hay una arquitectura x86 fijada en Compose. Los datos MySQL viven en `mining-system_mysql-data`; las claves de sesión y los mensajes de voz (`voice/`), en `mining-system_central-data`, fuera de las imágenes. Las contraseñas se generan en `secrets/` y MySQL no publica puertos.
 
 ## Arranque en franco-rasp4
 
@@ -61,7 +61,7 @@ MINING_DOCKER_SUBNET=172.30.84.0/24
 
 En ese caso, abrir `http://franco-rasp4.local:8088` y usar `ws://franco-rasp4.local:8088/ws/device`. No se fija un hostname en el JavaScript: la web conecta con el mismo origen desde el que se abre, incluso usando la IP. Compose carga `.env` automáticamente; los scripts locales de .NET no lo hacen.
 
-La API acepta encabezados de proxy únicamente desde la red Docker configurada, además de los proxies locales predeterminados de ASP.NET. Nginx conserva el host y puerto originales y permite el cambio de protocolo para ambos WebSockets. Su resolución DNS se renueva si se recrea el contenedor del backend. Los servicios tienen comprobaciones de salud, reinicio automático, límites de memoria y rotación de logs. La API y Nginx ejecutan sin root y con el sistema de archivos de imagen de solo lectura.
+La API acepta encabezados de proxy únicamente desde la red Docker configurada, además de los proxies locales predeterminados de ASP.NET. Nginx conserva el host y puerto originales, permite el cambio de protocolo para ambos WebSockets y acepta hasta 3 MB solo en `/api/device/voice`; el resto de solicitudes mantiene el límite de 1 MB. Su resolución DNS se renueva si se recrea el contenedor del backend. Los servicios tienen comprobaciones de salud, reinicio automático, límites de memoria y rotación de logs. La API y Nginx ejecutan sin root y con el sistema de archivos de imagen de solo lectura.
 
 ## Operación y actualizaciones
 
@@ -80,23 +80,23 @@ sudo docker compose logs --tail=100 -f
 sudo docker compose up -d --wait
 ```
 
-Docker se inicia con el sistema y `restart: unless-stopped` vuelve a levantar los contenedores tras reiniciar la Raspberry, siempre que no se hayan detenido explícitamente. La actualización conserva usuarios, mensajes y claves de sesión. **`docker compose down -v` elimina los datos**: no usarlo para una parada o actualización normal.
+Docker se inicia con el sistema y `restart: unless-stopped` vuelve a levantar los contenedores tras reiniciar la Raspberry, siempre que no se hayan detenido explícitamente. La actualización aplica las migraciones pendientes y conserva usuarios, mensajes, lecturas, audios y claves de sesión. **`docker compose down -v` elimina los datos**: no usarlo para una parada o actualización normal.
 
 `./start.sh --help` muestra las opciones. Si Docker requiere permisos de administrador, anteponer `sudo` también al usar `--down`.
 
 ## Respaldar e importar datos
 
 Respaldar MySQL mediante `mysqldump --single-transaction --no-tablespaces` y
-conservar aparte `central-data` (claves de sesión) y `secrets/` (credenciales).
+conservar aparte `central-data` (claves de sesión y mensajes de voz) y `secrets/` (credenciales).
 La configuración, el procedimiento de exportación y la importación transaccional
 se describen en [MySQL](mysql.md). La base anterior se conserva como respaldo;
 no copiar sus archivos al directorio de datos MySQL ni mezclarlos con su volumen.
 
-## Manilla OLED en Docker (opcional)
+## Manilla en Docker (opcional)
 
-La central funciona con `compose.yaml` solamente. `compose.device.yaml` es un despliegue independiente para la Raspberry que tiene físicamente conectados la OLED y los botones; puede ser la Pi Zero 2 W o la propia Pi 4B.
+La central funciona con `compose.yaml` solamente. `compose.device.yaml` es un despliegue independiente para la Raspberry que tiene físicamente conectados la OLED, los botones, los sensores, las salidas de alerta y el micrófono; puede ser la Pi Zero 2 W o la propia Pi 4B.
 
-En ese equipo, I²C debe estar habilitado y Avahi disponible para resolver `.local`. Verificar que existen `/dev/i2c-1`, `/dev/gpiochip0` y `/run/avahi-daemon/socket`.
+En ese equipo, I²C y el overlay I²S deben estar habilitados y Avahi disponible para resolver `.local`. Verificar que existen `/dev/i2c-1`, `/dev/gpiochip0`, `/dev/snd` y `/run/avahi-daemon/socket`.
 
 ```sh
 cp -n device/config/settings.docker.example.json device/config/settings.docker.json
@@ -106,7 +106,7 @@ sudo docker compose -f compose.device.yaml up -d --build
 sudo docker compose -f compose.device.yaml logs --tail=100 -f
 ```
 
-El JSON privado se monta en solo lectura y no entra en la imagen ni en Git. La cola se guarda en el volumen `mining-device_device-outbox`. El contenedor usa la red del host para acceder al Avahi local y solo recibe los dos dispositivos indicados; no usa `privileged`. Ejecuta como root para abrir los dispositivos GPIO/I²C, con capacidades eliminadas. Este despliegue requiere Linux y hardware físico; el simulador con ventana se sigue ejecutando fuera de Docker.
+El JSON privado se monta en solo lectura y no entra en la imagen ni en Git. Las colas de mensajes y de voz se guardan en el volumen `mining-device_device-outbox`. El contenedor usa la red del host para acceder al Avahi local, incluye `arecord` y solo recibe I²C, GPIO y audio (grupo `audio`); no usa `privileged`. Ejecuta como root para abrir los dispositivos GPIO/I²C, con capacidades eliminadas. Este despliegue requiere Linux y hardware físico; el simulador con ventana se sigue ejecutando fuera de Docker.
 
 En la Pi Zero 2 W, usar también un sistema de 64 bits y Docker disponible, conservando su propio hostname.
 
@@ -117,7 +117,7 @@ docker compose config --quiet
 docker compose -f compose.device.yaml config --quiet
 ```
 
-Las pruebas ejecutan `start.sh` desde otra carpeta, construyen y levantan una central aislada, comprueban login, rutas React/API, ambos WebSockets y persistencia tras recrear la API. Usan un proyecto/volumen temporal y no tocan el volumen de producción:
+Las pruebas ejecutan `start.sh` desde otra carpeta, construyen y levantan una central aislada, comprueban login, rutas React/API, ambos WebSockets, una subida de voz mayor de 1 MB a través de Nginx y persistencia tras recrear la API. Usan un proyecto/volumen temporal y no tocan el volumen de producción:
 
 ```sh
 # Docker funcionando y dependencias Python de las pruebas instaladas

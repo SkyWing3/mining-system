@@ -2,4 +2,5 @@ Pillow>=10,<13
 websockets>=15,<18
 luma.oled>=3.13,<4
 gpiozero>=2,<3
+smbus2>=0.5,<1
 lgpio>=0.2.2,<1; sys_platform == "linux"
