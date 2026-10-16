@@ -12,6 +12,7 @@ import tempfile
 import time
 import unittest
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 from datetime import datetime, timezone
@@ -317,6 +318,139 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(client.call('/auth/login', 'POST', {'email': user['email'], 'password': PASSWORD})[0], 200)
         self.assertEqual(self.admin.call('/users/' + user['id'], 'PUT', {**user, 'active': False})[0], 200)
         self.assertEqual(client.call('/overview')[0], 401)
+
+    def seed_history(self):
+        """Readings and messages at fixed past instants, isolated from rows that other tests create now."""
+        suffix = uuid.uuid4().hex[:8]
+        first, second = self.create_user(), self.create_user()
+        devices = []
+        for miner, zone in ((first, 'Zona A ' + suffix), (second, 'Zona B ' + suffix)):
+            status, result = self.admin.call('/devices', 'POST', {'name': 'Manilla ' + uuid.uuid4().hex[:10], 'zone': zone, 'userId': miner['id'], 'active': True})
+            self.assertEqual(status, 200, result)
+            devices.append((miner, result['device']))
+        database = '`' + self.database['name'] + '`'
+        def reading(index, at, temperature, gas, battery):
+            miner, device = devices[index]
+            values = ', '.join('NULL' if value is None else str(value) for value in (temperature, gas, battery))
+            return f"('{device['id']}', '{miner['name']}', '{device['name']}', '{device['zone']}', {values}, '{at}')"
+        rows = [
+            reading(0, '2026-01-05 10:15:00', 20, 100, 90),
+            reading(0, '2026-01-05 10:45:00', 24, None, 80),
+            reading(0, '2026-01-05 13:30:00', 30, 300, None),
+            reading(1, '2026-01-05 10:20:00', 40, 50, 70),
+            reading(1, '2026-01-06 05:00:00', 10, None, 60),
+        ]
+        run_sql(f"INSERT INTO {database}.Readings (DeviceId, MinerName, DeviceName, Zone, TemperatureC, GasPpm, BatteryPercent, ReceivedAt) VALUES {', '.join(rows)};")
+        def message(index, code, at, reviewed=False):
+            miner, device = devices[index]
+            review = f"'{at}', 'Prueba'" if reviewed else 'NULL, NULL'
+            return f"('{device['id']}', '{uuid.uuid4().hex}', '{code}', '{miner['name']}', '{device['name']}', '{device['zone']}', '{at}', '{at}', {review})"
+        messages = [
+            message(0, 'HELP', '2026-01-05 12:00:00'),
+            message(0, 'GAS', '2026-01-05 15:00:00', reviewed=True),
+            # 03:00 UTC on 6 January is still 5 January in Bolivia (UTC-4).
+            message(0, 'SUPPLIES', '2026-01-06 03:00:00'),
+            message(1, 'OK', '2026-01-06 05:00:00'),
+            message(1, 'EXIT', '2026-01-06 06:00:00'),
+        ]
+        run_sql(f"INSERT INTO {database}.Messages (DeviceId, ClientMessageId, Code, MinerName, DeviceName, Zone, SentAt, ReceivedAt, ReviewedAt, ReviewedBy) VALUES {', '.join(messages)};")
+        return devices
+
+    def analytics(self, path, client=None, **params):
+        return (client or self.admin).call('/analytics/' + path + '?' + urllib.parse.urlencode(params))
+
+    def test_analytics_requires_session(self):
+        anonymous = Api()
+        for path in ('readings', 'messages', 'options'):
+            with self.subTest(path=path):
+                self.assertEqual(self.analytics(path, anonymous)[0], 401)
+        supervisor = self.create_user('Supervisor')
+        client = Api()
+        self.assertEqual(client.call('/auth/login', 'POST', {'email': supervisor['email'], 'password': PASSWORD})[0], 200)
+        self.assertEqual(self.analytics('readings', client)[0], 200)
+        self.assertEqual(self.analytics('messages', client)[0], 200)
+
+    def test_analytics_validation(self):
+        cases = [
+            ({'from': '2026-01-05T10:00:00Z', 'to': '2026-01-05T10:00:00Z'}, 'anterior a la fecha final'),
+            ({'from': '2026-01-06T00:00:00Z', 'to': '2026-01-05T00:00:00Z'}, 'anterior a la fecha final'),
+            ({'from': '2025-01-01T00:00:00Z', 'to': '2025-04-02T00:00:01Z'}, 'no puede superar 90 días'),
+            ({'from': 'ayer', 'to': '2026-01-05T00:00:00Z'}, 'fecha inicial no es válida'),
+            ({'from': '2026-01-01T00:00:00Z', 'to': '31/01/2026'}, 'fecha final no es válida'),
+            ({'from': '2026-01-01T00:00:00Z', 'to': '2026-01-02T00:00:00Z', 'metric': 'humidity'}, 'Métrica no válida'),
+            ({'from': '2026-01-01T00:00:00Z', 'to': '2026-01-02T00:00:00Z', 'bucket': 'week'}, 'Intervalo no válido'),
+            ({'from': '2026-01-01T00:00:00Z', 'to': '2026-01-16T00:00:00Z', 'bucket': 'hour'}, 'no puede superar 14 días'),
+            ({'from': '2026-01-01T00:00:00Z', 'to': '2026-01-02T00:00:00Z', 'miner': 'x' * 101}, '100 caracteres'),
+        ]
+        for params, error in cases:
+            with self.subTest(params=params):
+                status, body = self.analytics('readings', **params)
+                self.assertEqual(status, 400, body)
+                self.assertIn(error, body['message'])
+        status, body = self.analytics('messages', **{'from': '2025-01-01T00:00:00Z', 'to': '2025-06-01T00:00:00Z'})
+        self.assertEqual((status, 'no puede superar 90 días' in body['message']), (400, True))
+        # Exactly 90 days is accepted; defaults cover the last seven days.
+        self.assertEqual(self.analytics('readings', **{'from': '2025-01-01T00:00:00Z', 'to': '2025-04-01T00:00:00Z'})[0], 200)
+        status, body = self.analytics('readings')
+        self.assertEqual((status, body['bucket'], body['metric']), (200, 'day', 'temperature'))
+
+    def test_analytics_aggregates_readings_in_mysql(self):
+        (first, device_a), (second, device_b) = self.seed_history()
+        window = {'from': '2026-01-05T10:00:00Z', 'to': '2026-01-05T14:00:00Z'}
+        status, body = self.analytics('readings', **window, metric='temperature', bucket='hour')
+        self.assertEqual(status, 200, body)
+        self.assertEqual((body['unit'], body['bucket']), ('°C', 'hour'))
+        self.assertEqual(body['summary'], {'readings': 4, 'average': 28.5, 'maximum': 40, 'minimum': 20})
+        self.assertEqual([x['start'] for x in body['series']], ['2026-01-05T10:00:00Z', '2026-01-05T11:00:00Z', '2026-01-05T12:00:00Z', '2026-01-05T13:00:00Z'])
+        self.assertEqual([(x['count'], x['average'], x['maximum']) for x in body['series']], [(3, 28, 40), (0, None, None), (0, None, None), (1, 30, 30)])
+        self.assertEqual([(x['miner'], x['count'], x['average'], x['maximum']) for x in body['miners'] if x['miner'] in (first['name'], second['name'])],
+                         sorted([(first['name'], 3, 24.67, 30), (second['name'], 1, 40, 40)]))
+
+        # The miner filter narrows summary and series; the comparison keeps every miner as a selector.
+        _, mine = self.analytics('readings', **window, metric='temperature', bucket='hour', miner=first['name'])
+        self.assertEqual(mine['summary'], {'readings': 3, 'average': 24.67, 'maximum': 30, 'minimum': 20})
+        self.assertEqual((mine['series'][0]['count'], mine['series'][0]['average']), (2, 22))
+        self.assertEqual({x['miner'] for x in mine['miners']}, {first['name'], second['name']})
+
+        # Missing values are absence, not zero: the gas average ignores the NULL reading.
+        _, gas = self.analytics('readings', **window, metric='gas', bucket='hour', miner=first['name'])
+        self.assertEqual((gas['unit'], gas['summary']['readings'], gas['summary']['average']), ('ppm', 2, 200))
+        self.assertEqual((gas['series'][0]['count'], gas['series'][0]['average']), (1, 100))
+
+        _, zone = self.analytics('readings', **window, metric='battery', zone=device_b['zone'])
+        self.assertEqual((zone['bucket'], zone['summary']['readings'], zone['summary']['average']), ('hour', 1, 70))
+        self.assertEqual([x['miner'] for x in zone['miners']], [second['name']])
+
+        # Days follow Bolivia time: 05:00 UTC on 6 January belongs to the second local day.
+        _, daily = self.analytics('readings', **{'from': '2026-01-05T04:00:00Z', 'to': '2026-01-07T04:00:00Z'}, bucket='day', zone=device_a['zone'])
+        self.assertEqual([(x['start'], x['count'], x['average']) for x in daily['series']], [('2026-01-05T04:00:00Z', 3, 24.67), ('2026-01-06T04:00:00Z', 0, None)])
+        _, daily = self.analytics('readings', **{'from': '2026-01-05T04:00:00Z', 'to': '2026-01-07T04:00:00Z'}, bucket='day', miner=second['name'])
+        self.assertEqual([(x['count'], x['maximum']) for x in daily['series']], [(1, 40), (1, 10)])
+        _, automatic = self.analytics('readings', **{'from': '2025-12-20T00:00:00Z', 'to': '2026-01-10T00:00:00Z'}, miner=second['name'])
+        self.assertEqual((automatic['bucket'], len(automatic['series']), automatic['summary']['readings']), ('day', 22, 2))
+
+        _, empty = self.analytics('readings', **{'from': '2025-06-01T00:00:00Z', 'to': '2025-06-02T00:00:00Z'})
+        self.assertEqual(empty['summary'], {'readings': 0, 'average': None, 'maximum': None, 'minimum': None})
+        self.assertEqual((len(empty['series']), empty['miners']), (24, []))
+        self.assertTrue(all(x['count'] == 0 and x['average'] is None for x in empty['series']))
+
+    def test_analytics_counts_messages_by_local_day_and_severity(self):
+        (first, device_a), (second, _) = self.seed_history()
+        window = {'from': '2026-01-05T04:00:00Z', 'to': '2026-01-07T04:00:00Z'}
+        status, body = self.analytics('messages', **window, zone=device_a['zone'])
+        self.assertEqual(status, 200, body)
+        self.assertEqual(body['summary'], {'total': 3, 'critical': 2, 'warning': 1, 'info': 0, 'pendingCritical': 1})
+        self.assertEqual(body['days'], [
+            {'day': '2026-01-05', 'start': '2026-01-05T04:00:00Z', 'critical': 2, 'warning': 1, 'info': 0},
+            {'day': '2026-01-06', 'start': '2026-01-06T04:00:00Z', 'critical': 0, 'warning': 0, 'info': 0},
+        ])
+        _, theirs = self.analytics('messages', **window, miner=second['name'])
+        self.assertEqual(theirs['summary'], {'total': 2, 'critical': 0, 'warning': 0, 'info': 2, 'pendingCritical': 0})
+        self.assertEqual([x['info'] for x in theirs['days']], [0, 2])
+        _, options = self.analytics('options')
+        self.assertTrue({first['name'], second['name']} <= set(options['miners']))
+        self.assertIn(device_a['zone'], options['zones'])
+        self.assertEqual(options['maxRangeDays'], 90)
 
     def test_zz_data_and_cookie_keys_survive_server_restart(self):
         _, before = self.admin.call('/overview')

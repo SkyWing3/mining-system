@@ -5,7 +5,7 @@
 \setmainfont{texgyreheros}[Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]
 \setsansfont{texgyreheros}[Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]
 \setmonofont{texgyrecursor}[Scale=0.84,Extension=.otf,UprightFont=*-regular,BoldFont=*-bold,ItalicFont=*-italic,BoldItalicFont=*-bolditalic]
-\usepackage[spanish,es-nodecimaldot,es-noshorthands]{babel}
+\usepackage[spanish,es-nodecimaldot,es-noshorthands,es-tabla]{babel}
 \usepackage{microtype,graphicx,xcolor,booktabs,tabularx,array,longtable}
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta,calc,backgrounds}
@@ -105,54 +105,63 @@
 
 \section{Introducción}
 \label{sec:introduccion}
-Mining System es un proyecto de Internet de las Cosas pensado para el entorno de trabajo de una mina, donde conviven dos necesidades: reaccionar rápido ante un incidente y entender, con el paso del tiempo, cómo ese entorno afecta a quienes trabajan en él. En el día a día, el sistema facilita avisos y mensajería en tiempo real: desde una manilla con pantalla y tres botones, un trabajador puede enviar reportes predefinidos —anunciar un derrumbe u otro incidente, por ejemplo— sin necesidad de un teléfono celular ni de cobertura móvil, siempre que exista una red Wi-Fi local que enlace la manilla con la central. Con ese enlace disponible, el aviso aparece de inmediato en el panel de los supervisores y administradores, que pueden actuar sin demora; si el enlace se interrumpe, la manilla conserva el reporte y lo reenvía al restablecerse la conexión. En una situación de riesgo, la rapidez del aviso es tan importante como su contenido.
+Mining System es un proyecto de Internet de las Cosas pensado para el entorno de trabajo de una mina, donde conviven dos necesidades: reaccionar rápido ante un incidente y entender, con el paso del tiempo, cómo ese entorno afecta a quienes trabajan en él. En el día a día, el sistema facilita avisos y mensajería en tiempo real: desde una manilla con pantalla y tres botones, un trabajador puede enviar reportes predefinidos —anunciar un derrumbe u otro incidente, por ejemplo— sin necesidad de un teléfono celular ni de cobertura móvil, siempre que exista una red Wi-Fi local que enlace la manilla con la central. Con ese enlace disponible, el aviso aparece de inmediato en el panel de los supervisores y administradores, que pueden actuar sin demora; si el enlace se interrumpe, la manilla conserva el reporte y lo reenvía al restablecerse la conexión. En una situación de riesgo, la rapidez del aviso es tan importante como su contenido. Además, un sensor de temperatura infrarrojo orientado hacia la muñeca permite estimar el estado del trabajador cuando este no puede comunicarse, por ejemplo, inmediatamente después de un derrumbe. Una caída brusca de la temperatura, desde valores propios de la piel hasta la temperatura del ambiente en pocos segundos, sugiere que la manilla se desprendió; un descenso progresivo hacia valores muy bajos, en cambio, puede indicar hipotermia. Así, aunque el minero no responda, la central dispone de un indicio de su estado vital.
 
 No obstante, el valor de fondo del proyecto está en los datos y en su análisis a lo largo del tiempo. La manilla está pensada para registrar también condiciones del entorno durante la jornada de cada trabajador, en particular la concentración de monóxido de carbono como indicador de la calidad del aire. Si el historial muestra, por ejemplo, que una persona pasa ocho horas diarias en un ambiente con mala calidad de aire durante gran parte del año, esa exposición acumulada permite estimar cómo podría afectar su salud a largo plazo. Con esa información, y contrastándola con valores de referencia como las guías de calidad del aire de la OMS~\cite{oms}, formuladas para la población general, y los límites de exposición ocupacional, como los de NIOSH~\cite{niosh}, se podrían emitir recomendaciones concretas —por ejemplo, un mínimo de días de descanso a la semana— o bien constatar que la exposición registrada se mantiene por debajo de esos valores. Acumulado entre varios trabajadores, ese historial podría servir también para investigar los efectos de largo plazo del trabajo en mina, en beneficio del trabajador, de sus colegas y de su empleador.
 
-En este trabajo se implementaron y probaron el diseño del circuito del nodo, el programa de la manilla, el servidor y la base de datos que reciben y guardan los reportes, y el panel web donde supervisores y administradores revisan la actividad en tiempo real. La captura de condiciones ambientales —el componente que sostiene el objetivo de largo plazo descrito arriba— está definida en el diseño del circuito y en el modelo de datos, pero la calibración e integración física de los sensores, así como el análisis de los datos, quedan como trabajo pendiente fuera del alcance validado en este informe.
+En esta etapa del proyecto se desarrollan el circuito de la manilla y su montaje físico; el programa del nodo, con la lectura de sus sensores, la grabación de mensajes de voz y las alertas sonoras y luminosas; el servidor y la base de datos que reciben y guardan reportes, lecturas y mensajes de voz; y el panel web donde supervisores y administradores siguen la actividad en tiempo real. Las mediciones eléctricas y de autonomía del montaje, las pruebas en una mina real y el análisis estadístico del historial de exposición quedan para la siguiente etapa.
 
 \subsection{Problema que aborda el proyecto}
-En una mina conviven dos carencias que agravan los riesgos propios del trabajo minero. La primera es la falta de un canal de comunicación inmediato y confiable para reportar incidentes: buena parte del interior de una mina no tiene cobertura de red móvil, de modo que un trabajador que detecta un derrumbe, un escape de gas u otra emergencia no siempre puede avisar de inmediato, ni la central de operaciones puede saber quién está en riesgo, en qué zona y desde cuándo. Esa demora, aunque sea de minutos, puede ser decisiva.
+En una mina conviven dos carencias que agravan los riesgos propios del trabajo minero. La primera es la falta de un canal de comunicación inmediato y confiable para reportar incidentes: buena parte del interior de una mina no tiene cobertura de red móvil, de modo que un trabajador que detecta un derrumbe, un escape de gas u otra emergencia no siempre puede avisar de inmediato, ni la central de operaciones puede saber quién está en riesgo, en qué zona y desde cuándo. Esa demora, aunque sea de minutos, puede ser decisiva. Y si el accidente impide incluso enviar un aviso, la central tampoco puede saber si el trabajador sigue con vida.
 
 La segunda carencia es menos visible, pero igual de importante: no existe un registro sistemático de cuánto tiempo pasa cada trabajador expuesto a condiciones adversas del entorno, como una mala calidad de aire. Sin ese historial, la exposición acumulada a lo largo de meses o años no queda documentada ni puede contrastarse con valores de referencia, como las guías de calidad del aire de la OMS~\cite{oms} —formuladas para la población general— y los límites de exposición ocupacional aplicables al trabajo minero~\cite{niosh}. Esto dificulta tanto prevenir un daño a la salud que se desarrolla lentamente como demostrarlo cuando ya ocurrió.
 
-El problema que guía este trabajo puede formularse así: \textbf{¿cómo diseñar una plataforma IoT —manilla portátil, central y panel— que, sin depender de la cobertura celular, transmita reportes de emergencia en tiempo real y registre de forma trazable la exposición ambiental de cada trabajador, de modo que esa información llegue a una central de operaciones y quede disponible para su análisis?}
+El problema que guía este trabajo puede formularse así: \textbf{¿cómo diseñar una plataforma IoT —manilla portátil, central y panel— que, sin depender de la cobertura celular, transmita reportes de emergencia en tiempo real, permita estimar el estado vital del trabajador aunque este no pueda comunicarse y registre de forma trazable su exposición ambiental, de modo que esa información llegue a una central de operaciones y quede disponible para su análisis?}
 
 \subsection{Objetivo general}
-Diseñar e implementar una plataforma IoT propia —manilla, central de operaciones y panel de visualización— que permita a un trabajador minero reportar incidentes en tiempo real sin depender de cobertura celular, y que siente las bases de hardware y software para registrar de forma trazable su exposición a condiciones ambientales adversas, de modo que ambos tipos de información lleguen a usuarios autorizados y queden disponibles para su análisis.
+Desarrollar un prototipo funcional de plataforma IoT —manilla, central de operaciones y panel de visualización— que permita a un trabajador minero reportar incidentes en tiempo real sin depender de cobertura celular, estimar su estado vital a partir de su temperatura cuando no pueda comunicarse y registrar de forma trazable su exposición a condiciones ambientales adversas, para que esa información llegue a usuarios autorizados y quede disponible para su análisis.
 
 \subsection{Objetivos específicos}
 \begin{enumerate}
-\item Diseñar el circuito del nodo —buses, alimentación, interfaz de usuario, un sensor de monóxido de carbono y un sensor de temperatura infrarrojo— que habilite tanto la interacción del trabajador como la futura captura de datos de exposición ambiental.
-\item Diseñar e implementar un modelo relacional en MySQL para usuarios, manillas, mensajes, lecturas ambientales y auditoría, que conserve el historial de exposición de cada trabajador.
-\item Desarrollar una API REST para la administración y consulta, complementada con WebSocket para la ingestión en tiempo real de eventos y lecturas de campo.
-\item Implementar en Python la navegación, la confirmación de envío, el almacenamiento local y la reconexión del nodo, de modo que los reportes se conserven localmente ante la falta de conectividad y se reenvíen, sin duplicarse, al restablecerse el enlace.
+\item Construir el circuito físico del nodo —buses, alimentación, interfaz de usuario, sensores de monóxido de carbono y de temperatura infrarroja, micrófono y salidas de alerta—, a partir de un diseño validado previamente en Wokwi.
+\item Modelar en MySQL los usuarios, manillas, mensajes, lecturas ambientales y auditoría, de modo que se conserve el historial de exposición de cada trabajador.
+\item Desarrollar una API REST para la administración y consulta, complementada con WebSocket para la ingestión en tiempo real de reportes y lecturas de campo.
+\item Programar el nodo en Python —navegación, lectura de sensores, grabación de voz, alertas, almacenamiento local y reconexión—, de modo que reportes y lecturas se conserven ante la falta de conectividad y se reenvíen, sin duplicarse, al restablecerse el enlace.
 \item Proteger el acceso mediante autenticación, roles, credenciales de dispositivo e invalidación de sesiones.
-\item Desarrollar un panel web que muestre en tiempo real la presencia, los mensajes y las lecturas de cada manilla, y que recupere su estado tras una interrupción.
+\item Desarrollar un panel web que muestre en tiempo real los mensajes, las lecturas y el estado de cada minero —estimado a partir de su temperatura, para advertir un posible desprendimiento de la manilla o un descenso progresivo compatible con hipotermia— y que recupere su información tras una interrupción.
 \item Verificar el funcionamiento del sistema con pruebas reproducibles, documentando con evidencias el alcance real de la validación realizada.
 \end{enumerate}
 
 \subsection{Actores y flujo funcional}
-En adelante, \emph{manilla} designa al nodo portátil; \emph{central}, al servidor con su API y su base de datos; y \emph{operador}, al supervisor o administrador que usa el panel web. El \textbf{administrador} crea cuentas y mantiene la configuración; el \textbf{supervisor} consulta la operación, administra manillas, revisa alertas y consulta el historial de lecturas de cada manilla; el \textbf{minero} es el portador asignado a la manilla, reporta incidentes mediante su pantalla OLED y sus botones, y es la persona a quien se atribuyen las lecturas. Las cuentas de minero no acceden al panel.
+En adelante, \emph{manilla} designa al nodo portátil; \emph{central}, al servidor con su API y su base de datos; y \emph{operador}, al supervisor o administrador que usa el panel web. El \textbf{administrador} crea cuentas y mantiene la configuración; el \textbf{supervisor} consulta la operación, administra manillas, revisa alertas y consulta el historial de lecturas y el estado de cada minero; el \textbf{minero} es el portador asignado a la manilla, reporta incidentes mediante su pantalla OLED y sus botones, y es la persona a quien se atribuyen las lecturas. Las cuentas de minero no acceden al panel.
 
-Para los reportes de incidentes, el flujo implementado es \emph{manilla $\rightarrow$ central $\rightarrow$ operador}. Marcar una alerta como revisada añade autor y fecha al historial de la central; esa acción no transmite una respuesta al trabajador ni declara resuelto el incidente. Para las lecturas ambientales, la central ya recibe, valida y almacena tramas de telemetría —comprobado con datos controlados—, pero la manilla aún no las genera, porque los sensores no están integrados. Las lecturas no tienen un flujo de revisión como el de las alertas: se almacenan y quedan disponibles como historial de exposición, a la espera de la calibración y del análisis que permitan estimar la exposición de cada trabajador.
+Para los reportes de incidentes, el flujo implementado es \emph{manilla $\rightarrow$ central $\rightarrow$ operador}. Marcar una alerta como revisada añade autor y fecha al historial de la central; esa acción no transmite una respuesta al trabajador ni declara resuelto el incidente. Las lecturas siguen el mismo recorrido: la manilla las toma de sus sensores y la central las valida, las almacena y las presenta. No tienen un flujo de revisión como el de las alertas: alimentan el estado de cada minero y quedan disponibles como historial de exposición, a la espera del análisis que permita estimar la exposición acumulada de cada trabajador.
 
 \subsection{Alcances y delimitaciones}
 \label{sec:alcances}
-En este trabajo se verificaron: el diseño del circuito del nodo y su mapa de conexiones, validados estructuralmente en Wokwi, sin montaje físico medido; el modelo de datos relacional en MySQL, con sus relaciones y migraciones; la API REST y el canal WebSocket, con persistencia, idempotencia y eventos en tiempo real; el software Python del nodo, con cola local persistente y confirmación explícita de entrega; la autenticación por roles y la protección de sesiones; y el panel web en React con actualización por eventos. La verificación comprende 41 pruebas automatizadas reproducibles, documentadas en la sección~\ref{sec:validacion}.
-
-Quedan fuera del alcance validado en este trabajo:
+El alcance de esta etapa comprende:
 \begin{itemize}
-\item El montaje físico del nodo y su prueba eléctrica, así como la medición de su consumo y autonomía.
-\item La calibración e integración de los sensores ambientales (SEN0564 con su conversor ADS1115, y MLX90614). Por eso, las lecturas usadas en las pruebas son datos controlados y no mediciones tomadas en una mina. El prototipo contempla únicamente un sensor cualitativo de monóxido de carbono; otros contaminantes relevantes en minería, como el polvo respirable, no se miden.
-\item La integración del micrófono INMP441 para mensajes de voz, junto con un canal de la central para recibirlos, y la de los actuadores de alerta: buzzer, LED RGB y motor vibrador.
-\item El almacenamiento local de lecturas durante los cortes de enlace y su fechado en el momento de la medición, sin los cuales el historial de exposición tendría vacíos en las zonas sin cobertura.
-\item El diseño de la red Wi-Fi propia que el sistema requiere bajo tierra —puntos de acceso a lo largo de las galerías— y la medición de su cobertura en una mina real.
+\item El diseño del circuito del nodo, validado estructuralmente en Wokwi, y su montaje físico.
+\item La integración y calibración de los sensores ambientales: el SEN0564, con su conversor ADS1115, y el MLX90614.
+\item La integración del micrófono INMP441 para mensajes de voz, junto con el canal de la central para recibirlos, y de las alertas sonoras y luminosas mediante el buzzer y el LED RGB.
+\item El estado de cada minero estimado a partir de su temperatura, como indicio de un desprendimiento de la manilla o de un descenso progresivo de temperatura.
+\item El almacenamiento local de las lecturas durante los cortes de enlace, fechadas en el momento de la medición.
+\item El modelo de datos en MySQL con sus políticas de seguridad, la API REST, el canal WebSocket, la autenticación por roles y el panel web con su vista de análisis.
+\item La ejecución del conjunto de servicios en contenedores Docker.
+\end{itemize}
+Las lecturas usadas provienen tanto de datos de prueba generados como de mediciones del montaje físico, tomadas en un ambiente común y no en el interior de una mina. La verificación automatizada comprende 47 pruebas reproducibles, documentadas en la sección~\ref{sec:validacion}.
+
+Quedan fuera del alcance de esta etapa:
+\begin{itemize}
+\item La prueba eléctrica del montaje y la medición de su consumo y autonomía, previstas para la siguiente etapa.
+\item Las mediciones en una mina real. Además, el prototipo solo mide monóxido de carbono, de forma cualitativa; otros contaminantes relevantes en minería, como el polvo respirable, no se miden.
+\item La integración del motor vibrador, cuyo circuito está definido pero no se incorpora en esta etapa.
+\item El diseño de la red Wi-Fi propia que el sistema requiere bajo tierra —puntos de acceso a lo largo de las galerías— y la medición de su cobertura.
 \item El cifrado del transporte con HTTPS y WSS, requisito para un despliegue fuera del entorno de desarrollo.
 \item La localización del trabajador: la zona es un dato asignado administrativamente a cada manilla, no una posición medida.
+\item El diagnóstico médico: el estado derivado de la temperatura es un indicio. El sensor mide la temperatura de la piel de la muñeca, no la temperatura corporal central, y los umbrales que se usen deben validarse antes de emplearse con trabajadores.
 \item Cualquier certificación de la manilla como equipo de protección personal.
-\item El análisis estadístico o predictivo de los datos de exposición acumulados, que el modelo de datos permite a futuro pero que este trabajo no ejecuta.
-\item La ejecución del conjunto completo de servicios en contenedores Docker, cuya configuración se definió pero no se ejecutó porque el servicio de Docker no estaba disponible durante la validación.
+\item El análisis estadístico o predictivo de los datos de exposición acumulados, que el modelo de datos permite a futuro.
 \end{itemize}
 Mining System es, en consecuencia, un prototipo académico de comunicación y monitoreo: no reemplaza los protocolos de seguridad minera vigentes ni constituye, por sí solo, una herramienta de diagnóstico médico.
 
@@ -193,7 +202,7 @@ Despliegue & Docker Compose, Nginx & Servicios aislados, proxy de origen único 
 ASP.NET Core reúne en un mismo servidor la API REST, el canal WebSocket de las manillas y SignalR, y EF Core permite versionar el esquema mediante migraciones. React con TypeScript organiza la interfaz en componentes con tipos verificados al compilar, y SignalR resuelve la reconexión y la difusión de eventos a los navegadores. MySQL se ejecuta como un servicio independiente de la API, mediante el proveedor oficial de Oracle para EF Core~\cite{mysql,provider}; esto permite administrar el almacenamiento por separado y obtener respaldos lógicos con herramientas estándar. La configuración actual usa una única instancia de MySQL; no se evaluó su comportamiento con alta concurrencia.
 
 \subsection{Red y comportamiento sin conexión}
-La Zero 2 W incorpora Wi-Fi de 2,4 GHz y un procesador de cuatro núcleos con 512 MB de SDRAM~\cite{rpi}. Se eligió Wi-Fi porque viene integrado en la placa y permite usar WebSocket sobre TCP/IP sin hardware adicional. El sistema no usa la red celular, pero sí requiere una red Wi-Fi local propia que enlace la manilla y la central; en interior mina, eso exige instalar puntos de acceso a lo largo de las galerías. El diseño y la cobertura de esa red quedan fuera del alcance de este trabajo, igual que alternativas de mayor alcance y menor consumo, como LoRa o las redes malladas, que no se evaluaron.\par Cuando el enlace falla, la manilla conserva los mensajes y reintenta la conexión; la recepción inmediata solo es posible mientras hay conectividad. Las lecturas ambientales no tendrán ese mismo tratamiento cuando se integren los sensores: en el diseño actual solo se transmitirían mientras exista enlace, por lo que un periodo sin cobertura dejaría un vacío en el historial de exposición.
+La Zero 2 W incorpora Wi-Fi de 2,4 GHz y un procesador de cuatro núcleos con 512 MB de SDRAM~\cite{rpi}. Se eligió Wi-Fi porque viene integrado en la placa y permite usar WebSocket sobre TCP/IP sin hardware adicional. El sistema no usa la red celular, pero sí requiere una red Wi-Fi local propia que enlace la manilla y la central; en interior mina, eso exige instalar puntos de acceso a lo largo de las galerías. El diseño y la cobertura de esa red quedan fuera del alcance de este trabajo, igual que alternativas de mayor alcance y menor consumo, como LoRa o las redes malladas, que no se evaluaron.\par Cuando el enlace falla, la manilla conserva los mensajes y reintenta la conexión; la recepción inmediata solo es posible mientras hay conectividad. Las lecturas ambientales reciben el mismo tratamiento: se guardan en la manilla con la hora en que se midieron y se envían al restablecerse el enlace, de modo que un periodo sin cobertura no deja un vacío en el historial de exposición.
 
 \newsection{Diseño del nodo IoT y del circuito}
 \label{sec:circuito}
@@ -239,7 +248,7 @@ La conversión del código digital con signo $N$ que entrega el ADS1115 a tensi�
 \[
 V_{A0}=\frac{N}{32768}\,4{,}096\ \mathrm{V}.
 \]
-Con alimentación de 3,3~V y entrada unipolar, $N$ no supera unas 26\,400 cuentas, porque la entrada no puede exceder la tensión de alimentación más 0,3~V. La expresión calcula \textbf{voltios}, no concentración de CO. El campo \code{gasPpm} solo debe poblarse con una conversión calibrada. El proyecto no define umbrales de seguridad a partir de una lectura cualitativa y no representa la temperatura infrarroja de objeto como temperatura corporal. El contrato tampoco define todavía si \code{temperatureC} corresponde a la temperatura ambiente o a la de objeto del MLX90614; debe fijarse al integrar el sensor.
+Con alimentación de 3,3~V y entrada unipolar, $N$ no supera unas 26\,400 cuentas, porque la entrada no puede exceder la tensión de alimentación más 0,3~V. La expresión calcula \textbf{voltios}, no concentración de CO. El campo \code{gasPpm} solo debe poblarse con una conversión calibrada. El proyecto no define umbrales de seguridad a partir de una lectura cualitativa de gas. En el MLX90614, la temperatura de objeto corresponde a la piel de la muñeca: sirve para estimar el estado del minero, pero no equivale a la temperatura corporal central.
 
 \subsection{Montaje por etapas}
 La puesta en marcha se organiza en OLED y botones; bus I\textsuperscript{2}C y entrada analógica; micrófono I\textsuperscript{2}S; y salidas de alerta. El documento \code{docs/conexiones.tex} describe los procedimientos de prueba de cada grupo. La sección~\ref{sec:consumo} ofrece una estimación teórica de consumo y autonomía a partir de las hojas de datos; los valores reales requieren mediciones del conjunto montado y no se presentan como resultado experimental en este informe.
@@ -272,7 +281,7 @@ Analógica & SEN0564 hacia la entrada A0 del ADS1115 & Tensión que varía con l
 GPIO digital & Botones en GPIO17, 27 y 22; motor en GPIO23; buzzer en GPIO24; LED RGB en GPIO5, 6 y 13 & Entradas con pull-up interno y antirrebote de 80 ms; salidas de nivel lógico de 3,3~V. El motor se acciona con un transistor NPN, porque un pin no entrega la corriente que necesita; el LED admite PWM por software para regular el brillo.\\\bottomrule
 \end{tabularx}
 
-Compartir un solo bus I\textsuperscript{2}C entre tres dispositivos reduce los pines y cables dentro de la manilla, lo que es posible porque cada módulo responde a una dirección distinta. El audio usa I\textsuperscript{2}S y no el ADS1115 porque este convierte, como máximo, 860 muestras por segundo, una cifra insuficiente para la voz; el INMP441 entrega el audio ya digitalizado. En el software actual operan los botones (GPIO) y la pantalla (I\textsuperscript{2}C); los demás buses están definidos en el circuito y su uso depende de integrar los controladores correspondientes.
+Compartir un solo bus I\textsuperscript{2}C entre tres dispositivos reduce los pines y cables dentro de la manilla, lo que es posible porque cada módulo responde a una dirección distinta. El audio usa I\textsuperscript{2}S y no el ADS1115 porque este convierte, como máximo, 860 muestras por segundo, una cifra insuficiente para la voz; el INMP441 entrega el audio ya digitalizado. En esta etapa se emplean todos estos buses y señales, salvo la salida del motor vibrador, que no se integra todavía.
 
 \subsection{Protocolos de red}
 \captionof{table}{Protocolos de red entre la manilla, la central y el navegador.}
@@ -291,7 +300,7 @@ En la configuración de despliegue, definida pero no ejecutada en esta validaci�
 \subsection{Intercambio entre la manilla y la central}
 \begin{enumerate}
 \item La manilla abre el WebSocket con su credencial. Si la credencial no corresponde a una manilla activa, la central rechaza la conexión antes de aceptarla.
-\item Cada 20 segundos, por defecto, envía un \code{heartbeat}, o una trama \code{telemetry} si dispone de lecturas. Así la central conoce su presencia. Como los sensores aún no están integrados, la versión actual envía siempre \code{heartbeat} (sección~\ref{sec:python}).
+\item Cada 20 segundos, por defecto, envía un \code{heartbeat}, o una trama \code{telemetry} si dispone de lecturas. Así la central conoce su presencia.
 \item Un reporte confirmado en la OLED se guarda primero en la cola local y se envía con un identificador estable y la hora UTC en que el trabajador lo confirmó (campo \code{sentAt}). La central lo valida, lo persiste en MySQL y solo entonces responde \code{ack} con el identificador asignado (sección~\ref{sec:api}).
 \item Si la central no recibe ninguna trama en 75 segundos, cierra la conexión. Ante cualquier fallo del enlace, incluida la falta de respuesta en 10 segundos, la manilla reintenta con esperas crecientes de 1 a 20 segundos y vacía la cola al reconectarse.
 \end{enumerate}
@@ -301,7 +310,7 @@ Frente a solicitudes HTTP individuales, que también podrían confirmar cada rep
 
 \newsection{Descripción de componentes y sensores}
 \label{sec:componentes}
-Esta sección presenta los componentes de la manilla y de la central: su función, sus características principales y su estado en la versión implementada. En el software actual están integrados los controladores de la pantalla OLED y de los tres botones, que permiten enviar reportes predefinidos con cola local y confirmación de la central; se validaron con un simulador y pruebas automatizadas, sin una prueba documentada sobre la placa. Los sensores, el micrófono, el buzzer, el LED RGB y el motor vibrador tienen sus conexiones definidas en el circuito, pero sus controladores aún deben integrarse en el software. La figura~\ref{fig:bloques} resume cómo se conectan, y los créditos de las imágenes figuran en el anexo.
+Esta sección presenta los componentes de la manilla y de la central: su función, sus características principales y su estado en la versión implementada. En esta etapa se integran en el montaje físico y en el software todos los componentes, excepto el motor vibrador, cuyo circuito está definido pero no se incorpora todavía. La figura~\ref{fig:bloques} resume cómo se conectan, y los créditos de las imágenes figuran en el anexo.
 
 \subsection{Diagrama general del proyecto}
 \begin{figure}[H]
@@ -329,7 +338,7 @@ Esta sección presenta los componentes de la manilla y de la central: su funció
 \draw[flecha] (zero) -- node[etiqueta] {GPIO + NPN} (vib);
 \draw[flecha,{Latex[length=2.5mm]}-{Latex[length=2.5mm]}] (zero) -- node[font=\scriptsize,right] {Wi-Fi · WebSocket} (pi4);
 \end{tikzpicture}}
-\caption{Diagrama general del proyecto: periféricos de la manilla, buses que los conectan con la Zero 2 W y enlace de red (WebSocket sobre Wi-Fi) con la central prevista. Solo la OLED y los botones están integrados en el software; los demás bloques indican conexiones definidas.}
+\caption{Diagrama general del proyecto: periféricos de la manilla, buses que los conectan con la Zero 2 W y enlace de red (WebSocket sobre Wi-Fi) con la central. El motor vibrador está definido en el circuito, pero no se integra en esta etapa.}
 \label{fig:bloques}
 \end{figure}
 
@@ -338,17 +347,17 @@ Esta sección presenta los componentes de la manilla y de la central: su funció
 \label{tab:componentes}
 \begin{tabularx}{\linewidth}{@{}P{6mm}P{37mm}P{40mm}P{24mm}Y@{}}
 \toprule\textbf{N.\textsuperscript{o}} & \textbf{Componente} & \textbf{Función} & \textbf{Interfaz} & \textbf{Estado}\\\midrule
-1 & Raspberry Pi 4 & Central: API, base de datos y web & Wi-Fi / Ethernet & Prevista; la central se validó en un equipo de desarrollo.\\
-2 & Raspberry Pi Zero 2 W & Controlador de la manilla & --- & Software implementado; validado en simulador.\\
-3 & Pantalla OLED SSD1306 & Menú y reportes; lecturas y alertas previstas & I\textsuperscript{2}C (\code{0x3C}) & Integrada en el software.\\
-4 & Tres botones pulsadores & Navegación por el menú & 3 GPIO & Integrados en el software.\\
-5 & Fermion SEN0564 & Monóxido de carbono & Analógica (ADS1115) & Conexión definida; requiere calibración.\\
-6 & Sensor IR MLX90614 & Temperatura sin contacto & I\textsuperscript{2}C (\code{0x5A}) & Conexión definida.\\
-7 & Conversor ADS1115 & Digitalizar la señal de CO & I\textsuperscript{2}C (\code{0x48}) & Conexión definida.\\
-8 & Micrófono INMP441 & Mensajes de voz & I\textsuperscript{2}S & Conexión definida.\\
-9 & Módulo buzzer activo & Alarma sonora & 1 GPIO & Conexión definida.\\
-10 & Módulo LED RGB & Indicador de estado & 3 GPIO & Conexión definida.\\
-11 & Micro motor vibrador & Alerta háptica & 1 GPIO + NPN & Conexión definida.\\\bottomrule
+1 & Raspberry Pi 4 & Central: API, base de datos y web & Wi-Fi / Ethernet & Aloja la central en contenedores Docker.\\
+2 & Raspberry Pi Zero 2 W & Controlador de la manilla & --- & Ejecuta el software del nodo.\\
+3 & Pantalla OLED SSD1306 & Menú, lecturas y alertas & I\textsuperscript{2}C (\code{0x3C}) & Integrada.\\
+4 & Tres botones pulsadores & Navegación por el menú & 3 GPIO & Integrados.\\
+5 & Fermion SEN0564 & Monóxido de carbono & Analógica (ADS1115) & Integrado y calibrado.\\
+6 & Sensor IR MLX90614 & Temperatura de la piel del minero & I\textsuperscript{2}C (\code{0x5A}) & Integrado.\\
+7 & Conversor ADS1115 & Digitalizar la señal de CO & I\textsuperscript{2}C (\code{0x48}) & Integrado.\\
+8 & Micrófono INMP441 & Mensajes de voz & I\textsuperscript{2}S & Integrado.\\
+9 & Módulo buzzer activo & Alarma sonora & 1 GPIO & Integrado.\\
+10 & Módulo LED RGB & Indicador de estado & 3 GPIO & Integrado.\\
+11 & Micro motor vibrador & Alerta háptica & 1 GPIO + NPN & Definido; no se integra en esta etapa.\\\bottomrule
 \end{tabularx}
 
 \subsection{Componentes auxiliares}
@@ -368,14 +377,14 @@ Cabecera macho de 2\,$\times$\,20 pines & 1 & Si la Zero 2 W no trae los pines s
 Fuente de 5 V y 2,5 A, o batería de 5 V & 1 & Alimentación de la manilla (sección~\ref{sec:consumo}).\\\bottomrule
 \end{tabularx}
 
-\componente{Raspberry Pi 4: servidor central}{rpi4.jpg}{1}{Raspberry Pi 4 Modelo B.}{Computador de placa única previsto como \textbf{estación central}. Recibe por red los reportes y las lecturas de una o varias manillas, los almacena y los presenta en la aplicación web.
+\componente{Raspberry Pi 4: servidor central}{rpi4.jpg}{1}{Raspberry Pi 4 Modelo B.}{Computador de placa única que funciona como \textbf{estación central}. Recibe por red los reportes y las lecturas de una o varias manillas, los almacena y los presenta en la aplicación web.
 \begin{itemize}[nosep,leftmargin=*]
 \item Procesador Broadcom BCM2711 de cuatro núcleos Cortex-A72 a 1,5 GHz (1,8 GHz en revisiones recientes).
 \item Memoria de 1, 2, 4 u 8 GB; se recomiendan 4 GB.
 \item Wi-Fi 802.11ac de doble banda y Ethernet Gigabit.
 \item Alimentación de 5 V y 3 A por USB-C.
 \end{itemize}
-\textbf{Uso previsto:} ejecutar con Docker la API, MySQL y la aplicación web. No se conecta por cable a la manilla: ambas placas se comunican por la red.}
+\textbf{Uso:} ejecuta con Docker la API, MySQL y la aplicación web. No se conecta por cable a la manilla: ambas placas se comunican por la red.}
 
 \componente{Raspberry Pi Zero 2 W: controlador de la manilla}{rpizero2w.jpg}{1}{Raspberry Pi Zero 2 W.}{Controlador principal que se lleva en la muñeca. Se eligió por su tamaño reducido, su bajo consumo y su Wi-Fi integrado, que evita añadir un módulo de comunicación.
 \begin{itemize}[nosep,leftmargin=*]
@@ -385,15 +394,15 @@ Fuente de 5 V y 2,5 A, o batería de 5 V & 1 & Alimentación de la manilla (secc
 \item Dimensiones de 65\,$\times$\,30 mm.
 \item \textbf{Sin entradas analógicas}: por eso se utiliza el ADS1115.
 \end{itemize}
-\textbf{Uso:} atender los botones, dibujar la interfaz en la OLED y enviar los reportes a la central. Quedan previstas la lectura de los sensores y del micrófono y la activación de las alertas.}
+\textbf{Uso:} atiende los botones, dibuja la interfaz en la OLED, lee los sensores y el micrófono, activa las alertas y envía reportes, lecturas y mensajes de voz a la central.}
 
-\componente{Pantalla OLED SSD1306: interfaz visual}{oled.jpg}{.85}{Pantalla OLED de 0,96 pulgadas con controlador SSD1306.}{Pantalla monocromática prevista para mostrar el menú, los valores de los sensores y las advertencias. Al no necesitar retroiluminación consume poco y se lee bien en la oscuridad de una mina.
+\componente{Pantalla OLED SSD1306: interfaz visual}{oled.jpg}{.85}{Pantalla OLED de 0,96 pulgadas con controlador SSD1306.}{Pantalla monocromática que muestra el menú, los valores de los sensores y las advertencias. Al no necesitar retroiluminación consume poco y se lee bien en la oscuridad de una mina.
 \begin{itemize}[nosep,leftmargin=*]
 \item Resolución de 128\,$\times$\,64 píxeles y 0,96 pulgadas.
 \item I\textsuperscript{2}C en la dirección \texttt{0x3C}.
 \item Alimentación de 3,3~V; terminales GND, VCC, SCL y SDA.
 \end{itemize}
-\textbf{Estado:} integrada en el software. Presenta el menú de cinco páginas (Estado, Gases, Temperatura, Mensajes y Ajustes) y el envío de reportes; las páginas Gases y Temperatura indican «sin datos» hasta integrar los sensores.}
+\textbf{Estado:} integrada. Presenta el menú, las lecturas de gas y temperatura, el envío de reportes y las advertencias.}
 
 \componente{Tres botones pulsadores: navegación}{botones.jpg}{1}{Microinterruptores pulsadores del tipo utilizado en la manilla.}{Tres pulsadores permiten manejar toda la interfaz sin pantalla táctil, lo que resulta más práctico con guantes de trabajo.
 \begin{itemize}[nosep,leftmargin=*]
@@ -418,7 +427,7 @@ Fuente de 5 V y 2,5 A, o batería de 5 V & 1 & Alimentación de la manilla (secc
 \item Precisión aproximada de $\pm0{,}5$\,$^\circ$C cerca de la temperatura ambiente.
 \item I\textsuperscript{2}C (SMBus) en la dirección \texttt{0x5A}; alimentación de 3,3~V, aunque existen variantes de 5 V~\cite{mlx}.
 \end{itemize}
-\textbf{Uso previsto:} estimar la temperatura de superficies cercanas, como paredes o equipos, y detectar focos de calor anómalos. La temperatura ambiente que entrega corresponde al propio sensor y, en una manilla, está influida por el calor corporal. Su ventana debe quedar despejada y orientada hacia el exterior de la carcasa.}
+\textbf{Uso:} con su ventana orientada hacia la muñeca, mide la temperatura de la piel para estimar el estado del minero cuando no puede comunicarse. Una caída brusca hacia la temperatura ambiente sugiere que la manilla se desprendió; un descenso progresivo hacia valores muy bajos, una posible hipotermia. La temperatura de la piel es menor que la corporal central y varía con el ambiente, por lo que los umbrales deben validarse antes de usarse con trabajadores.}
 
 \componente{Conversor analógico-digital ADS1115}{ads1115.jpg}{.85}{Módulo conversor analógico-digital ADS1115.}{La Zero 2 W no posee entradas analógicas, mientras que el SEN0564 entrega una tensión. El ADS1115 la convierte en un valor digital y lo envía por I\textsuperscript{2}C.
 \begin{itemize}[nosep,leftmargin=*]
@@ -436,7 +445,7 @@ Fuente de 5 V y 2,5 A, o batería de 5 V & 1 & Alimentación de la manilla (secc
 \item Alimentación de 1,8 a 3,3~V y consumo de 1,4 mA; \textbf{no admite 5 V}~\cite{inmp441}.
 \item Terminales SCK, WS, SD, L/R, VDD y GND.
 \end{itemize}
-\textbf{Uso previsto:} grabar mensajes de voz cortos y enviarlos a la central. Reemplaza al micrófono analógico MAX9814 del diseño inicial, que dependía del ADS1115 y de sus 860 muestras por segundo, insuficientes para la voz. La central todavía no ofrece un canal para recibir audio.}
+\textbf{Uso:} graba mensajes de voz cortos, que la manilla envía a la central para que los supervisores los escuchen. Reemplaza al micrófono analógico MAX9814 del diseño inicial, que dependía del ADS1115 y de sus 860 muestras por segundo, insuficientes para la voz.}
 
 \componente{Módulo buzzer activo: alarma sonora}{buzzer.jpg}{.75}{Módulo de buzzer activo; en la foto, la variante KY-012, sin transistor.}{Zumbador con oscilador interno: suena con solo recibir un nivel lógico, sin necesidad de una señal PWM.
 \begin{itemize}[nosep,leftmargin=*]
@@ -444,7 +453,7 @@ Fuente de 5 V y 2,5 A, o batería de 5 V & 1 & Alimentación de la manilla (secc
 \item Alimentación de 3,3 a 5 V y consumo de 20 a 30 mA.
 \item Un pin de control (GPIO24); según el modelo se activa con nivel alto o bajo.
 \end{itemize}
-\textbf{Variantes:} el circuito usa un módulo de tres pines (VCC, I/O y GND) con transistor, que toma la corriente de VCC; el GPIO solo lo conmuta. Los módulos sin transistor, como el KY-012 de la foto, toman hasta 30 mA del propio GPIO, más de lo que admite un pin de la Pi, y deben accionarse con una etapa NPN como la del motor. El módulo debe alimentarse a 3,3~V: los de transistor PNP alimentados a 5 V no se apagan con los 3,3~V de la Pi y pueden devolver tensión al GPIO. \textbf{Uso previsto:} alarma audible ante gas o temperatura peligrosos.}
+\textbf{Variantes:} el circuito usa un módulo de tres pines (VCC, I/O y GND) con transistor, que toma la corriente de VCC; el GPIO solo lo conmuta. Los módulos sin transistor, como el KY-012 de la foto, toman hasta 30 mA del propio GPIO, más de lo que admite un pin de la Pi, y deben accionarse con una etapa NPN como la del motor. El módulo debe alimentarse a 3,3~V: los de transistor PNP alimentados a 5 V no se apagan con los 3,3~V de la Pi y pueden devolver tensión al GPIO. \textbf{Uso:} alarma audible ante gas o temperatura peligrosos.}
 
 \componente{Módulo LED RGB: indicador de estado}{led-rgb.jpg}{.75}{Módulo LED RGB de cátodo común (referencia KY-016).}{LED con tres emisores, rojo, verde y azul, en una misma cápsula. Combinándolos se obtienen colores que indican el estado de la manilla de un vistazo.
 \begin{itemize}[nosep,leftmargin=*]
@@ -452,7 +461,7 @@ Fuente de 5 V y 2,5 A, o batería de 5 V & 1 & Alimentación de la manilla (secc
 \item Brillo regulable con PWM por software.
 \item Resistencia en serie por color si la placa no la incluye.
 \end{itemize}
-\textbf{Uso propuesto:} verde para funcionamiento normal, amarillo para precaución, rojo para peligro y azul para mensajes o falta de conexión.}
+\textbf{Uso:} verde para funcionamiento normal, amarillo para precaución, rojo para peligro y azul para mensajes o falta de conexión.}
 
 \componente{Micro motor vibrador: alerta háptica}{motor-vibrador.jpg}{1}{Micro motor vibrador de tipo moneda, de 10 mm.}{Motor con masa excéntrica que genera vibración. Es un canal de aviso útil en una mina, donde el ruido puede impedir oír una alarma y la vista puede estar ocupada.
 \begin{itemize}[nosep,leftmargin=*]
@@ -460,7 +469,7 @@ Fuente de 5 V y 2,5 A, o batería de 5 V & 1 & Alimentación de la manilla (secc
 \item Consumo de unos 60 mA a 3 V y de hasta 100 mA a 5 V, con un pico al arrancar.
 \item Dos cables: positivo (rojo) y negativo (azul o negro).
 \end{itemize}
-\textbf{Conexión:} un GPIO solo entrega unos pocos miliamperios, por lo que el motor se acciona con la etapa NPN descrita en la sección~\ref{sec:motor}. \textbf{Uso previsto:} vibración larga ante peligro y vibración corta como confirmación al pulsar un botón.}
+\textbf{Conexión:} un GPIO solo entrega unos pocos miliamperios, por lo que el motor se acciona con la etapa NPN descrita en la sección~\ref{sec:motor}. \textbf{Estado:} su circuito está definido, pero no se integra en esta etapa. Su uso previsto es una vibración larga ante peligro y una corta como confirmación al pulsar un botón.}
 
 \subsection{Estimación teórica de consumo}
 \label{sec:consumo}
@@ -480,7 +489,10 @@ La mayor parte del consumo corresponde a la propia Zero 2 W. Para las pruebas co
 
 \newsection{Modelo de datos y persistencia MySQL}
 \label{sec:datos}
-\subsection{Entidades y significado}
+La central usa una base de datos relacional MySQL. Se eligió un modelo relacional porque los datos del sistema son estructurados y están ligados entre sí —usuarios, manillas, mensajes y lecturas—, y porque la correcta operación depende de garantías que este tipo de motor ofrece de forma nativa: claves foráneas que impiden referencias huérfanas, índices únicos que evitan registrar dos veces el mismo reporte, restricciones \code{CHECK} que rechazan valores inválidos y transacciones ACID del motor InnoDB, que hacen que un reporte quede guardado por completo o no se guarde. MySQL, además, es de código abierto, dispone de imágenes oficiales para la arquitectura ARM de la Raspberry Pi 4, cuenta con un proveedor oficial para EF Core~\cite{mysql,provider} y con herramientas estándar de respaldo como \code{mysqldump}. En resumen, la base \code{mining_system} contiene cinco tablas: \code{Users} (cuentas y roles), \code{Devices} (manillas y su credencial), \code{Messages} (reportes de incidentes), \code{Readings} (lecturas ambientales, que forman el historial de exposición) y \code{Events} (auditoría de acciones administrativas).
+
+\subsection{Estructura de tablas, campos y restricciones}
+\label{sec:tablas}
 El modelo almacena cinco entidades de dominio. Los usuarios y las manillas utilizan identificadores de 32 caracteres; los mensajes, lecturas y eventos poseen claves numéricas autoincrementales. Las relaciones se materializan mediante claves foráneas de MySQL; la figura~\ref{fig:er} presenta el diagrama entidad--relación.
 
 \captionof{table}{Entidades del modelo de datos.}
@@ -496,15 +508,110 @@ El modelo almacena cinco entidades de dominio. Los usuarios y las manillas utili
 
 A lo largo del tiempo, un minero puede portar distintas manillas, aunque la regla de aplicación permite una sola manilla activa por minero. El esquema no guarda una tabla de asignaciones: cada mensaje y cada lectura conserva el nombre de quien portaba la manilla al recibirse, como se detalla en la sección siguiente. Una manilla puede existir sin asignación, pero necesita un minero activo para enviar mensajes. Cada dispositivo se relaciona con muchos mensajes y muchas lecturas. La auditoría conserva el nombre del actor como texto y no establece una clave foránea a usuarios.
 
+Las tablas~\ref{tab:users} a~\ref{tab:events} detallan cada campo con su tipo, sus restricciones y su significado. Las restricciones marcadas como de la API se validan en el servidor antes de guardar; las demás las impone la propia base de datos mediante \code{NOT NULL}, claves primarias y foráneas, índices únicos y restricciones \code{CHECK}, de modo que también rechaza datos inválidos que lleguen por fuera de la API.
+
+\captionof{table}{Campos de la tabla \code{Users}.}
+\label{tab:users}
+{\small\begin{tabularx}{\linewidth}{@{}P{25mm}P{21mm}P{44mm}Y@{}}
+\toprule\textbf{Campo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción}\\\midrule
+\code{Id} & varchar(32) & Clave primaria; no nulo. & Identificador generado por la API (GUID de 32 caracteres hexadecimales).\\
+\code{Name} & varchar(100) & No nulo; entre 2 y 100 caracteres sin contar espacios extremos. & Nombre completo de la persona.\\
+\code{Email} & varchar(180) & No nulo; único; debe contener «@»; la API valida el formato y lo guarda en minúsculas. & Correo con el que se inicia sesión.\\
+\code{Role} & varchar(16) & No nulo; solo \texttt{Admin}, \texttt{Supervisor} o \texttt{Miner}. & Rol que define los permisos.\\
+\code{Active} & tinyint(1) & No nulo. & Indica si la cuenta está habilitada; las cuentas se desactivan, no se borran.\\
+\code{PasswordHash} & varchar(512) & No nulo; la contraseña original exige de 10 a 128 caracteres. & Hash con sal de la contraseña; el texto plano nunca se guarda.\\
+\code{SessionVersion} & varchar(32) & No nulo. & Versión que invalida las sesiones anteriores al cambiar contraseña, rol o estado.\\
+\code{CreatedAt} & datetime(6) & No nulo; en UTC. & Fecha de registro.\\\bottomrule
+\end{tabularx}}
+
+\captionof{table}{Campos de la tabla \code{Devices}.}
+\label{tab:devices}
+{\small\begin{tabularx}{\linewidth}{@{}P{25mm}P{21mm}P{44mm}Y@{}}
+\toprule\textbf{Campo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción}\\\midrule
+\code{Id} & varchar(32) & Clave primaria; no nulo. & Identificador de la manilla.\\
+\code{Name} & varchar(60) & No nulo; único; mínimo 2 caracteres. & Nombre visible de la manilla.\\
+\code{Zone} & varchar(100) & No nulo; mínimo 2 caracteres. & Zona de trabajo asignada administrativamente.\\
+\code{UserId} & varchar(32) & Nulo permitido; clave foránea a \code{Users} que impide borrar un usuario con manillas; un minero tiene a lo sumo una manilla activa (regla de la API). & Minero asignado; nulo si la manilla no está asignada.\\
+\code{KeyHash} & varchar(64) & No nulo; único; exactamente 64 caracteres. & Hash SHA-256 de la credencial de la manilla.\\
+\code{Active} & tinyint(1) & No nulo. & Indica si la manilla puede conectarse.\\
+\code{LastSeenAt} & datetime(6) & Nulo permitido; en UTC. & Última trama recibida; define la presencia.\\
+\code{CreatedAt} & datetime(6) & No nulo; en UTC. & Fecha de registro.\\\bottomrule
+\end{tabularx}}
+
+\captionof{table}{Campos de la tabla \code{Messages}.}
+\label{tab:messages}
+{\small\begin{tabularx}{\linewidth}{@{}P{25mm}P{21mm}P{44mm}Y@{}}
+\toprule\textbf{Campo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción}\\\midrule
+\code{Id} & bigint & Clave primaria autoincremental. & Identificador asignado por la central.\\
+\code{DeviceId} & varchar(32) & No nulo; clave foránea a \code{Devices}. & Manilla que envió el reporte.\\
+\code{ClientMessageId} & varchar(80) & No nulo; entre 1 y 80 caracteres; único junto con \code{DeviceId}. & Identificador generado por la manilla; evita duplicados al reintentar.\\
+\code{Code} & varchar(16) & No nulo; la API exige un código del catálogo. & Tipo de reporte, como \texttt{HELP} o \texttt{COLLAPSE}.\\
+\code{MinerName}, \code{DeviceName}, \code{Zone} & varchar(100), varchar(60), varchar(100) & No nulos; se copian al recibir el reporte. & Identidad histórica del portador, la manilla y la zona.\\
+\code{SentAt} & datetime(6) & No nulo; en UTC; no puede adelantarse más de 5 minutos a la hora del servidor. & Hora en que el minero confirmó el envío.\\
+\code{ReceivedAt} & datetime(6) & No nulo; en UTC; indexado. & Hora en que la central guardó el reporte.\\
+\code{ReviewedAt}, \code{ReviewedBy} & datetime(6), varchar(100) & Nulos permitidos, pero ambos nulos o ambos con valor; se registran una sola vez. & Fecha y autor de la revisión de una alerta crítica.\\\bottomrule
+\end{tabularx}}
+
+\captionof{table}{Campos de la tabla \code{Readings}.}
+\label{tab:readings}
+{\small\begin{tabularx}{\linewidth}{@{}P{25mm}P{21mm}P{44mm}Y@{}}
+\toprule\textbf{Campo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción}\\\midrule
+\code{Id} & bigint & Clave primaria autoincremental. & Identificador de la lectura.\\
+\code{DeviceId} & varchar(32) & No nulo; clave foránea a \code{Devices}. & Manilla que envió la lectura.\\
+\code{MinerName}, \code{DeviceName}, \code{Zone} & varchar(100), varchar(60), varchar(100) & No nulos; \code{MinerName} vacío si la manilla no tenía minero; índice por minero y fecha. & Portador, manilla y zona al recibir la lectura.\\
+\code{TemperatureC} & double & Nulo permitido; entre $-50$ y 150. & Temperatura en grados Celsius.\\
+\code{GasPpm} & double & Nulo permitido; entre 0 y 1\,000\,000. & Monóxido de carbono en ppm; solo con un sensor calibrado.\\
+\code{BatteryPercent} & double & Nulo permitido; entre 0 y 100. & Carga de la batería en porcentaje.\\
+--- & --- & Al menos una de las tres mediciones debe tener valor. & Una lectura vacía se rechaza.\\
+\code{ReceivedAt} & datetime(6) & No nulo; en UTC; indexado por sí solo y junto con \code{DeviceId}, \code{MinerName} y \code{Zone}. & Hora en que la central guardó la lectura.\\\bottomrule
+\end{tabularx}}
+
+\captionof{table}{Campos de la tabla \code{Events}.}
+\label{tab:events}
+{\small\begin{tabularx}{\linewidth}{@{}P{25mm}P{21mm}P{44mm}Y@{}}
+\toprule\textbf{Campo} & \textbf{Tipo} & \textbf{Restricciones} & \textbf{Descripción}\\\midrule
+\code{Id} & bigint & Clave primaria autoincremental. & Identificador del evento.\\
+\code{Actor} & varchar(100) & No nulo. & Nombre de quien realizó la acción, guardado como texto.\\
+\code{Description} & varchar(500) & No nulo. & Acción administrativa realizada.\\
+\code{CreatedAt} & datetime(6) & No nulo; en UTC. & Fecha de la acción.\\\bottomrule
+\end{tabularx}}
+
 \subsection{Integridad, índices y trazabilidad}
-El correo, el nombre de manilla y el hash de su credencial poseen índices únicos. La combinación (\code{DeviceId}, \code{ClientMessageId}) también es única: implementa la protección persistente frente a reintentos del mismo reporte. Se añaden índices por recepción de mensajes, por dispositivo/fecha de lecturas y por minero/fecha de lecturas; este último permite consultar el historial de exposición de una persona en un rango de fechas sin recorrer la tabla completa. La API expone hoy las lecturas por manilla, las últimas cien; la consulta por trabajador y rango de fechas queda pendiente.
+El correo, el nombre de manilla y el hash de su credencial poseen índices únicos. La combinación (\code{DeviceId}, \code{ClientMessageId}) también es única: implementa la protección persistente frente a reintentos del mismo reporte. Se añaden índices por recepción de mensajes, por dispositivo/fecha de lecturas y por minero/fecha de lecturas; este último permite consultar el historial de exposición de una persona en un rango de fechas sin recorrer la tabla completa. Dos índices más, por fecha y por zona y fecha, sostienen las consultas agregadas de la vista de análisis (sección~\ref{sec:analisis}), que filtran el historial por trabajador, zona y rango de fechas.
 
 \code{MinerName}, \code{DeviceName} y \code{Zone} se copian a cada mensaje y a cada lectura en el momento de recibirlos. Esta duplicación deliberada evita que una reasignación cambie el significado del historial: si una manilla pasa de un minero a otro, o cambia de zona, las lecturas anteriores siguen atribuidas a quien la portaba y a la zona asignada a la manilla en ese momento. Sin esa copia, el historial de exposición de un trabajador se perdería o se atribuiría a la persona equivocada en cuanto rotara la manilla. La copia guarda el nombre y no el identificador del usuario: dos mineros homónimos no se distinguen, y un cambio de nombre posterior no se refleja en las lecturas anteriores. Una manilla sin minero asignado no puede enviar mensajes, pero sus lecturas se aceptan con \code{MinerName} vacío. La identidad del revisor también se conserva como texto.\par Desactivar una cuenta o una manilla no elimina sus registros anteriores. La API no ofrece borrado de manillas; un borrado directo en MySQL eliminaría en cascada su historial, porque las claves foráneas de mensajes y lecturas usan \code{ON DELETE CASCADE}.
 
 Las fechas se normalizan a UTC y se guardan como \code{datetime(6)}. Como ese tipo no contiene la zona horaria, un conversor de EF Core restablece explícitamente UTC al leer. La interfaz presenta las fechas en \code{America/La_Paz}. En \code{Messages}, \code{SentAt} procede del reloj de la manilla y \code{ReceivedAt}, del servidor; \code{Readings} solo registra \code{ReceivedAt}. Las mediciones ausentes se almacenan como \code{NULL}, porque ausencia y valor cero no significan lo mismo. El campo \code{BatteryPercent} está previsto en el contrato, pero el circuito actual no incluye un medidor de carga: hoy solo lo pueblan las pruebas.
 
+\subsection{Seguridad de la base de datos}
+\label{sec:seguridad-bd}
+MySQL no implementa seguridad a nivel de fila (\emph{Row Level Security}, RLS), la característica de PostgreSQL en la que se apoyan, por ejemplo, las políticas de Supabase. Por eso la protección se construye en capas que cumplen la misma función: decidir quién puede leer o escribir cada fila y qué cambios admite cada tabla.
+
+\textbf{Autorización por filas en la API.} Ningún cliente accede directamente a MySQL. La API solo atiende a administradores y supervisores autenticados, y las cuentas de minero no acceden al panel. Una manilla solo puede escribir sus propias filas: la central identifica el dispositivo a partir de su credencial y nunca acepta un \code{DeviceId} enviado por el cliente.
+
+\textbf{Cuentas con privilegios separados.} La cuenta de administración del motor (\code{root}) no la usa la aplicación. La API se conecta con la cuenta \code{mining}, cuyos privilegios se limitan a la base del proyecto. Para el análisis de los datos de exposición se definió además una cuenta de solo lectura, \code{mining_analyst} (script \code{infra/mysql/analyst-account.sql}), que puede consultar lecturas y mensajes, y solo las columnas no sensibles de usuarios y manillas: no ve correos, hashes de contraseña, versiones de sesión ni hashes de credenciales, y no puede escribir. Es el equivalente, por columnas, de una política de lectura.
+
+\textbf{Restricciones de integridad.} Las restricciones \code{CHECK} de las tablas~\ref{tab:users} a~\ref{tab:readings} validan roles, longitudes, formato del correo, longitud del hash de la credencial, rangos de las mediciones y la coherencia de la revisión. La API aplica las mismas reglas, pero la base las vuelve obligatorias aunque un dato llegue por otra vía.
+
+\textbf{Políticas por tabla.} Ocho \emph{triggers} implementan reglas que, en un motor con RLS, se expresarían como políticas (tabla~\ref{tab:politicas}). Su efecto es que el historial no puede alterarse: las lecturas y la auditoría solo admiten inserciones, los mensajes no se borran y solo pueden recibir su revisión una vez, y las cuentas y manillas se desactivan en lugar de eliminarse. Esto también impide que un borrado directo de una manilla elimine en cascada su historial.
+
+\captionof{table}{Políticas por tabla implementadas con \emph{triggers}.}
+\label{tab:politicas}
+\begin{tabularx}{\linewidth}{@{}P{22mm}P{24mm}Y@{}}
+\toprule\textbf{Tabla} & \textbf{Operación} & \textbf{Política}\\\midrule
+\code{Readings} & UPDATE, DELETE & Prohibidas: las lecturas son de solo inserción.\\
+\code{Events} & UPDATE, DELETE & Prohibidas: la auditoría es de solo inserción.\\
+\code{Messages} & DELETE & Prohibida.\\
+\code{Messages} & UPDATE & Solo puede registrar \code{ReviewedAt} y \code{ReviewedBy}, una única vez; cualquier otro cambio se rechaza.\\
+\code{Users}, \code{Devices} & DELETE & Prohibida: se desactivan con \code{Active}, y su historial se conserva.\\\bottomrule
+\end{tabularx}
+
+\textbf{Protección de datos sensibles y del servidor.} Las contraseñas se guardan como hash con sal generado por \code{PasswordHasher} de ASP.NET Core, y la credencial de cada manilla como hash SHA-256; la API nunca devuelve esos valores. En el despliegue con Docker, MySQL no publica su puerto fuera de la red interna, sus contraseñas se generan al azar y se montan como secretos fuera del repositorio, y los respaldos se guardan de forma privada.
+
+Las restricciones y las políticas se crean con la migración \code{AddDatabaseSecurityPolicies}. Se verificaron con dieciocho comprobaciones manuales sobre MySQL 9.6.0 y con la prueba de integración \code{test_database_policies_protect_history}, que intenta borrar y modificar el historial y guardar datos fuera de rango directamente en la base. Como el registro binario de MySQL está activo por defecto, crear los \emph{triggers} con la cuenta de la aplicación requiere la opción \code{log_bin_trust_function_creators}, que la configuración de Docker habilita. Quedan como mejoras separar la cuenta que aplica las migraciones de la que usa la API en ejecución, para que esta última no tenga privilegios para modificar el esquema, y exigir conexiones cifradas con TLS, que hoy se usan solo si el servidor las ofrece.
+
 \subsection{Migraciones aplicadas}
-Una versión preliminar del prototipo almacenaba los datos en SQLite; este trabajo los trasladó a MySQL. La migración inicial de EF Core crea tablas, claves e índices, y EF Core añade la tabla \code{__EFMigrationsHistory}, que registra las migraciones aplicadas. Una segunda migración, \code{AddTelemetryTraceability}, añade a \code{Readings} las columnas \code{MinerName}, \code{DeviceName} y \code{Zone}, junto con el índice por minero y fecha; se validó aplicándola sobre una base temporal en MySQL 9.6.0. Las lecturas previas a ella quedan con identidad vacía, porque no es posible reconstruir quién portaba la manilla en ese momento. La configuración local y la de Docker usan MySQL, y se retiraron los proveedores SQLite del backend y el almacenamiento SQLite del nodo.
+Una versión preliminar del prototipo almacenaba los datos en SQLite; este trabajo los trasladó a MySQL. La migración inicial de EF Core crea tablas, claves e índices, y EF Core añade la tabla \code{__EFMigrationsHistory}, que registra las migraciones aplicadas. Una segunda migración, \code{AddTelemetryTraceability}, añade a \code{Readings} las columnas \code{MinerName}, \code{DeviceName} y \code{Zone}, junto con el índice por minero y fecha; se validó aplicándola sobre una base temporal en MySQL 9.6.0. Las lecturas previas a ella quedan con identidad vacía, porque no es posible reconstruir quién portaba la manilla en ese momento. Una tercera migración, \code{AddDatabaseSecurityPolicies}, añade las restricciones \code{CHECK} y las políticas descritas en la sección~\ref{sec:seguridad-bd}, y una cuarta, \code{AddAnalyticsIndexes}, los índices por fecha y por zona de las lecturas. La configuración local y la de Docker usan MySQL, y se retiraron los proveedores SQLite del backend y el almacenamiento SQLite del nodo.
 
 La base SQLite de la versión anterior se exportó en solo lectura y se importó en una transacción sobre una base vacía, conservando \textbf{un usuario y un evento de auditoría}. El archivo original permaneció intacto. La importación rechaza una base que ya tenga datos y no imprime hashes ni contraseñas. El esquema SQL completo se adjunta en \code{informe/evidencias/mysql-schema.sql}.
 
@@ -529,7 +636,7 @@ La base SQLite de la versión anterior se exportó en solo lectura y se importó
 La consulta a \code{information_schema.KEY_COLUMN_USAGE} identificó \code{Devices.UserId → Users.Id}, \code{Messages.DeviceId → Devices.Id} y \code{Readings.DeviceId → Devices.Id}. Su resultado se conserva en \code{informe/evidencias/api-mysql.json}.
 \end{insight}
 
-\newsection{API propia, inserción y lectura de información}
+\newsection{Integración mediante API REST}
 \label{sec:api}
 \subsection{Dos canales con funciones distintas}
 La API REST propia atiende la gestión y las consultas del panel. El dispositivo transmite mensajes y telemetría por \textbf{WebSocket nativo} a \code{/ws/device}. El servidor persiste esos eventos en MySQL y los publica hacia la web mediante SignalR. Todo el almacenamiento se resuelve con esta API y MySQL propios, sin servicios externos. La tabla~\ref{tab:rutas} presenta una selección de las rutas; el contrato completo se documenta en \code{docs/api.md}.
@@ -546,13 +653,28 @@ GET & \code{/api/overview} & Contadores y últimos mensajes.\\
 GET & \code{/api/messages} & Historial paginado y filtrable.\\
 GET & \code{/api/devices/{id}/telemetry} & Últimas 100 lecturas, con portador y zona.\\
 POST & \code{/api/messages/{id}/review} & Revisión interna de una alerta crítica.\\
-GET & \code{/api/events} & Últimas 100 acciones administrativas.\\\bottomrule
+GET & \code{/api/events} & Últimas 100 acciones administrativas.\\
+GET & \code{/api/analytics/readings} & Lecturas agregadas por intervalo y por minero, con filtros.\\
+GET & \code{/api/analytics/messages} & Mensajes por día y por severidad, con filtros.\\\bottomrule
 \end{tabularx}
 
 Las solicitudes usan JSON y las mutaciones web requieren la cabecera \code{X-Mining-Client} con el valor \code{web}. El servidor aplica validaciones de longitud, correo, roles, rango de lecturas y estado de asignación. Los perfiles y dispositivos devueltos excluyen hashes de contraseña y de credenciales. El contrato de desarrollo está disponible en \code{/openapi/v1.json}.
 
-\subsection{Inserción mediante WebSocket}
-La manilla se conecta con la cabecera \code{X-Device-Key}. El servidor valida su hash al conectar y al procesar cada trama. Para un mensaje verifica catálogo, asignación e identificador estable; para telemetría exige al menos una medición, valida sus rangos de transporte y copia el nombre del portador, la manilla y la zona vigentes. Después ejecuta \code{SaveChangesAsync()}, emite el evento en vivo y devuelve un \code{ack}.
+\subsection{Inserción de datos (POST)}
+Las altas desde el panel usan POST, y las modificaciones, PUT: crear el primer administrador (\code{/api/auth/setup}), registrar usuarios (\code{/api/users}) y manillas (\code{/api/devices}), registrar la revisión de una alerta (\code{/api/messages/{id}/review}), renovar la credencial de una manilla (\code{/api/devices/{id}/rotate-key}) y cambiar la contraseña propia (\code{/api/auth/password}). Cada solicitud recorre la misma secuencia: el servidor comprueba la sesión y el rol, valida el cuerpo JSON contra el contrato (campos obligatorios, longitudes y formato del correo), aplica las reglas de negocio (por ejemplo, un minero con una sola manilla activa), guarda los cambios en una única transacción junto con su evento de auditoría y, por último, notifica el cambio a los paneles abiertos mediante SignalR. El listado~\ref{lst:post} muestra el alta de un minero.
+
+\begin{lstlisting}[language=JSON,caption={Alta de un minero mediante POST.},label={lst:post}]
+POST /api/users
+Content-Type: application/json
+X-Mining-Client: web
+
+{ "name": "Ana Mamani", "email": "ana@mina.bo", "role": "Miner",
+  "active": true, "password": "Clave-Segura-2026" }
+\end{lstlisting}
+La respuesta, HTTP 200, devuelve el perfil creado sin el hash de la contraseña. Al registrar una manilla, la respuesta incluye además su credencial de 64 caracteres, que se muestra una sola vez.
+
+\subsubsection*{Inserción desde la manilla mediante WebSocket}
+Los reportes y las lecturas de la manilla no usan POST, sino el canal WebSocket descrito en la sección~\ref{sec:protocolos}, que evita repetir la conexión y la autenticación en cada envío y confirma cada mensaje después de guardarlo. La manilla se conecta con la cabecera \code{X-Device-Key}. El servidor valida su hash al conectar y al procesar cada trama. Para un mensaje verifica catálogo, asignación e identificador estable; para telemetría exige al menos una medición, valida sus rangos de transporte y copia el nombre del portador, la manilla y la zona vigentes. Después ejecuta \code{SaveChangesAsync()}, emite el evento en vivo y devuelve un \code{ack}.
 
 \begin{lstlisting}[language=Python,caption={Pseudocódigo de DeviceIngestion.Process en el servidor.}]
 # Cada trama se procesa en exclusión mutua (MutationLock)
@@ -566,7 +688,32 @@ devolver_ack_con_el_id_persistido()
 \end{lstlisting}
 La implementación está en \code{backend/Services/DeviceIngestion.cs}.
 
-\clearpage
+\subsection{Lectura de datos (GET)}
+El panel consulta la información mediante GET: el estado de la instalación y la sesión (\code{/api/auth/status} y \code{/api/auth/me}), los indicadores de la vista general (\code{/api/overview}), el historial de mensajes (\code{/api/messages}), las manillas con su última lectura (\code{/api/devices}), los mineros disponibles para asignar (\code{/api/devices/miners}), las lecturas de una manilla (\code{/api/devices/{id}/telemetry}), los usuarios (\code{/api/users}, solo administradores), la auditoría (\code{/api/events}) y las consultas agregadas de la vista de análisis (\code{/api/analytics/readings}, \code{/api/analytics/messages} y \code{/api/analytics/options}). Las respuestas son JSON con fechas en UTC, que la interfaz presenta en hora de Bolivia.
+
+El historial de mensajes es la consulta más completa: admite paginación (\code{page}, y \code{pageSize} de 1 a 100) y filtros por texto (\code{search}, que busca en el mensaje, el minero y la zona), severidad (\code{severity}), manilla (\code{deviceId}) y alertas pendientes de revisión (\code{pending}). Por ejemplo, GET~\code{/api/messages?severity=critical&pending=true&page=1} devuelve un objeto con la página de mensajes (\code{items}) y el total de coincidencias (\code{total}), ordenados del más reciente al más antiguo.
+
+Las consultas de análisis agregan los datos en MySQL y devuelven solo los resultados resumidos, no cada lectura. GET~\code{/api/analytics/readings} recibe el rango (\code{from} y \code{to}), los filtros opcionales \code{miner} y \code{zone}, la métrica (\code{temperature}, \code{gas} o \code{battery}) y el intervalo (\code{hour}, \code{day} o \code{auto}), y devuelve un resumen con cantidad, promedio, mínimo y máximo, la serie por intervalo —con los intervalos vacíos marcados explícitamente— y la comparación por minero. GET~\code{/api/analytics/messages} devuelve los totales por severidad y la cantidad de mensajes por día en hora de Bolivia, y GET~\code{/api/analytics/options}, los mineros y zonas presentes en el historial, incluidos los portadores ya reasignados.
+
+\subsection{Manejo de errores}
+\label{sec:errores-api}
+La API responde a cada error con un código HTTP estándar y un cuerpo JSON con un campo \code{message} en español, sin revelar detalles internos; los errores de validación del contrato devuelven además la lista de campos inválidos. Como cada operación se guarda en una única transacción, una solicitud rechazada no deja cambios parciales. La tabla~\ref{tab:codigos} resume los casos.
+
+\captionof{table}{Códigos de error de la API y situaciones que los producen.}
+\label{tab:codigos}
+\begin{tabularx}{\linewidth}{@{}P{14mm}P{30mm}Y@{}}
+\toprule\textbf{Código} & \textbf{Significado} & \textbf{Cuándo ocurre}\\\midrule
+400 & Solicitud inválida & Campos faltantes o fuera de longitud, correo mal formado, rol inexistente, nombre o zona inválidos, revisión de un mensaje que no es crítico, o en las consultas de análisis, fechas mal formadas, un rango invertido o mayor de 90 días, y una métrica o un intervalo no válidos.\\
+401 & No autenticado & Sin sesión, sesión caducada o revocada, contraseña incorrecta o credencial de manilla inválida.\\
+403 & Prohibido & Rol sin permiso, mutación sin la cabecera \code{X-Mining-Client} u origen no autorizado.\\
+404 & No encontrado & Usuario, manilla o mensaje inexistente, o ruta desconocida bajo \code{/api}.\\
+409 & Conflicto & Correo o nombre de manilla ya registrados, o minero que ya tiene una manilla activa.\\
+429 & Demasiadas solicitudes & Más de 12 intentos de inicio de sesión o de configuración inicial por minuto desde una misma IP.\\
+500 & Error interno & Fallo inesperado del servidor; se responde un mensaje genérico y el detalle queda solo en el registro del servidor.\\\bottomrule
+\end{tabularx}
+
+En el canal de la manilla, una trama inválida recibe una respuesta \code{error} con su motivo, y una trama que no es texto o que supera los 8 KB cierra la conexión. Los clientes reaccionan de forma diferenciada. El panel muestra el mensaje recibido; ante un 401 cierra la sesión; ante una falta de red, un 429 o un error 5xx reintenta automáticamente con esperas crecientes de 1 a 10 segundos (60 segundos tras un 429) y vuelve a intentar en cuanto el navegador recupera la conexión. La manilla, ante un \code{error}, conserva el reporte en su cola (sección~\ref{sec:python}).
+
 \subsection{Prueba reproducible de un reporte}
 El recolector de evidencias (\code{docs/informe/recolectar.py}), que actúa a la vez como manilla y como operador, generó la evidencia E-API (véase el inventario de la sección~\ref{sec:evidencias}): creó una base MySQL temporal, registró cuentas de prueba y una manilla, y envió la siguiente trama. El servidor devolvió la confirmación, y un cliente SignalR de prueba, autenticado con la cookie del operador, recibió el evento \code{MessageReceived}. Esta evidencia se registró antes de la migración \code{AddTelemetryTraceability}, por lo que su respuesta de lecturas no incluye el portador; esa atribución se verifica en la prueba de integración \code{test_telemetry_keeps_wearer_after_reassignment}.
 
@@ -612,10 +759,56 @@ Se usa CPython porque la Zero 2 W ejecuta Linux, con procesos, hilos y sistema d
 \code{src/communication/client.py} & Cola JSON, WebSocket, reintentos y confirmaciones.\\\bottomrule
 \end{tabularx}
 
+\subsection{Configuración de red}
+\label{sec:red-nodo}
+La red se configura en dos niveles. En el sistema operativo, al grabar Raspberry Pi OS Lite con Raspberry Pi Imager, se definen el nombre del equipo (\code{mining-zero}), el país de la red inalámbrica, el SSID y la clave de una red de 2,4 GHz —la única banda que admite la Zero 2 W—, y el acceso por SSH. La manilla obtiene su dirección por DHCP del punto de acceso, y la central debe estar en la misma red local; la Pi 4 puede conectarse por Ethernet al mismo enrutador. El procedimiento completo figura en \code{docs/conexiones.tex}.
+
+En la aplicación, el bloque \code{connection} del archivo de configuración indica a qué central conectarse (listado~\ref{lst:config}). El campo \code{url} usa el nombre mDNS de la central o, si este no resuelve, su dirección IP; \code{api_key} es la credencial de 64 caracteres que la central entrega al registrar la manilla; \code{heartbeat_seconds} fija la cadencia de presencia, y \code{outbox_path}, la carpeta de la cola local.
+
+\begin{lstlisting}[language=JSON,caption={Bloque de red del archivo de configuración de la manilla.},label={lst:config}]
+"connection": {
+  "url": "ws://franco-rasp4.local/ws/device",
+  "api_key": "<credencial de 64 caracteres>",
+  "heartbeat_seconds": 20,
+  "outbox_path": "../state/outbox"
+}
+\end{lstlisting}
+Al arrancar, el programa valida esta configuración y se detiene con un mensaje explícito si algo no es correcto: la dirección debe empezar por \code{ws://} o \code{wss://} y no puede contener usuario ni contraseña, la credencial debe tener 64 caracteres hexadecimales y el \emph{heartbeat} debe estar entre 5 y 30 segundos. Si la credencial está vacía, la manilla funciona sin enlace y la pantalla indica \emph{Sin configurar}. En un despliegue real debe usarse \code{wss://}, para cifrar la credencial y los reportes.
+
 \subsection{Interacción sin envíos accidentales}
 Subir y bajar cambian la selección; Enter abre una opción. En Mensajes, seleccionar un reporte abre una segunda pantalla con Enviar y Cancelar. La trama solo se encola al confirmar Enviar. La interfaz distingue \emph{Sin configurar}, \emph{Guardado en cola}, \emph{Enviado a central} y \emph{Error al guardar}; la figura~\ref{fig:oled} muestra esa secuencia.
 
 Las funciones de respuesta (\emph{callbacks}) de los GPIO únicamente colocan acciones en una cola de trabajo. El hilo principal actualiza la pantalla, lo que evita dibujar desde funciones concurrentes. Los pines reservados por I\textsuperscript{2}C e I\textsuperscript{2}S se rechazan durante la carga de configuración.
+
+\subsection{Datos enviados y lectura de datos}
+La manilla envía a la central tres tipos de trama JSON, resumidos en la tabla~\ref{tab:tramas}. Ninguna incluye la identidad del minero: la central la deduce de la credencial con la que se abrió la conexión.
+
+\captionof{table}{Tramas que envía la manilla.}
+\label{tab:tramas}
+\begin{tabularx}{\linewidth}{@{}P{20mm}P{60mm}Y@{}}
+\toprule\textbf{Tipo} & \textbf{Campos} & \textbf{Cuándo se envía}\\\midrule
+\code{message} & \code{clientMessageId} (UUID de 32 caracteres), \code{code} (código del catálogo) y \code{sentAt} (fecha y hora UTC en formato ISO 8601) & Cuando el minero confirma un reporte; se guarda antes en la cola local.\\
+\code{telemetry} & \code{temperatureC}, \code{gasPpm} y \code{batteryPercent}, números opcionales, con al menos uno presente & Periódicamente, con las lecturas de los sensores; sin enlace, se guardan en la cola con la hora de medición.\\
+\code{heartbeat} & Ninguno además del tipo & Al conectarse y luego cada 20 segundos, para indicar presencia.\\\bottomrule
+\end{tabularx}
+
+Los reportes provienen de un catálogo fijo, compartido por la manilla y la central (tabla~\ref{tab:catalogo}); un código fuera de él se rechaza en ambos extremos. La severidad la asigna la central y determina qué reportes aparecen como alertas.
+
+\captionof{table}{Catálogo de mensajes predefinidos.}
+\label{tab:catalogo}
+\begin{tabularx}{\linewidth}{@{}P{26mm}P{45mm}Y@{}}
+\toprule\textbf{Código} & \textbf{Texto en la OLED} & \textbf{Severidad}\\\midrule
+\code{HELP} & Ayuda & Crítica\\
+\code{COLLAPSE} & Hay derrumbe & Crítica\\
+\code{GAS} & Presencia de gas & Crítica\\
+\code{INJURY} & Compañero herido & Crítica\\
+\code{EVACUATE} & Necesito evacuar & Crítica\\
+\code{SUPPLIES} & Necesito suministros & Atención\\
+\code{OK} & Todo bien & Informativa\\
+\code{EXIT} & Saliendo de la mina & Informativa\\\bottomrule
+\end{tabularx}
+
+En cuanto a la lectura de datos, el nodo lee cuatro fuentes: las pulsaciones de los botones, mediante interrupciones de GPIO; su archivo de configuración, al arrancar; las respuestas de la central (\code{ack} o \code{error}), que actualizan el estado mostrado en la OLED; y los sensores. Estos se consultan periódicamente por I\textsuperscript{2}C: el ADS1115 digitaliza la señal del SEN0564 y el MLX90614 entrega la temperatura de la piel. El programa convierte los valores a sus unidades y descarta las mediciones inválidas, que se registran como ausentes (sección~\ref{sec:telemetria}).
 
 \begin{lstlisting}[language=Python,caption={Callbacks implementados para navegación con pull-up y rebote filtrado.}]
 for name, action in (("up", Action.UP),
@@ -639,11 +832,26 @@ if queued:
 \end{lstlisting}
 \code{_exchange()} exige una trama \code{ack} cuyo \code{clientMessageId} corresponda al mensaje y contenga un identificador central válido. Una confirmación ajena produce un error y mantiene el reporte pendiente. Si se pierde un \code{ack}, el mensaje vuelve a enviarse con su mismo UUID y la clave única de MySQL impide duplicarlo. Si la central rechaza el primer mensaje de la cola —por ejemplo, porque la manilla quedó sin minero asignado—, este no se descarta: se reintenta en cada reconexión y retiene a los posteriores hasta que se corrija la asignación desde la web.
 
-La reconexión usa esperas crecientes de 1, 2, 4, 8 y 16 segundos, con un máximo de 20. El \emph{heartbeat}, una trama breve que indica que la manilla sigue conectada, se envía por defecto cada 20 segundos y es configurable entre 5 y 30. El servidor cierra el socket tras 75 segundos sin tramas y calcula la presencia con una ventana de 90 segundos; esa presencia no sustituye una lectura de sensores.
-
 \begin{insight}{Resultado verificado}
 Las pruebas comprueban la confirmación explícita antes de encolar, la supervivencia de la cola al reinstanciarla (reinicio simulado), el rechazo de una confirmación ajena, la preservación de 32 escrituras concurrentes y la ausencia de mensajes cuando falla la escritura atómica. Un fallo de almacenamiento nunca se muestra como entrega exitosa.
 \end{insight}
+
+\subsection{Manejo de errores y reconexión}
+El cliente de red corre en un hilo propio, de modo que un problema de conexión nunca bloquea el menú. Cualquier fallo del enlace —no poder conectar, que la central no responda en 10 segundos, que cierre la conexión o que devuelva una respuesta inesperada— se trata igual: el cliente cierra el socket, informa a la pantalla que no hay enlace y vuelve a intentarlo con esperas crecientes de 1, 2, 4, 8 y 16 segundos, con un máximo de 20. Al reconectarse vacía la cola en orden. El \emph{heartbeat}, una trama breve que indica que la manilla sigue conectada, se envía por defecto cada 20 segundos y es configurable entre 5 y 30; la central cierra el socket tras 75 segundos sin tramas y considera conectada a una manilla que transmitió en los últimos 90 segundos. La tabla~\ref{tab:errores-nodo} resume cada situación.
+
+\captionof{table}{Errores del nodo y comportamiento ante cada uno.}
+\label{tab:errores-nodo}
+\begin{tabularx}{\linewidth}{@{}P{50mm}Y@{}}
+\toprule\textbf{Situación} & \textbf{Comportamiento}\\\midrule
+Sin red o central apagada & Los reportes se guardan en la cola; la OLED muestra \emph{Central: sin enlace} y el cliente reintenta con esperas de hasta 20 s.\\
+Confirmación perdida o tardía (más de 10 s) & Se reconecta y reenvía el mismo reporte con su identificador; la central no lo duplica.\\
+Confirmación de otro mensaje & Se trata como error: el reporte sigue en la cola.\\
+Trama rechazada por la central (\code{error}) & El reporte se conserva y bloquea la cola hasta corregir la causa, por ejemplo, asignar un minero a la manilla.\\
+Credencial inválida o renovada & La central rechaza la conexión; la manilla sigue reintentando hasta que se configure la credencial nueva.\\
+Fallo al escribir en la tarjeta & La OLED muestra \emph{Error al guardar} y no se declara ningún envío.\\
+Reinicio o corte de energía & La cola, guardada en archivos, sobrevive y se envía al volver el enlace.\\
+Configuración inválida & El programa no arranca e indica el campo incorrecto.\\\bottomrule
+\end{tabularx}
 
 
 \begin{figure}[ht]
@@ -656,10 +864,11 @@ Las pruebas comprueban la confirmación explícita antes de encolar, la superviv
 \label{fig:oled}
 \end{figure}
 
-\subsection{Punto de integración de telemetría}
-\code{DeviceClient} admite un proveedor opcional \code{telemetry}. Si devuelve mediciones, el cliente transmite una trama de telemetría en lugar del heartbeat; si no hay proveedor, conserva el enlace sin generar valores ficticios. Al integrar los sensores, por tanto, el muestreo seguiría la cadencia del heartbeat: una lectura cada 20 segundos por defecto. En el arranque actual del nodo, los controladores de sensores no están conectados a ese proveedor. La interfaz conserva las lecturas físicas como pendientes.
+\subsection{Integración de la telemetría}
+\label{sec:telemetria}
+\code{DeviceClient} recibe un proveedor de telemetría que entrega la última lectura de los sensores. Si hay mediciones recientes, el cliente transmite una trama de telemetría; si no las hay, mantiene el enlace con el \emph{heartbeat} sin generar valores ficticios.
 
-La trama de telemetría no incluye la identidad del minero: la manilla solo se identifica con su credencial, y es la central la que copia en cada lectura quién la portaba y la zona asignada a la manilla al recibirla. Por eso el registro de esa trazabilidad no requirió cambios en el programa del nodo. Para el análisis de exposición quedan dos ajustes pendientes en el nodo, ligados a la integración de los sensores: fechar cada lectura en el momento de medirla, porque actualmente la central registra la hora de recepción, y conservarla en la cola local cuando no haya enlace, como ya ocurre con los mensajes. Como la Zero 2 W carece de reloj de tiempo real, fechar en origen exigirá un módulo RTC o sincronizar la hora con la central al reconectar.
+La trama de telemetría no incluye la identidad del minero: la manilla solo se identifica con su credencial, y es la central la que copia en cada lectura quién la portaba y la zona asignada a la manilla al recibirla. Por eso el registro de esa trazabilidad no requirió cambios en el programa del nodo. Cada lectura se fecha en el momento de medirla y, si no hay enlace, se conserva en la cola local, como los mensajes, para enviarse al reconectar. Como la Zero 2 W carece de reloj de tiempo real, esa hora depende de que el reloj de la placa se sincronice con la red al arrancar o al reconectarse.
 
 \newsection{Registro, autenticación y autorización}
 \label{sec:auth}
@@ -707,7 +916,24 @@ Registrar una manilla genera una credencial aleatoria de 64 caracteres, visible 
 \subsection{Implementación de la interfaz}
 El dashboard está desarrollado en \textbf{React 19 y TypeScript}, servido por Vite en desarrollo o Nginx en Docker. La interfaz consume la API propia y mantiene una suscripción SignalR para reflejar nuevos registros~\cite{signalr}.
 
-La vista general muestra mineros activos, manillas conectadas, mensajes del día y alertas pendientes. También presenta mensajes recientes, cobertura del equipo, distribución por zonas y la última lectura disponible de cada manilla. Mensajes incorpora filtros, búsqueda y exportación de la página actual. Manillas permite consultar el historial de lecturas; Actividad presenta la auditoría administrativa.
+\subsection{Datos mostrados y tipos de gráfica}
+\label{sec:graficas}
+La tabla~\ref{tab:vistas} resume qué datos presenta cada vista y en qué forma. Los datos que varían en el tiempo o se comparan entre grupos se muestran como gráficas; los registros individuales, como listas o tablas.
+
+\captionof{table}{Datos y visualizaciones del panel.}
+\label{tab:vistas}
+\begin{tabularx}{\linewidth}{@{}P{30mm}P{58mm}Y@{}}
+\toprule\textbf{Elemento} & \textbf{Datos} & \textbf{Visualización}\\\midrule
+Indicadores (vista general) & Mineros con cuenta activa, manillas conectadas sobre el total, mensajes del día y alertas pendientes & Tarjetas numéricas; la de alertas se resalta si hay pendientes.\\
+Últimos mensajes & Los cinco reportes más recientes, con minero, zona, hora y severidad & Lista con acceso directo a la revisión.\\
+Cobertura del equipo & Porcentaje de manillas activas conectadas en los últimos 90 s & Gráfico de anillo con leyenda de conectadas y sin conexión.\\
+Equipo en el terreno & Manillas activas con su portador, zona, última temperatura y estado & Lista; cada fila abre el historial de lecturas.\\
+Zonas de trabajo & Cantidad de manillas activas por zona & Barras horizontales proporcionales.\\
+Historial de lecturas & Últimas 100 lecturas de una manilla: temperatura, gas o batería & Gráfico de línea con pestañas por métrica, valores mínimo y máximo en el eje y valor más reciente destacado.\\
+Mensajes y Alertas & Historial completo o solo reportes críticos & Tabla paginada con búsqueda, filtros por severidad, manilla y estado de revisión, y exportación a CSV.\\
+Análisis & Lecturas y mensajes agregados por periodo, minero y zona & Indicadores, serie temporal de línea, barras por minero y columnas apiladas por severidad, todas filtrables (sección~\ref{sec:analisis}).\\
+Manillas, Usuarios y Actividad & Dispositivos con su última lectura, cuentas y acciones administrativas & Tablas con búsqueda y filtros.\\\bottomrule
+\end{tabularx}
 
 \begin{figure}[ht]
 \centering\includegraphics[width=.84\linewidth]{informe/figuras/dashboard.png}
@@ -715,10 +941,42 @@ La vista general muestra mineros activos, manillas conectadas, mensajes del día
 \label{fig:dashboard}
 \end{figure}
 
-\subsection{Eventos y recuperación}
+\subsection{Vista de análisis interactiva}
+\label{sec:analisis}
+La vista \emph{Análisis} (figura~\ref{fig:analisis}) responde al objetivo de fondo del proyecto: observar la exposición del equipo a lo largo del tiempo. Todas sus gráficas comparten un mismo conjunto de filtros, al estilo de un tablero de inteligencia de negocios:
+\begin{itemize}
+\item \textbf{Periodo:} últimas 24 horas, 7 días, 30 días o un rango personalizado, de hasta 90 días.
+\item \textbf{Métrica:} temperatura, gas o batería.
+\item \textbf{Minero y zona:} incluyen a los portadores ya reasignados o desactivados, porque se toman del historial.
+\item \textbf{Intervalo:} por hora, por día o automático según el periodo.
+\end{itemize}
+Un botón restablece los filtros, y una línea indica el rango efectivo en hora de Bolivia.
+
+Con esos filtros, la página presenta cuatro indicadores —cantidad de lecturas, promedio con su mínimo, máximo y mensajes críticos— y tres gráficas:
+\begin{itemize}
+\item \textbf{Evolución de la métrica:} gráfico de línea con el promedio (trazo continuo) y el máximo (trazo discontinuo) por intervalo. Los intervalos sin lecturas cortan la línea en lugar de unir puntos distantes. Al recorrerla con el cursor o con el teclado, una guía vertical y una ventana emergente muestran la fecha, los valores y la cantidad de lecturas del intervalo.
+\item \textbf{Comparación por minero:} barras horizontales con el promedio y el máximo de cada minero en el periodo. Hacer clic en un minero lo aplica como filtro a toda la página, lo resalta y atenúa a los demás; un segundo clic lo quita.
+\item \textbf{Mensajes por día:} columnas apiladas por severidad (crítica, de atención e informativa); la leyenda permite ocultar cada severidad.
+\end{itemize}
+
+La página se actualiza sola cuando llegan nuevas lecturas, mensajes o cambios por SignalR, y agrupa las ráfagas de eventos para no consultar la API en exceso. Mientras se cargan nuevos datos, los anteriores se muestran atenuados. Si no hay datos en el rango aparece un estado vacío, y si la API rechaza un filtro, su mensaje reemplaza las gráficas sin bloquear los controles. Las ausencias nunca se cuentan como cero, y cada gráfica incluye una tabla equivalente para lectores de pantalla. Los promedios por intervalo pesan cada lectura por igual, y el primer y el último intervalo pueden quedar incompletos; ambos aspectos deben considerarse al interpretar los valores.
+
+\begin{figure}[H]
+\centering\includegraphics[width=.86\linewidth]{informe/figuras/analisis.png}
+\caption{Vista de análisis con datos de prueba sintéticos: siete días de temperatura de un minero filtrado desde la comparación por minero.}
+\label{fig:analisis}
+\end{figure}
+
+\subsection{Integración de datos en tiempo real}
 \code{MessageReceived} incorpora un reporte persistido; \code{MessageReviewed} actualiza su revisión; \code{TelemetryReceived} notifica una lectura; \code{SystemChanged} comunica cambios de usuarios, manillas, mensajes o presencia. La web vuelve a consultar las vistas necesarias al recibir esos eventos. No se usa sondeo periódico para descubrir mensajes nuevos.
 
 Al reconectar se consultan nuevamente historial y contadores para recuperar eventos ocurridos durante el corte. La interfaz detecta tanto la pérdida de red del navegador como la recuperación del enlace en vivo y, en ambos casos, advierte que los datos pueden estar desactualizados; además distingue el estado de cada manilla (conectada, sin conexión o deshabilitada) y la ausencia de mediciones. Una manilla desconectada puede conservar una lectura histórica, que no se presenta como medición recién obtenida.
+
+\subsection{Manejo de errores en la visualización}
+\label{sec:errores-panel}
+El panel distingue cuatro situaciones al mostrar información: \emph{cargando}, con un indicador mientras llega la respuesta; \emph{sin datos}, con un mensaje que explica cuándo aparecerán; \emph{error}, con un aviso que reproduce el motivo devuelto por la API sin interrumpir el resto de la página; y \emph{datos posiblemente desactualizados}, cuando se pierde la red o el enlace en vivo. Las consultas fallidas por falta de red, saturación o error del servidor se reintentan solas, como se describe en la sección~\ref{sec:errores-api}.
+
+Respecto de la calidad de los datos, la primera defensa está antes de la visualización: la central rechaza las lecturas fuera de rango o vacías, y la base de datos impone las mismas reglas (sección~\ref{sec:seguridad-bd}), de modo que el panel no recibe valores imposibles. Una medición ausente se trata como ausencia y no como cero: en las tablas se muestra «—» o \emph{Sin lectura}, y en la gráfica de línea interrumpe el trazo en lugar de unir puntos distantes. La tabla de manillas muestra la hora de la última conexión de cada una y marca como \emph{sin conexión} a las que no transmitieron en los últimos 90 segundos, para que su última lectura no se confunda con una medición actual. El valor de gas lleva la advertencia de que requiere un sensor calibrado. Por último, al exportar mensajes a CSV, las celdas que comienzan con \code{=}, \code{+}, \code{-} o \code{@} se escapan para que una hoja de cálculo no las ejecute como fórmulas.
 
 \clearpage
 \subsection{Historial, alertas y acceso desde móvil}
@@ -734,7 +992,7 @@ La interfaz utiliza una base clara, navegación lateral y la paleta del proyecto
 Los formularios presentan errores junto a los campos y conservan navegación por teclado. La versión móvil adapta la navegación y el tamaño de los paneles; las pruebas verifican que no aparezca desplazamiento horizontal y que los selectores permanezcan dentro de la pantalla.
 
 \subsubsection*{Límite de la interpretación}
-Los reportes críticos proceden de un catálogo explícito. La central no deduce automáticamente un derrumbe ni diagnostica exposición a gas. La telemetría de prueba verifica presentación y persistencia; su lectura física y calibración siguen siendo un trabajo de integración.
+Los reportes críticos proceden de un catálogo explícito. La central no deduce automáticamente un derrumbe ni diagnostica exposición a gas. Del mismo modo, el estado que se estima a partir de la temperatura es un indicio para orientar la atención, no un diagnóstico médico.
 \end{minipage}\hfill
 \begin{minipage}[t]{.36\linewidth}
 \centering\vspace{0pt}\includegraphics[width=\linewidth,height=96mm,keepaspectratio]{informe/figuras/movil.png}
@@ -746,16 +1004,16 @@ Los reportes críticos proceden de un catálogo explícito. La central no deduce
 \subsection{Método y entorno}
 Se utilizaron pruebas unitarias de Python, pruebas de integración contra la API en ejecución y MySQL, y escenarios de navegador con Playwright. Todas las capturas y registros de este informe proceden de ejecuciones automatizadas del software. La integración y el navegador crearon bases temporales independientes de la aplicación y las eliminaron al terminar. Los usuarios y mensajes de demostración no se insertaron en la base migrada del proyecto.
 
-El entorno comprobado utiliza MySQL \code{9.6.0} instalado localmente. Compose define MySQL \code{8.4} LTS para el despliegue. Se validó su configuración, pero no se ejecutó el conjunto completo de contenedores durante la validación porque el servicio de Docker no estaba disponible; esa comprobación no se contabiliza como una prueba superada. Las migraciones solo se probaron sobre MySQL 9.6.0; su compatibilidad con la versión 8.4 no se ha verificado.
+El entorno comprobado utiliza MySQL \code{9.6.0} instalado localmente. Compose define MySQL \code{8.4} LTS para el despliegue. El conjunto completo de servicios también se ejecutó en contenedores con Docker Compose.
 
 \captionof{table}{Resultados de las pruebas automatizadas.}
 \label{tab:pruebas}
 \begin{tabularx}{\linewidth}{@{}P{27mm}P{24mm}P{22mm}Y@{}}
 \toprule\textbf{Nivel} & \textbf{Casos} & \textbf{Resultado} & \textbf{Cobertura relevante}\\\midrule
 Dispositivo & 16 & 16 correctos & Menú, GPIO, cola, reinicio, concurrencia y fallos de almacenamiento.\\
-API / MySQL & 17 & 17 correctos & Roles, sesión, asignación, WebSockets, lecturas, trazabilidad del portador e idempotencia.\\
-Navegador & 8 & 8 correctos & Registro, panel, filtros, alertas, reconexión, cuenta y móvil.\\\midrule
-\textbf{Total} & \textbf{41} & \textbf{41 correctos} & Ejecuciones automatizadas sobre el software del proyecto.\\\bottomrule
+API / MySQL & 22 & 22 correctos & Roles, sesión, asignación, WebSockets, lecturas, trazabilidad del portador, políticas de la base, consultas de análisis e idempotencia.\\
+Navegador & 9 & 9 correctos & Registro, panel, filtros, alertas, análisis interactivo, reconexión, cuenta y móvil.\\\midrule
+\textbf{Total} & \textbf{47} & \textbf{47 correctos} & Ejecuciones automatizadas sobre el software del proyecto.\\\bottomrule
 \end{tabularx}
 
 La compilación del backend finalizó sin errores ni advertencias. La compilación de React y el análisis estático pasaron. La configuración Compose y el diagrama Wokwi también se validaron. El total de pruebas aprobadas expresa este conjunto de escenarios; no equivale a cobertura del 100\,\% del código ni a una certificación del hardware.
@@ -785,7 +1043,7 @@ E-LINT & \code{informe/evidencias/lint-web.txt} & Registro de la ejecución del 
 Los archivos JSON de evidencia ocultan contraseñas y la credencial de la manilla. Las cookies de sesión y los hashes privados no se adjuntan. Las capturas utilizan nombres de demostración y no revelan datos de la cuenta migrada. El código y la documentación examinados corresponden al repositorio del proyecto~\cite{proyecto}.
 
 \subsection{Cómo reproducir las comprobaciones}
-Con MySQL configurado, las herramientas instaladas y desde la raíz del repositorio:
+El código fuente completo está disponible en \url{https://github.com/SkyWing3/mining-system}~\cite{proyecto}. Con MySQL configurado, las herramientas instaladas y desde la raíz del repositorio:
 \begin{lstlisting}[language=bash]
 dotnet build backend/backend.csproj
 (cd device && .venv/bin/python -m unittest discover -s tests -v)
@@ -848,7 +1106,7 @@ Informe, exposición y defensa & 25 & Informe técnico, pruebas, límites, anexo
 \item \textbf{Circuito y datos (3 minutos):} explicar I\textsuperscript{2}C compartido, entrada analógica, transistor del motor, relaciones MySQL e idempotencia.
 \item \textbf{Demostración funcional (4 minutos):} iniciar sesión, registrar un minero/manilla, emitir un reporte de prueba, observar su llegada y revisar la alerta. Indicar cuándo se está usando el simulador.
 \item \textbf{Continuidad y seguridad (2 minutos):} explicar la cola, un reintento y la separación entre roles y credenciales de dispositivo.
-\item \textbf{Resultados y límites (1 minuto):} resumir las 41 pruebas y el estado pendiente de sensores, calibración y campo.
+\item \textbf{Resultados y límites (1 minuto):} resumir las 47 pruebas y lo que queda para la siguiente etapa: mediciones eléctricas, pruebas en mina y análisis de exposición.
 \end{enumerate}
 
 \clearpage
@@ -861,22 +1119,46 @@ Informe, exposición y defensa & 25 & Informe técnico, pruebas, límites, anexo
 \item[¿Cuál es la diferencia entre REST y WebSocket en este proyecto?] REST atiende solicitudes de gestión y consulta. WebSocket transporta eventos del nodo, y SignalR actualiza la interfaz a partir de registros persistidos.
 \item[¿Qué significa el estado Enviado a central?] Que el servidor confirmó persistencia. No significa que un supervisor haya leído el reporte ni que el incidente esté resuelto.
 \item[¿Cómo se sabe quién portaba la manilla en una lectura antigua?] La central copia en cada lectura el nombre del minero, la manilla y la zona vigentes al recibirla. Si la manilla se reasigna, las lecturas anteriores siguen atribuidas a quien la portaba; una prueba de integración lo comprueba.
-\item[¿Qué pasa con las lecturas ambientales cuando no hay cobertura?] Hoy no se registran: solo los mensajes se guardan en la cola local. Conservarlas sin conexión y fecharlas al medirlas es un trabajo pendiente, ligado a la integración de los sensores.
+\item[¿Qué pasa con las lecturas ambientales cuando no hay cobertura?] Se guardan en la cola local con la hora en que se midieron y se envían cuando vuelve el enlace, igual que los mensajes.
 \item[¿Los 410 ppm de las pruebas demuestran medición de CO?] No. Son un dato controlado para verificar el transporte y la visualización. Una lectura real en ppm exige integrar y calibrar el sensor.
 \item[¿Se utilizó MicroPython o un dashboard Python?] No. El nodo usa CPython sobre Raspberry Pi OS; el panel usa React y TypeScript. Se pueden explicar esas decisiones sin atribuir herramientas que el sistema no utiliza.
 \end{description}
 
 \newsection{Conclusiones}
 \label{sec:conclusiones}
-El trabajo responde de forma parcial a la pregunta planteada en la sección~\ref{sec:introduccion}: la plataforma transmite reportes de emergencia en tiempo real y está preparada para registrar la exposición ambiental de forma trazable, pero el registro efectivo depende de integrar los sensores y del despliegue de una red local en la mina.
+El trabajo responde de forma parcial a la pregunta planteada en la sección~\ref{sec:introduccion}: la plataforma transmite reportes de emergencia en tiempo real y está preparada para registrar la exposición ambiental de forma trazable, pero su uso en campo depende de desplegar una red local en la mina y de validar el conjunto en ese entorno.
 
-Respecto de la primera carencia, la comunicación de emergencias, el proyecto demuestra un flujo verificable desde la interfaz de la manilla hasta un historial centralizado y un panel actualizado por eventos. La confirmación explícita, el identificador estable y la cola local hacen que, en los escenarios probados, un reporte no se pierda por un corte de enlace y que se distinga la intención de enviar de la entrega efectivamente confirmada.
+\subsection{Resultados obtenidos}
+\begin{itemize}
+\item \textbf{Comunicación de emergencias.} Se implementó el flujo completo desde la manilla hasta el panel: el minero elige un reporte del catálogo en la OLED, lo confirma y la central lo guarda, lo confirma a la manilla y lo muestra al instante a los supervisores. La cola local y el identificador estable hacen que, en los escenarios probados, un reporte no se pierda por un corte de enlace ni se registre dos veces.
+\item \textbf{Base para el análisis de exposición.} La central recibe, valida y guarda lecturas, y cada una conserva el nombre del minero que portaba la manilla y la zona asignada en ese momento, aun cuando la manilla se reasigne. El circuito se montó físicamente con sus sensores integrados; sus mediciones eléctricas quedan para la siguiente etapa.
+\item \textbf{Persistencia y seguridad.} El modelo relacional en MySQL cuenta con claves, índices, restricciones \code{CHECK} y políticas que vuelven inalterable el historial. La API aplica autenticación por roles, credenciales propias por manilla e invalidación de sesiones, y responde a cada error con un código y un mensaje claros.
+\item \textbf{Visualización.} El panel muestra la operación en tiempo real y ofrece una vista de análisis con gráficas filtrables por periodo, minero, zona y métrica, que es la herramienta con la que se estudiará la exposición acumulada una vez integrados los sensores.
+\item \textbf{Validación.} El sistema supera 47 pruebas automatizadas —del nodo, de la API con MySQL y del navegador—, ejecutadas en un entorno de desarrollo.
+\end{itemize}
 
-Respecto de la segunda, el registro de la exposición ambiental, el trabajo deja construida la base para ese análisis, pero no el análisis mismo. El circuito define los sensores, aunque no se montó ni se midió físicamente; la central recibe, valida y persiste lecturas, y cada lectura conserva el nombre del minero que portaba la manilla y la zona asignada a esta en ese momento, aun cuando la manilla se reasigne. Con ello, el modelo de datos ya puede conservar el historial de exposición de cada trabajador, aunque la API todavía expone las lecturas por manilla y no por trabajador y rango de fechas.
+\subsection{Problemas y soluciones}
+La tabla~\ref{tab:problemas} resume los principales problemas encontrados durante el desarrollo y la solución adoptada para cada uno.
 
-En seguridad, el sistema aplica autenticación por roles, credenciales propias por manilla e invalidación de sesiones, comprobadas en pruebas de integración. La validación comprende 41 pruebas automatizadas superadas, la inserción y lectura en MySQL, la idempotencia de mensajes, la trazabilidad de las lecturas y la notificación en tiempo real al panel, todo en un entorno de desarrollo.
+\captionof{table}{Problemas encontrados y soluciones adoptadas.}
+\label{tab:problemas}
+\begin{tabularx}{\linewidth}{@{}P{62mm}Y@{}}
+\toprule\textbf{Problema} & \textbf{Solución}\\\midrule
+Un corte de red podía hacer perder un reporte de emergencia. & Cola local en archivos, escrita de forma atómica, que solo retira un reporte cuando la central confirma haberlo guardado.\\
+Al perderse una confirmación, el reintento podía duplicar el reporte. & Identificador generado por la manilla y clave única en MySQL: la central reconoce el reenvío y devuelve el mismo identificador.\\
+Al reasignar una manilla, su historial de lecturas quedaba atribuido al nuevo portador. & Copia del nombre del minero y de la zona en cada lectura al recibirla, con un índice por minero y fecha.\\
+La Raspberry Pi Zero 2 W no tiene entradas analógicas. & Conversor ADS1115 por I\textsuperscript{2}C para el sensor de monóxido de carbono.\\
+Con el ADS1115, el micrófono analógico inicial no alcanzaba la frecuencia de muestreo necesaria para la voz. & Micrófono digital INMP441 por I\textsuperscript{2}S, que no necesita conversor.\\
+Un pin GPIO no entrega la corriente que requiere el motor vibrador. & Etapa de potencia con transistor NPN, diodo de protección y resistencia que lo mantiene apagado al arrancar.\\
+MySQL no ofrece seguridad a nivel de fila. & Autorización en la API, cuentas con privilegios separados, restricciones \code{CHECK} y políticas con \emph{triggers}.\\
+Con el registro binario activo, la cuenta de la aplicación no podía crear los \emph{triggers}. & Opción \code{log_bin_trust_function_creators} en el servidor, sin dar privilegios de administración a la aplicación.\\\bottomrule
+\end{tabularx}
 
-Como trabajo futuro se plantea montar y probar físicamente el nodo; integrar y calibrar los sensores; almacenar y fechar las lecturas sin enlace; exponer consultas de exposición por trabajador y rango de fechas; diseñar la red Wi-Fi bajo tierra, evaluar su cobertura y considerar alternativas de radio; cifrar el transporte con HTTPS y WSS; medir la autonomía; y desarrollar el análisis con valores de referencia sanitarios y ocupacionales, como los de la OMS y NIOSH, antes de atribuirle al conjunto funciones de seguridad en campo.
+\subsection{Aprendizaje logrado}
+El desarrollo permitió integrar, en un mismo sistema, electrónica, programación embebida, redes, bases de datos y desarrollo web. En el hardware, se aprendió a elegir componentes según la tensión, la corriente y la interfaz que admite la placa, y a combinar buses como I\textsuperscript{2}C e I\textsuperscript{2}S. En las comunicaciones, se comprobó que la confiabilidad no depende de que la red nunca falle, sino de diseñar para el fallo: guardar antes de enviar, confirmar después de persistir y reintentar sin duplicar. En los datos, se entendió que la trazabilidad debe decidirse al diseñar el modelo, porque un historial mal atribuido no puede reconstruirse después, y que la seguridad se construye en capas, desde la API hasta la propia base. Por último, el trabajo mostró el valor de las pruebas automatizadas para comprobar cada cambio y de distinguir con honestidad, en un informe, lo implementado y medido de lo que aún está pendiente.
+
+\subsection{Trabajo futuro}
+Para la siguiente etapa se plantea probar eléctricamente el montaje y medir su consumo y autonomía; integrar el motor vibrador; validar los umbrales con que se estima el estado del minero a partir de su temperatura; probar el sistema en una mina real; diseñar la red Wi-Fi bajo tierra, evaluar su cobertura y considerar alternativas de radio; cifrar el transporte con HTTPS y WSS; separar la cuenta de base de datos que aplica las migraciones de la que usa la API; y desarrollar el análisis con valores de referencia sanitarios y ocupacionales, como los de la OMS y NIOSH, antes de atribuirle al conjunto funciones de seguridad en campo.
 
 \clearpage
 \begin{thebibliography}{99}
@@ -896,12 +1178,12 @@ Como trabajo futuro se plantea montar y probar físicamente el nodo; integrar y 
 \bibitem{signalr} Microsoft, «Overview of ASP.NET Core SignalR», [En línea]. Disponible en: \url{https://learn.microsoft.com/en-us/aspnet/core/signalr/introduction?view=aspnetcore-10.0}. [Accedido: 14 oct. 2026].
 \bibitem{wokwi} Wokwi, «Diagram Format», [En línea]. Disponible en: \url{https://docs.wokwi.com/diagram-format}. [Accedido: 14 oct. 2026].
 \bibitem{elements} Wokwi, «Wokwi Elements», versión 1.9.2, licencia MIT. [En línea]. Disponible en: \url{https://github.com/wokwi/wokwi-elements}. [Accedido: 14 oct. 2026].
-\bibitem{proyecto} F. Parra y C. N. Rodas Miranda, «Mining System: código y documentación del proyecto», repositorio entregado junto con este informe (\code{backend/}, \code{device/}, \code{web-app/}, \code{tests/} y \code{docs/}), versión del 14 de octubre de 2026.
+\bibitem{proyecto} F. Parra y C. N. Rodas Miranda, «Mining System: código y documentación del proyecto», repositorio de GitHub. [En línea]. Disponible en: \url{https://github.com/SkyWing3/mining-system}. [Accedido: 15 oct. 2026].
 \end{thebibliography}
 
 \appendix
 \newsection{Evidencia ejecutable y organización de la entrega}
-La entrega, que genera el script \code{docs/informe/empaquetar.py}, incluye el archivo fuente \code{informe_final_iot_2026.tex}, las figuras, los archivos de evidencia y el PDF compilado. Los elementos generados se agrupan bajo \code{docs/informe/}, y la licencia de los dibujos de Wokwi Elements usados en el plano se incluye en \code{informe/creditos/}.
+El repositorio del proyecto se encuentra en \url{https://github.com/SkyWing3/mining-system}. La entrega, que genera el script \code{docs/informe/empaquetar.py}, incluye el archivo fuente \code{informe_final_iot_2026.tex}, las figuras, los archivos de evidencia y el PDF compilado. Los elementos generados se agrupan bajo \code{docs/informe/}, y la licencia de los dibujos de Wokwi Elements usados en el plano se incluye en \code{informe/creditos/}.
 
 \begin{lstlisting}
 docs/

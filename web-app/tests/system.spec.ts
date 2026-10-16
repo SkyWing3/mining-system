@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import type { Page, APIRequestContext } from '@playwright/test'
 import { WebSocket } from 'ws'
+import { execFileSync } from 'node:child_process'
 
 const password = 'Browser-Test-2026!'
 let minerId: string
@@ -26,6 +27,15 @@ async function send(code: string, telemetry = false) {
     expect(JSON.parse(await response).type).toBe('ack')
   } finally { socket.close() }
 }
+
+// Historical rows cannot arrive through the device socket (it stamps the current time), so they are inserted directly.
+function seed(statements: string) {
+  execFileSync('python3', ['../scripts/mysql_test_db.py', 'seed', process.env.MINING_E2E_DATABASE!], { input: statements, encoding: 'utf8' })
+}
+
+const sqlTime = (time: number) => new Date(time).toISOString().slice(0, 19).replace('T', ' ')
+const kpi = (page: Page, label: string) => page.locator('.stat-card').filter({ has: page.getByText(label, { exact: true }) }).locator('.stat-number')
+const count = async (page: Page, label: string) => Number((await kpi(page, label).textContent())!.replace(/\D/g, ''))
 
 async function authorized(request: APIRequestContext) {
   const login = await request.post('/api/auth/login', { data: { email: 'admin@browser.invalid', password }, headers: { 'X-Mining-Client': 'web' } })
@@ -241,7 +251,7 @@ test.describe.serial('Mining System', () => {
 
   test('audit every screen and use the assignment dropdown by touch', async ({ page, browser }) => {
     await signIn(page)
-    for (const section of ['Usuarios', 'Manillas', 'Mensajes', 'Alertas', 'Actividad', 'Mi cuenta y sistema', 'Vista general']) {
+    for (const section of ['Usuarios', 'Manillas', 'Mensajes', 'Alertas', 'Análisis', 'Actividad', 'Mi cuenta y sistema', 'Vista general']) {
       await page.locator('.sidebar').getByRole('button', { name: section, exact: section !== 'Alertas' }).click()
       await expectApplicationControls(page)
     }
@@ -275,6 +285,141 @@ test.describe.serial('Mining System', () => {
       await expectApplicationControls(mobile)
       expect(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy()
     } finally { await context.close() }
+  })
+
+  test('analysis page: shared filters, cross-filtering, tooltips, errors and live refresh', async ({ page, request }) => {
+    const errors: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    await authorized(request)
+    const headers = { 'X-Mining-Client': 'web' }
+    const miner = await (await request.post('/api/users', { headers, data: { name: 'Rosa Quispe', email: 'rosa@browser.invalid', password, role: 'Miner', active: true } })).json()
+    expect((await request.post('/api/devices', { headers, data: { name: 'Manilla 02', zone: 'Galería sur', userId: miner.id, active: true } })).ok()).toBeTruthy()
+    const devices = await (await request.get('/api/devices')).json() as { id: string; name: string }[]
+    const wearers = [
+      { id: devices.find(x => x.name === 'Manilla 01')!.id, miner: 'Javier Mamani', device: 'Manilla 01', zone: 'Galería norte', temperature: 24, gas: 380, battery: 96 },
+      { id: devices.find(x => x.name === 'Manilla 02')!.id, miner: 'Rosa Quispe', device: 'Manilla 02', zone: 'Galería sur', temperature: 29, gas: 540, battery: 88 },
+    ]
+    const now = Date.now()
+    const readings: string[] = []
+    const messages: string[] = []
+    for (const [index, wearer] of wearers.entries()) {
+      for (let hour = 1; hour <= 7 * 24; hour++) {
+        // Hours 10–15 ago have no data for anyone, and Rosa's manilla was off for a day: the chart must show gaps.
+        if ((hour >= 10 && hour <= 15) || (index === 1 && hour >= 72 && hour < 96)) continue
+        const wave = Math.sin(hour / 24 * 2 * Math.PI + index)
+        const gas = hour % 7 === 0 ? 'NULL' : (wearer.gas + 60 * wave + (hour % 5) * 8).toFixed(0)
+        readings.push(`('${wearer.id}', '${wearer.miner}', '${wearer.device}', '${wearer.zone}', ${(wearer.temperature + 3 * wave + (hour % 3) * .4).toFixed(1)}, ${gas}, ${(wearer.battery - (hour % 24) * 1.6).toFixed(0)}, '${sqlTime(now - hour * 3600000 - 600000)}')`)
+      }
+      for (const [day, code] of (['GAS', 'OK', 'SUPPLIES', 'HELP', 'EXIT', 'OK', 'COLLAPSE'] as const).entries()) {
+        for (let repeat = 0; repeat <= (day + index) % 3; repeat++) {
+          const at = sqlTime(now - (day + 1) * 86400000 + repeat * 3600000 + index * 1800000)
+          messages.push(`('${wearer.id}', 'seed-${index}-${day}-${repeat}', '${code}', '${wearer.miner}', '${wearer.device}', '${wearer.zone}', '${at}', '${at}', NULL, NULL)`)
+        }
+      }
+    }
+    seed(`INSERT INTO Readings (DeviceId, MinerName, DeviceName, Zone, TemperatureC, GasPpm, BatteryPercent, ReceivedAt) VALUES ${readings.join(',\n')};
+INSERT INTO Messages (DeviceId, ClientMessageId, Code, MinerName, DeviceName, Zone, SentAt, ReceivedAt, ReviewedAt, ReviewedBy) VALUES ${messages.join(',\n')};`)
+
+    await signIn(page)
+    await page.locator('.sidebar').getByRole('button', { name: 'Análisis', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Análisis', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Evolución de temperatura' })).toBeVisible()
+    await expect(page.locator('.miner-bar')).toHaveCount(2)
+    await expect(page.getByText('El gas en ppm requiere un sensor calibrado.', { exact: false })).toBeVisible()
+    await expectApplicationControls(page)
+    const everyone = await count(page, 'LECTURAS')
+    expect(everyone).toBeGreaterThan(250)
+    await expect(kpi(page, 'PROMEDIO')).toContainText('°C')
+
+    // Last 24 hours: hourly buckets, with the 10–15 h outage drawn as a break in the line.
+    await page.getByRole('group', { name: /^Periodo/ }).getByRole('button', { name: '24 h', exact: true }).click()
+    await expect(page.locator('.analytics-scope')).toContainText('Por hora')
+    await expect.poll(() => page.locator('.series-average').count()).toBeGreaterThanOrEqual(2)
+    const daily = await count(page, 'LECTURAS')
+    expect(daily).toBeLessThan(everyone)
+    const chart = page.locator('.analytics-series .chart-frame')
+    const box = (await chart.boundingBox())!
+    await page.mouse.move(box.x + box.width * .75, box.y + box.height / 2)
+    await expect(page.getByRole('tooltip')).toContainText(/Promedio: .+ °C|Sin lecturas/)
+    await page.mouse.move(0, 0)
+    await expect(page.getByRole('tooltip')).toHaveCount(0)
+    await chart.focus()
+    await chart.press('End')
+    await expect(page.getByRole('tooltip')).toContainText(/\d{4}, \d\d:00–\d\d:00/)
+    await chart.press('Escape')
+
+    // Cross-filtering: a miner bar becomes the shared miner filter for every chart.
+    const criticalBefore = await count(page, 'MENSAJES CRÍTICOS')
+    await page.getByRole('group', { name: /^Periodo/ }).getByRole('button', { name: '7 días', exact: true }).click()
+    await expect(page.locator('.analytics-scope')).toContainText('Por día')
+    const weekCritical = await count(page, 'MENSAJES CRÍTICOS')
+    expect(weekCritical).toBeGreaterThan(criticalBefore)
+    await page.getByRole('button', { name: /^Rosa Quispe:/ }).click()
+    await expect(page.getByRole('combobox', { name: 'Minero' })).toContainText('Rosa Quispe')
+    await expect(page.getByRole('button', { name: /^Javier Mamani:/ })).toHaveClass(/dimmed/)
+    await expect.poll(() => count(page, 'LECTURAS')).toBeLessThan(everyone)
+    await expect.poll(() => count(page, 'MENSAJES CRÍTICOS')).toBeLessThan(weekCritical)
+    const rosaTemperature = await kpi(page, 'PROMEDIO').textContent()
+
+    await page.getByRole('group', { name: 'Métrica' }).getByRole('button', { name: 'Gas', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Evolución de gas' })).toBeVisible()
+    await expect(kpi(page, 'PROMEDIO')).toContainText('ppm')
+    expect(await kpi(page, 'PROMEDIO').textContent()).not.toBe(rosaTemperature)
+
+    await page.getByRole('combobox', { name: 'Zona' }).click()
+    await page.getByRole('option', { name: 'Galería norte', exact: true }).click()
+    await expect(page.getByText('Sin lecturas en este rango')).toBeVisible()
+    await expect(page.getByText('Sin mensajes en este rango')).toBeVisible()
+    await page.getByRole('button', { name: 'Limpiar filtros' }).click()
+    await expect(page.getByRole('combobox', { name: 'Minero' })).toContainText('Todos los mineros')
+    await expect.poll(() => count(page, 'LECTURAS')).toBeGreaterThan(200)
+
+    // Live refresh: a new reading from Javier's manilla updates the filtered indicators.
+    await page.getByRole('group', { name: 'Métrica' }).getByRole('button', { name: 'Temperatura', exact: true }).click()
+    await page.getByRole('combobox', { name: 'Minero' }).click()
+    await page.getByRole('option', { name: 'Javier Mamani', exact: true }).click()
+    await expect(page.locator('.miner-bar.selected')).toContainText('Javier Mamani')
+    await expect(page.getByRole('status').filter({ hasText: 'Actualizado' })).toBeVisible()
+    const javier = await count(page, 'LECTURAS')
+    await send('', true)
+    await expect.poll(() => count(page, 'LECTURAS'), { timeout: 5000 }).toBe(javier + 1)
+
+    // Custom dates: format errors stay in the form, API validation is shown without breaking the page.
+    await page.getByRole('button', { name: 'Personalizado', exact: true }).click()
+    await page.getByLabel('Desde').fill('ayer')
+    await page.getByRole('button', { name: 'Aplicar fechas' }).click()
+    await expect(page.getByText('Escribe las fechas con el formato AAAA-MM-DD', { exact: false })).toBeVisible()
+    await page.getByLabel('Desde').fill('2025-01-01')
+    await page.getByLabel('Hasta (incluido)').fill('2025-06-30')
+    await page.getByRole('button', { name: 'Aplicar fechas' }).click()
+    await expect(page.getByText('El rango de fechas no puede superar 90 días.')).toBeVisible()
+    await page.getByLabel('Hasta (incluido)').fill('2025-01-05')
+    await page.getByRole('button', { name: 'Aplicar fechas' }).click()
+    await expect(page.getByText('Sin lecturas en este rango')).toBeVisible()
+    await expect(kpi(page, 'PROMEDIO')).toHaveText('—')
+
+    await page.getByRole('button', { name: 'Limpiar filtros' }).click()
+    await expect.poll(() => count(page, 'LECTURAS')).toBeGreaterThan(200)
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await expect(page.locator('.miner-bar')).toHaveCount(2)
+    // The report figure: hourly week for one miner, showing cross-filtering and the gaps left by missing data.
+    await page.getByRole('button', { name: /^Rosa Quispe:/ }).click()
+    await page.getByRole('combobox', { name: 'Intervalo' }).click()
+    await page.getByRole('option', { name: 'Por hora', exact: true }).click()
+    await expect(page.locator('.analytics-scope')).toContainText('Por hora')
+    await expect(page.getByRole('status').filter({ hasText: 'Actualizado' })).toBeVisible()
+    await expect.poll(() => page.locator('.series-average').count()).toBeGreaterThanOrEqual(3)
+    await chart.scrollIntoViewIfNeeded()
+    const frame = (await chart.boundingBox())!
+    await page.mouse.move(frame.x + frame.width * .62, frame.y + frame.height / 2)
+    await expect(page.getByRole('tooltip')).toBeVisible()
+    await page.screenshot({ path: 'test-results/analytics.png', fullPage: true })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(page.locator('.miner-bar')).toHaveCount(2)
+    await page.waitForTimeout(300) // let the sidebar finish sliding out before the capture
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy()
+    await page.screenshot({ path: 'test-results/analytics-mobile.png', fullPage: true })
+    expect(errors).toEqual([])
   })
 
   test('user updates, activity and password change', async ({ page }) => {

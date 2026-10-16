@@ -202,9 +202,13 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ReceivedAt");
+
                     b.HasIndex("DeviceId", "ReceivedAt");
 
                     b.HasIndex("MinerName", "ReceivedAt");
+
+                    b.HasIndex("Zone", "ReceivedAt");
 
                     b.ToTable("Readings", t =>
                         {

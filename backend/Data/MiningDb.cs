@@ -47,6 +47,9 @@ public sealed class MiningDb(DbContextOptions<MiningDb> options) : DbContext(opt
         model.Entity<MiningMessage>().HasIndex(x => x.ReceivedAt);
         model.Entity<Telemetry>().HasIndex(x => new { x.DeviceId, x.ReceivedAt });
         model.Entity<Telemetry>().HasIndex(x => new { x.MinerName, x.ReceivedAt });
+        // Range scans for analytics over every miner or a single zone.
+        model.Entity<Telemetry>().HasIndex(x => x.ReceivedAt);
+        model.Entity<Telemetry>().HasIndex(x => new { x.Zone, x.ReceivedAt });
         // The database rejects invalid rows even when they bypass the API.
         model.Entity<User>().ToTable(t =>
         {

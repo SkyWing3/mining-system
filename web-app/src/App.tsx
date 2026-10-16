@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
-import { Activity, ArrowRight, ArrowUpRight, Battery, Bell, Check, CheckCheck, ChevronLeft, ChevronRight, CircleHelp, ClipboardCheck, Clock3, Cpu, Download, Edit3, Eye, HardHat, KeyRound, LayoutDashboard, LogOut, MapPin, Menu, MessageSquare, Plus, Radio, Settings, ShieldCheck, Thermometer, TriangleAlert, Users, Wifi, WifiOff, Wind, X } from 'lucide-react'
+import { Activity, ArrowRight, ArrowUpRight, Battery, ChartColumn, Bell, Check, CheckCheck, ChevronLeft, ChevronRight, CircleHelp, ClipboardCheck, Clock3, Cpu, Download, Edit3, Eye, HardHat, KeyRound, LayoutDashboard, LogOut, MapPin, Menu, MessageSquare, Plus, Radio, Settings, ShieldCheck, Thermometer, TriangleAlert, Users, Wifi, WifiOff, Wind, X } from 'lucide-react'
 import { api, ApiError, date, initials, loadWithRecovery, post, roleName } from './api'
 import { Brand, Empty, MessageRows, Modal } from './components'
 import { DeviceForm, KeyModal, TelemetryModal, UserForm } from './Forms'
+import { AnalyticsPage } from './Analytics'
 import Login from './Login'
 import { useRealtime } from './useRealtime'
 import type { AuditEvent, Device, Message, MessageList, Overview, Page, Reading, User } from './types'
@@ -14,6 +15,7 @@ const pageInfo: Record<Page, { title: string; description: string; icon: typeof 
   dashboard: { title: 'Vista general', description: 'La información esencial de tu operación, en un solo lugar.', icon: LayoutDashboard },
   messages: { title: 'Mensajes', description: 'Cada reporte de tu equipo, recibido directamente desde las manillas.', icon: MessageSquare },
   alerts: { title: 'Alertas de seguridad', description: 'Prioriza los reportes críticos y registra su revisión.', icon: TriangleAlert },
+  analytics: { title: 'Análisis', description: 'La exposición del equipo a lo largo del tiempo, por minero, zona y periodo.', icon: ChartColumn },
   devices: { title: 'Manillas', description: 'Administra dispositivos, asignaciones y lecturas de tu equipo.', icon: Cpu },
   users: { title: 'Usuarios', description: 'Gestiona a tu equipo y sus permisos de acceso.', icon: Users },
   activity: { title: 'Actividad', description: 'Un registro de las acciones realizadas en la central.', icon: ClipboardCheck },
@@ -103,7 +105,7 @@ function Central({ user, signOut }: { user: User; signOut: () => void }) {
     try { const readings = await api<Reading[]>(`/devices/${device.id}/telemetry`); setTelemetry({ device, readings }) } catch (error) { handleError(error) }
   }
   async function logout() { try { await post('/auth/logout'); signOut() } catch (error) { handleError(error) } }
-  const navigation: Page[] = ['dashboard', 'messages', 'alerts', 'devices', ...(user.role === 'Admin' ? ['users' as Page] : []), 'activity']
+  const navigation: Page[] = ['dashboard', 'messages', 'alerts', 'analytics', 'devices', ...(user.role === 'Admin' ? ['users' as Page] : []), 'activity']
   const dateLabel = new Intl.DateTimeFormat('es-BO', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'America/La_Paz' }).format(now)
 
   return <div className="app-shell">
@@ -116,6 +118,7 @@ function Central({ user, signOut }: { user: User; signOut: () => void }) {
       {loading ? <div className="loading-panel"><span className="spinner" />Cargando la operación…</div> : <>
         {page === 'dashboard' && overview && <Dashboard overview={overview} devices={devices} navigate={navigate} review={openReview} inspect={inspect} />}
         {(page === 'messages' || page === 'alerts') && <MessagesPage key={page} alerts={page === 'alerts'} tick={tick} devices={devices} review={openReview} onError={handleError} />}
+        {page === 'analytics' && <AnalyticsPage tick={tick} onError={handleError} />}
         {page === 'devices' && <DeviceTable devices={devices} edit={setDeviceModal} rotate={device => { setActionError(''); setRotateDevice(device) }} inspect={inspect} add={() => setDeviceModal('new')} />}
         {page === 'users' && <UsersPage users={users} edit={setUserModal} />}
         {page === 'activity' && <ActivityPage events={events} />}

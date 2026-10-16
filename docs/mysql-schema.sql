@@ -99,6 +99,12 @@ CREATE INDEX `IX_Readings_DeviceId_ReceivedAt` ON `Readings` (`DeviceId`, `Recei
 CREATE INDEX `IX_Readings_MinerName_ReceivedAt` ON `Readings` (`MinerName`, `ReceivedAt`);
 
 
+CREATE INDEX `IX_Readings_ReceivedAt` ON `Readings` (`ReceivedAt`);
+
+
+CREATE INDEX `IX_Readings_Zone_ReceivedAt` ON `Readings` (`Zone`, `ReceivedAt`);
+
+
 CREATE UNIQUE INDEX `IX_Users_Email` ON `Users` (`Email`);
 
 

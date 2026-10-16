@@ -112,7 +112,7 @@ with tempfile.TemporaryDirectory(prefix='mining-report-') as folder:
             server.wait(timeout=10)
             drop(database['name'])
 
-for source, dest in [('login.png', 'acceso.png'), ('dashboard.png', 'dashboard.png'), ('messages.png', 'mensajes.png'), ('mobile.png', 'movil.png'), ('custom-select-desktop.png', 'registro-usuario.png')]:
+for source, dest in [('login.png', 'acceso.png'), ('dashboard.png', 'dashboard.png'), ('messages.png', 'mensajes.png'), ('mobile.png', 'movil.png'), ('custom-select-desktop.png', 'registro-usuario.png'), ('analytics.png', 'analisis.png')]:
     shutil.copy2(ROOT / 'web-app/test-results' / source, OUTPUT / 'figuras' / dest)
 shutil.copy2(ROOT / 'docs/wokwi/diagrama.pdf', OUTPUT / 'figuras/circuito.pdf')
 shutil.copy2(ROOT / 'docs/wokwi/diagrama.png', OUTPUT / 'figuras/circuito.png')

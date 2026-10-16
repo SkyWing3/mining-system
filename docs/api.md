@@ -28,6 +28,9 @@ El login y la configuración inicial tienen un límite de 12 solicitudes por IP 
 | POST | `/api/messages/{id}/review` | Revisión interna de una alerta crítica, idempotente. |
 | GET | `/api/devices/{id}/telemetry` | Últimas 100 lecturas, de reciente a antigua, con `minerName` y `zone` registrados al recibir cada una. |
 | GET | `/api/events` | Últimas 100 acciones administrativas. |
+| GET | `/api/analytics/readings` | Admin/Supervisor; lecturas agregadas por hora o día, resumen y comparación por minero. |
+| GET | `/api/analytics/messages` | Admin/Supervisor; mensajes por día local y prioridad, con resumen. |
+| GET | `/api/analytics/options` | Admin/Supervisor; mineros y zonas presentes en el historial, para los filtros. |
 | GET | `/openapi/v1.json` | Descripción de API, solo en entorno Development. |
 
 Roles válidos: `Admin`, `Supervisor`, `Miner`. El panel requiere Admin o Supervisor. Los mineros son portadores de dispositivos. Se protege el último administrador activo; no se permite desactivar la propia cuenta. Desasignar las manillas activas antes de desactivar un minero o cambiar su rol. Cada minero tiene como máximo una manilla activa; los registros se conservan para proteger el historial.
@@ -61,6 +64,61 @@ Todos los filtros son opcionales. `pageSize` está limitado a 100. `severity` ad
 ```
 
 El mensaje conserva el nombre del portador y la zona asignados al recibirlo; reasignaciones posteriores no modifican el registro. `receivedAt` es la fecha del servidor; `sentAt` proviene del reloj del dispositivo. Mantener sincronizados los relojes de las Raspberry Pi.
+
+### Análisis agregado
+
+La página **Análisis** consulta estos endpoints. La agregación (`COUNT`, `AVG`, `MAX`, `MIN`, `GROUP BY` del intervalo) se ejecuta en MySQL; solo viajan los intervalos. Los filtros comparten la misma semántica en ambos endpoints:
+
+| Parámetro | Valor |
+| --- | --- |
+| `from`, `to` | Instantes ISO 8601 (`2026-10-01T04:00:00Z`; sin zona se asume UTC). Intervalo semiabierto `[from, to)`. Opcionales: por defecto, los últimos 7 días. `from < to` y como máximo 90 días. |
+| `miner` | Nombre del portador registrado en cada fila (`MinerName`), coincidencia exacta. Opcional. |
+| `zone` | Zona registrada en cada fila, coincidencia exacta. Opcional. |
+| `metric` | Solo lecturas: `temperature` (°C, por defecto), `gas` (ppm) o `battery` (%). |
+| `bucket` | Solo lecturas: `hour`, `day` o `auto` (por defecto: por hora hasta 3 días, por día en rangos mayores). Por hora admite como máximo 14 días. |
+
+Los días se cuentan en hora de Bolivia (UTC−4 fija, sin horario de verano): un intervalo diario empieza a las 04:00 UTC. El primer y el último intervalo pueden estar incompletos si `from`/`to` no coinciden con un límite. Los mensajes se agrupan por `receivedAt`, la fecha del servidor.
+
+`GET /api/analytics/readings?from=2026-01-05T10:00:00Z&to=2026-01-05T14:00:00Z&metric=temperature&bucket=hour`
+
+```json
+{
+  "from": "2026-01-05T10:00:00Z", "to": "2026-01-05T14:00:00Z",
+  "metric": "temperature", "unit": "°C", "bucket": "hour", "timeZone": "America/La_Paz",
+  "summary": { "readings": 4, "average": 28.5, "maximum": 40, "minimum": 20 },
+  "series": [
+    { "start": "2026-01-05T10:00:00Z", "count": 3, "average": 28, "maximum": 40 },
+    { "start": "2026-01-05T11:00:00Z", "count": 0, "average": null, "maximum": null }
+  ],
+  "miners": [{ "miner": "Javier Mamani", "count": 3, "average": 24.67, "maximum": 30 }]
+}
+```
+
+- Solo cuentan las filas con la métrica presente: un valor `null` es ausencia de dato, nunca cero. `summary.readings` es la cantidad de lecturas con esa métrica.
+- `series` contiene todos los intervalos del rango, en orden; los vacíos llevan `count: 0` y valores `null` para que la gráfica los muestre como huecos.
+- `miners` aplica rango, zona y métrica, pero **no** el filtro `miner`: funciona como selector para el filtrado cruzado. Un nombre vacío corresponde a lecturas de una manilla sin minero asignado.
+- Valores redondeados a dos decimales.
+
+`GET /api/analytics/messages?from=2026-01-05T04:00:00Z&to=2026-01-07T04:00:00Z&zone=Galería%20norte`
+
+```json
+{
+  "from": "2026-01-05T04:00:00Z", "to": "2026-01-07T04:00:00Z", "timeZone": "America/La_Paz",
+  "summary": { "total": 3, "critical": 2, "warning": 1, "info": 0, "pendingCritical": 1 },
+  "days": [
+    { "day": "2026-01-05", "start": "2026-01-05T04:00:00Z", "critical": 2, "warning": 1, "info": 0 },
+    { "day": "2026-01-06", "start": "2026-01-06T04:00:00Z", "critical": 0, "warning": 0, "info": 0 }
+  ]
+}
+```
+
+La prioridad proviene del catálogo de mensajes. `pendingCritical` cuenta las alertas críticas del rango sin revisión registrada.
+
+`GET /api/analytics/options` devuelve `{ miners, zones, maxRangeDays, maxHourlyRangeDays }`, con los nombres y zonas que aparecen en lecturas y mensajes históricos (incluye portadores reasignados o desactivados).
+
+Errores: sin sesión, `401`; con rol Miner, `403`; parámetros inválidos, `400` con `{ "message": "..." }` en español, por ejemplo `La fecha inicial debe ser anterior a la fecha final.`, `El rango de fechas no puede superar 90 días.`, `Métrica no válida. Usa temperature, gas o battery.`, `Intervalo no válido. Usa hour, day o auto.`, `Para intervalos por hora, el rango no puede superar 14 días. Usa intervalos por día.`, fechas con formato inválido o filtros de más de 100 caracteres.
+
+Índices: el filtro por minero usa `IX_Readings_MinerName_ReceivedAt`; la migración `AddAnalyticsIndexes` añade `IX_Readings_ReceivedAt` (rango sin filtros) e `IX_Readings_Zone_ReceivedAt` (filtro por zona). Los mensajes usan `IX_Messages_ReceivedAt`.
 
 ## Manilla → central: WebSocket nativo
 
@@ -134,7 +192,7 @@ Ruta `/hubs/mining`, cookie de operador y roles Admin/Supervisor. El cliente exi
 | `TelemetryReceived` | `{ deviceId, reading }`. |
 | `SystemChanged` | Categoría: `users`, `devices`, `messages` o `presence`. |
 
-La web actualiza sus vistas al recibir eventos. No usa sondeo periódico para mensajes. Después de reconectar vuelve a consultar el historial y los contadores para recuperar lo ocurrido durante el corte. También identifica el estado offline del navegador. Las sesiones revocadas cierran sus sockets y las caducadas se revalidan, como máximo, cada 15 segundos.
+La web actualiza sus vistas al recibir eventos; la página Análisis vuelve a consultar los agregados (con una espera de 250 ms para agrupar ráfagas de lecturas). No usa sondeo periódico para mensajes. Después de reconectar vuelve a consultar el historial y los contadores para recuperar lo ocurrido durante el corte. También identifica el estado offline del navegador. Las sesiones revocadas cierran sus sockets y las caducadas se revalidan, como máximo, cada 15 segundos.
 
 El flujo es **manilla → central → operador**. No hay API ni caja de texto para respuestas desde la web. Una revisión de alerta solo cambia el historial de la central; no se emite una trama hacia el dispositivo.
 

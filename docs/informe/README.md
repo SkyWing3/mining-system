@@ -20,7 +20,7 @@ entrega conserva esa estructura y se puede compilar sin el código del servidor.
   ACK e idempotencia, lectura y consulta de claves foráneas en una base temporal.
 - `evidencias/mysql-schema.sql`: esquema generado por EF Core para MySQL.
 - `evidencias/pruebas-dispositivo.txt`: salida real de las 16 pruebas del nodo.
-- `evidencias/resultados.json`: resumen de las 41 pruebas y del entorno validado.
+- `evidencias/resultados.json`: resumen de las 47 pruebas y del entorno validado.
 - `creditos/`: licencia de los dibujos de Wokwi Elements usados en el plano.
 
 El programa del nodo usa CPython y el dashboard usa React; el informe describe

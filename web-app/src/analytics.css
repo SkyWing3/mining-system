@@ -1,0 +1,260 @@
+.analytics {
+  display:flex;
+  flex-direction:column;
+  gap:23px;
+  min-width:0
+}
+.analytics .stats-grid { margin-bottom:0 }
+.analytics > :not(.analytics-filters) { transition:opacity .15s }
+.analytics.stale > :not(.analytics-filters) { opacity:.55 }
+.analytics .error-banner { margin-bottom:0 }
+.analytics-toolbar {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  gap:14px 16px;
+  padding:20px 23px
+}
+.analytics-toolbar > .app-field {
+  width:190px;
+  flex:0 1 190px
+}
+.analytics-toolbar .app-field label,.analytics-label {
+  font-size:11px;
+  font-weight:650;
+  letter-spacing:.4px;
+  color:var(--charcoal)
+}
+.analytics-field {
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  min-width:0
+}
+.analytics-toolbar .tabs { flex-wrap:wrap }
+.analytics-toolbar .tabs button { min-height:36px }
+.analytics-toolbar .select-trigger {
+  height:44px;
+  font-size:12px
+}
+.analytics-clear {
+  min-height:44px;
+  font-size:12px;
+  margin-left:auto
+}
+.analytics-custom {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-end;
+  gap:12px 16px;
+  padding:0 23px 20px
+}
+.analytics-custom .app-field { width:180px }
+.analytics-custom .button { min-height:44px }
+.analytics-custom .field-error { flex-basis:100% }
+.analytics-scope {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-between;
+  align-items:center;
+  gap:6px 14px;
+  padding:12px 23px;
+  border-top:1px solid var(--border);
+  font-size:11px;
+  line-height:1.6;
+  color:var(--muted)
+}
+.analytics-refresh {
+  display:inline-flex;
+  align-items:center;
+  gap:6px
+}
+.analytics-refresh svg { color:var(--earth) }
+.analytics-refresh .spinning { animation:spin .8s linear infinite }
+.analytics-grid {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:23px
+}
+.chart-legend {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 16px;
+  font-size:11px;
+  color:var(--charcoal)
+}
+.chart-legend span,.chart-legend button,.chart-tooltip span {
+  display:inline-flex;
+  align-items:center;
+  gap:7px
+}
+.chart-legend.interactive { padding:16px 23px 0 }
+.chart-legend.interactive button {
+  min-height:32px;
+  padding:4px 10px;
+  border:1px solid var(--border);
+  border-radius:5px;
+  font-size:11px;
+  font-weight:600;
+  color:var(--ink)
+}
+.chart-legend.interactive button[aria-pressed="false"] {
+  color:var(--muted);
+  text-decoration:line-through
+}
+.chart-legend.interactive button[aria-pressed="false"] .legend-swatch { opacity:.25 }
+.legend-line {
+  display:inline-block;
+  width:18px;
+  border-top:2px solid var(--wine)
+}
+.legend-line.dashed { border-top:2px dashed var(--plum) }
+.legend-swatch {
+  display:inline-block;
+  width:11px;
+  height:11px;
+  border-radius:3px;
+  flex-shrink:0
+}
+.legend-swatch.average { background:var(--wine) }
+.legend-swatch.maximum { background:var(--plum) }
+.chart-frame {
+  position:relative;
+  padding:18px 23px 14px;
+  min-width:0
+}
+.chart-frame:focus-visible { outline-offset:-3px }
+.analytics-chart {
+  display:block;
+  overflow:visible;
+  touch-action:pan-y
+}
+.analytics-chart text {
+  font-size:11px;
+  fill:var(--muted)
+}
+.chart-grid { stroke:var(--chart-grid) }
+.chart-crosshair {
+  stroke:var(--charcoal);
+  stroke-dasharray:3 3
+}
+.series-average {
+  fill:none;
+  stroke:var(--wine);
+  stroke-width:2;
+  stroke-linejoin:round;
+  stroke-linecap:round
+}
+.series-maximum {
+  fill:none;
+  stroke:var(--plum);
+  stroke-width:1.5;
+  stroke-dasharray:5 4;
+  stroke-linejoin:round
+}
+.point-average,.point-maximum {
+  stroke:var(--paper);
+  stroke-width:2
+}
+.point-average { fill:var(--wine) }
+.point-maximum { fill:var(--plum) }
+.message-segment {
+  stroke:var(--paper);
+  stroke-width:1
+}
+.analytics-chart .faded rect { opacity:.45 }
+.chart-tooltip {
+  position:absolute;
+  top:6px;
+  z-index:5;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  max-width:min(260px,100%);
+  padding:9px 12px;
+  background:var(--charcoal);
+  color:var(--paper);
+  border-radius:5px;
+  font-size:12px;
+  line-height:1.45;
+  pointer-events:none;
+  box-shadow:0 3px 12px #25263115
+}
+.chart-tooltip strong { font-weight:650 }
+.chart-tooltip small { color:var(--sidebar-muted); font-size:11px }
+.chart-tooltip .legend-line { border-top-color:var(--sand) }
+.chart-tooltip .legend-line.dashed { border-top-color:var(--sidebar-muted) }
+.miner-bars {
+  display:flex;
+  flex-direction:column;
+  padding:10px 12px 14px
+}
+.miner-bars .tooltip-anchor { display:block }
+.miner-bar {
+  display:grid;
+  gap:6px;
+  width:100%;
+  padding:10px 11px;
+  border-radius:6px;
+  text-align:left;
+  color:var(--ink);
+  transition:opacity .15s,background .15s
+}
+.miner-bar:hover:not(:disabled),.miner-bar.selected { background:#f6f2f0 }
+.miner-bar.selected { box-shadow:inset 3px 0 0 var(--wine) }
+.miner-bar.dimmed { opacity:.45 }
+.miner-bar:disabled { cursor:default }
+.miner-bar-label {
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:10px;
+  font-size:12px;
+  min-width:0
+}
+.miner-bar-label strong {
+  font-weight:650;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap
+}
+.miner-bar-label > span {
+  white-space:nowrap;
+  font-weight:650;
+  color:var(--wine)
+}
+.miner-bar-label small {
+  font-weight:500;
+  color:var(--muted)
+}
+.miner-bar-track {
+  display:block;
+  height:8px;
+  background:var(--chart-grid);
+  border-radius:4px;
+  overflow:hidden
+}
+.miner-bar-track > span {
+  display:block;
+  height:100%;
+  border-radius:4px
+}
+.miner-bar-track .average { background:var(--wine) }
+.miner-bar-track .maximum { background:var(--plum) }
+.messages-chart { min-width:0 }
+@media(max-width:1100px) {
+  .analytics-grid { grid-template-columns:1fr }
+}
+@media(max-width:760px) {
+  .analytics { gap:18px }
+  .analytics-toolbar,.analytics-custom { padding-left:15px; padding-right:15px }
+  .analytics-toolbar > .app-field { flex:1 1 140px; width:auto }
+  .analytics-field { flex-basis:100% }
+  .analytics-clear { flex:1 1 140px; margin-left:0 }
+  .analytics-custom .app-field { flex:1 1 130px; width:auto }
+  .analytics-custom .button { flex-basis:100% }
+  .analytics-scope { padding:12px 15px }
+  .chart-frame { padding:14px 12px 10px }
+  .chart-legend.interactive { padding:14px 15px 0 }
+  .analytics .panel-heading { flex-wrap:wrap }
+}

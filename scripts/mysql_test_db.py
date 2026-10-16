@@ -49,10 +49,19 @@ def create(kind='api'):
     return {'name': name, 'connectionString': connection}
 
 
-def drop(name):
+def temporary(name):
     if not re.fullmatch(r'mining_test_(api|browser|report)_[0-9a-f]{32}', name):
-        raise ValueError('Solo se eliminan las bases temporales con un nombre de pruebas válido')
-    sql(f'DROP DATABASE IF EXISTS `{name}`;')
+        raise ValueError('Solo se usan las bases temporales con un nombre de pruebas válido')
+    return name
+
+
+def drop(name):
+    sql(f'DROP DATABASE IF EXISTS `{temporary(name)}`;')
+
+
+def seed(name, statements):
+    """Insert fixture rows into a temporary database; the append-only triggers still apply."""
+    return sql(f'USE `{temporary(name)}`;\n' + statements)
 
 
 if __name__ == '__main__':
@@ -60,5 +69,7 @@ if __name__ == '__main__':
         print(json.dumps(create(sys.argv[2])))
     elif sys.argv[1] == 'drop':
         drop(sys.argv[2])
+    elif sys.argv[1] == 'seed':
+        print(seed(sys.argv[2], sys.stdin.read()), end='')
     else:
-        raise SystemExit('Usar create api|browser|report, o drop NOMBRE_TEMPORAL')
+        raise SystemExit('Usar create api|browser|report, drop NOMBRE_TEMPORAL o seed NOMBRE_TEMPORAL < datos.sql')
