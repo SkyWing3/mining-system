@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { WifiOff } from 'lucide-react'
-import { ApiError, loadWithRecovery } from './api/client'
+import { loadWithRecovery } from './api/client'
 import { authApi } from './api/endpoints'
 import { Brand } from './components/ui/Brand'
 import { Central } from './pages/Central'
@@ -16,17 +16,9 @@ export default function App() {
   const [error, setError] = useState('')
   const signOut = useCallback(() => setUser(null), [])
 
+  // The public status already includes the current session, so a signed-out visit causes no 401.
   useEffect(() => loadWithRecovery(
-    async signal => {
-      const status = await authApi.status(signal)
-      if (status.setupRequired) return { setupRequired: true, user: null }
-      try {
-        return { setupRequired: false, user: await authApi.me(signal) }
-      } catch (failure) {
-        if (failure instanceof ApiError && failure.status === 401) return { setupRequired: false, user: null }
-        throw failure
-      }
-    },
+    signal => authApi.status(signal),
     result => {
       setSetup(result.setupRequired)
       setUser(result.user)

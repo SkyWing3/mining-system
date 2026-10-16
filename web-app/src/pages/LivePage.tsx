@@ -95,7 +95,7 @@ function LiveCard({ device, readings, now, inspect }: { device: Device; readings
       </div>
       <footer>
         <span className={`live-freshness ${stale ? 'stale' : ''}`}>
-          {reading ? `${stale ? 'Sin datos recientes · ' : ''}Actualizado ${elapsed(reading.receivedAt, now)}` : 'Esperando la primera lectura'}
+          {!reading ? 'Esperando la primera lectura' : stale ? `Última lectura ${elapsed(reading.receivedAt, now)}` : `Actualizado ${elapsed(reading.receivedAt, now)}`}
           {reading?.simulated && <SimulatedTag />}
         </span>
         <button className="text-button" onClick={() => inspect(device)}>Ver gráfico<ChevronRight size={15} /></button>

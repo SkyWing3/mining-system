@@ -84,13 +84,15 @@ export function DashboardPage({ overview, devices, liveDanger, navigate, review,
                     <strong>{device.minerName ?? 'Sin asignar'}</strong>
                     <small>{device.name} · {device.zone}</small>
                   </span>
-                  <span className="team-reading">
-                    <Thermometer size={15} />
-                    {device.reading?.temperatureC == null ? 'Sin lectura' : temperature(device.reading.temperatureC)}
+                  <span className="team-meta">
+                    <span className="team-reading">
+                      <Thermometer size={15} />
+                      {device.reading?.temperatureC == null ? 'Sin lectura' : temperature(device.reading.temperatureC)}
+                    </span>
+                    {device.reading && device.reading.level !== 'normal' && <LevelBadge level={device.reading.level} />}
+                    <DeviceStatus device={device} />
                   </span>
-                  {device.reading && device.reading.level !== 'normal' && <LevelBadge level={device.reading.level} />}
-                  <DeviceStatus device={device} />
-                  <ChevronRight size={16} />
+                  <ChevronRight className="team-chevron" size={16} />
                 </button>
               ))}
             </div>
@@ -116,17 +118,19 @@ function Coverage({ active, online, navigate }: { active: number; online: number
       <div className="coverage-ring">
         <svg viewBox="0 0 160 160" aria-hidden="true">
           <circle cx="80" cy="80" r="65" fill="none" stroke="var(--chart-grid)" strokeWidth="11" />
-          <circle
-            cx="80"
-            cy="80"
-            r="65"
-            fill="none"
-            stroke="var(--accent-plum)"
-            strokeWidth="11"
-            strokeDasharray={`${(coverage / 100) * 408.4} 408.4`}
-            transform="rotate(-90 80 80)"
-            strokeLinecap="round"
-          />
+          {coverage > 0 && (
+            <circle
+              cx="80"
+              cy="80"
+              r="65"
+              fill="none"
+              stroke="var(--accent-plum)"
+              strokeWidth="11"
+              strokeDasharray={`${(coverage / 100) * 408.4} 408.4`}
+              transform="rotate(-90 80 80)"
+              strokeLinecap="round"
+            />
+          )}
         </svg>
         <div><strong>{coverage}<small>%</small></strong><span>conectadas</span></div>
       </div>

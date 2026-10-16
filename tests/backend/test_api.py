@@ -177,6 +177,13 @@ class BackendTests(unittest.TestCase):
         self.assertEqual(anonymous.call('/auth/login', 'POST', {'email': 'admin@test.invalid', 'password': 'wrong-password'})[0], 401)
         self.assertEqual(self.admin.call('/auth/setup', 'POST', {'name': 'Another Admin', 'email': 'other@test.invalid', 'password': PASSWORD})[0], 409)
 
+    def test_status_reports_the_current_session(self):
+        status, anonymous = Api().call('/auth/status')
+        self.assertEqual((status, anonymous), (200, {'setupRequired': False, 'user': None}))
+        _, signed_in = self.admin.call('/auth/status')
+        self.assertEqual(signed_in['user']['email'], 'admin@test.invalid')
+        self.assertNotIn('passwordHash', signed_in['user'])
+
     def test_contract_and_catalog_match_the_oled(self):
         from src.communication.catalog import AUTOMATIC_MESSAGES, MESSAGES, NOTICES
         with urllib.request.urlopen(BASE + '/openapi/v1.json', timeout=5) as response:

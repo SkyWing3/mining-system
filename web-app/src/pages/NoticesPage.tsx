@@ -37,18 +37,26 @@ export function NoticesPage({ version, compose, onError }: { version: number; co
         : loading && !result ? <Spinner label="Cargando avisos…" />
         : result?.items.length ? (
           <div className="table-scroll">
-            <table>
-              <thead>
-                <tr><th>AVISO</th><th>MANILLA / MINERO</th><th>ENVIADO POR</th><th>ENVIADO</th><th>ESTADO</th></tr>
-              </thead>
+            <table className="data-table">
+              <thead><tr><th>AVISO</th><th>MANILLA / MINERO</th><th>ENVIADO</th><th>ESTADO</th></tr></thead>
               <tbody>
                 {result.items.map(notice => (
                   <tr key={notice.id}>
-                    <td><div className="notice-cell"><strong>{notice.text}</strong><Badge severity={notice.severity} /></div></td>
-                    <td><div className="table-person"><div><strong>{notice.deviceName}</strong><small>{notice.minerName ?? 'Sin asignar'} · {notice.zone}</small></div></div></td>
-                    <td>{notice.createdBy}</td>
-                    <td className="muted">{date(notice.createdAt, true)}</td>
-                    <td><NoticeStatus notice={notice} /></td>
+                    <td className="cell-main" data-label="Aviso">
+                      <div className="notice-cell"><strong>{notice.text}</strong><Badge severity={notice.severity} /></div>
+                    </td>
+                    <td className="cell-wrap" data-label="Manilla">
+                      <div className="table-person">
+                        <div><strong>{notice.deviceName}</strong><small>{notice.minerName ?? 'Sin asignar'} · {notice.zone}</small></div>
+                      </div>
+                    </td>
+                    <td data-label="Enviado">
+                      <div className="cell-stack">
+                        <span>{date(notice.createdAt, true)}</span>
+                        <span className="cell-note">por {notice.createdBy}</span>
+                      </div>
+                    </td>
+                    <td data-label="Estado"><NoticeStatus notice={notice} /></td>
                   </tr>
                 ))}
               </tbody>

@@ -13,9 +13,16 @@ namespace MiningSystem.Controllers;
 [ApiController, Route("api/auth")]
 public sealed class AuthController(AuthService auth, TimeProvider time) : ControllerBase
 {
+    // Public: tells the web whether to show the initial setup, the login, or the current session.
     [HttpGet("status"), AllowAnonymous]
-    public async Task<IActionResult> Status(CancellationToken cancellationToken) =>
-        Ok(new { setupRequired = await auth.IsSetupRequiredAsync(cancellationToken) });
+    public async Task<IActionResult> Status(CancellationToken cancellationToken)
+    {
+        var setupRequired = await auth.IsSetupRequiredAsync(cancellationToken);
+        var user = !setupRequired && (User.IsInRole(Roles.Admin) || User.IsInRole(Roles.Supervisor))
+            ? await auth.FindAsync(CurrentUserId, cancellationToken)
+            : null;
+        return Ok(new { setupRequired, user = user is null ? null : UserDto.From(user) });
+    }
 
     [HttpPost("setup"), AllowAnonymous, EnableRateLimiting(RateLimitPolicies.Login)]
     public async Task<ActionResult<UserDto>> Setup(SetupRequest request, CancellationToken cancellationToken)

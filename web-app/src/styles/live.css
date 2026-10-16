@@ -106,7 +106,8 @@
 .live-card header {
   display:flex;
   align-items:center;
-  gap:12px;
+  flex-wrap:wrap;
+  gap:10px 12px;
   min-width:0
 }
 .live-identity {
@@ -119,22 +120,22 @@
 .live-identity strong {
   font-size:14px;
   color:var(--ink);
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap
+  overflow-wrap:anywhere
 }
 .live-identity small {
   font-size:11px;
+  line-height:1.5;
   color:var(--muted);
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap
+  overflow-wrap:anywhere
 }
+/* Badges sit under the name, aligned with it, so long names are never cut. */
 .live-status {
   display:flex;
-  flex-direction:column;
-  align-items:flex-end;
-  gap:5px
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px;
+  width:100%;
+  padding-left:52px
 }
 .live-metrics {
   display:grid;
@@ -179,7 +180,11 @@
   flex-wrap:wrap;
   gap:6px;
   font-size:11px;
+  line-height:1.5;
   color:var(--muted)
+}
+.live-card footer .text-button {
+  flex:none
 }
 .live-freshness.stale {
   color:var(--earth);
@@ -290,7 +295,7 @@
   display:flex;
   align-items:flex-start;
   gap:13px;
-  padding:16px 0;
+  padding:18px 24px;
   border-bottom:1px solid var(--border)
 }
 .voice-row .mini-avatar {
@@ -342,7 +347,7 @@
 }
 .voice-track {
   flex:1;
-  min-width:120px;
+  min-width:80px;
   height:6px;
   border-radius:3px;
   background:var(--chart-grid);
@@ -362,6 +367,8 @@
   background:var(--wine)
 }
 .voice-time {
+  flex:none;
+  white-space:nowrap;
   font-size:11px;
   color:var(--muted);
   font-variant-numeric:tabular-nums
@@ -438,7 +445,8 @@
     align-items:center
   }
   .voice-row {
-    flex-wrap:wrap
+    flex-wrap:wrap;
+    padding:16px 18px
   }
   .voice-end {
     width:100%;
@@ -452,5 +460,290 @@
 @media(prefers-reduced-motion:reduce) {
   .live-card,.live-metrics {
     transition:none
+  }
+}
+
+/* Short windows: compact navigation so the account block always fits (touch sizes stay on phones). */
+@media(min-width:981px) and (max-height:860px) {
+  .sidebar {
+    padding-top:22px
+  }
+  .sidebar>.brand {
+    margin-bottom:24px
+  }
+  .sidebar-label {
+    margin-bottom:10px
+  }
+  .sidebar nav {
+    gap:2px
+  }
+  .nav-item {
+    min-height:40px;
+    padding-top:9px;
+    padding-bottom:9px
+  }
+  .sidebar-bottom {
+    padding-top:10px
+  }
+  .sidebar-user {
+    margin-top:10px;
+    padding-top:14px;
+    padding-bottom:14px
+  }
+}
+
+/* Message source: each separator travels with the item it precedes, never alone at a line start. */
+.source-item {
+  display:inline-flex;
+  align-items:center;
+  gap:5px
+}
+
+/* Dashboard team rows: reading and badges; under the name when the panel is narrow. */
+.team-list {
+  container-type:inline-size
+}
+.team-meta {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:6px 8px
+}
+@container (max-width:520px) {
+  .team-row {
+    grid-template-columns:auto minmax(0,1fr) auto
+  }
+  .team-meta {
+    grid-column:2;
+    grid-row:2;
+    justify-content:flex-start;
+    margin-top:8px
+  }
+  .team-chevron {
+    grid-column:3;
+    grid-row:1 / span 2
+  }
+}
+
+/* Telemetry dialog header: the value stays on one line; the details wrap below it. */
+.chart-label {
+  flex-wrap:wrap
+}
+.chart-label strong {
+  white-space:nowrap
+}
+.chart-meta {
+  margin-left:auto
+}
+
+/* Data tables: wrapping cells, grouped values, and stacked cards when the container is narrow. */
+.data-table .cell-wrap {
+  white-space:normal;
+  min-width:150px;
+  max-width:280px
+}
+.cell-stack {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:6px
+}
+.badge-row {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px
+}
+.reading-group {
+  display:flex;
+  flex-direction:column;
+  gap:6px
+}
+.table-person .zone-cell {
+  display:flex;
+  align-items:flex-start;
+  gap:4px;
+  margin-top:5px
+}
+.table-person .zone-cell svg {
+  flex:none;
+  margin-top:1px
+}
+.cell-note {
+  display:block;
+  margin-top:5px;
+  font-size:11px;
+  color:var(--muted)
+}
+@container (max-width:900px) {
+  .data-table.wide thead {
+    display:none
+  }
+  .data-table.wide,.data-table.wide tbody,.data-table.wide tr,.data-table.wide td {
+    display:block
+  }
+  .data-table.wide tr {
+    padding:16px 20px;
+    border-bottom:1px solid var(--border)
+  }
+  .data-table.wide tbody tr:last-child {
+    border-bottom:0
+  }
+  .data-table.wide td {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:6px 0;
+    border:0;
+    white-space:normal;
+    text-align:right
+  }
+  .data-table.wide td::before {
+    content:attr(data-label);
+    flex:none;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.6px;
+    text-transform:uppercase;
+    color:var(--muted);
+    text-align:left
+  }
+  .data-table.wide td.cell-main {
+    display:block;
+    text-align:left;
+    padding-bottom:10px
+  }
+  .data-table.wide td.cell-actions {
+    justify-content:flex-end;
+    padding-top:10px
+  }
+  .data-table.wide td.cell-main::before,.data-table.wide td.cell-actions::before {
+    content:none
+  }
+  .data-table.wide .cell-wrap {
+    min-width:0;
+    max-width:none
+  }
+  .data-table.wide .cell-stack,.data-table.wide .reading-group {
+    align-items:flex-end
+  }
+  .data-table.wide .badge-row {
+    justify-content:flex-end
+  }
+}
+@container (max-width:720px) {
+  .data-table:not(.compact) thead {
+    display:none
+  }
+  .data-table:not(.compact),.data-table:not(.compact) tbody,.data-table:not(.compact) tr,.data-table:not(.compact) td {
+    display:block
+  }
+  .data-table:not(.compact) tr {
+    padding:16px 20px;
+    border-bottom:1px solid var(--border)
+  }
+  .data-table:not(.compact) tbody tr:last-child {
+    border-bottom:0
+  }
+  .data-table:not(.compact) td {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:6px 0;
+    border:0;
+    white-space:normal;
+    text-align:right
+  }
+  .data-table:not(.compact) td::before {
+    content:attr(data-label);
+    flex:none;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.6px;
+    text-transform:uppercase;
+    color:var(--muted);
+    text-align:left
+  }
+  .data-table:not(.compact) td.cell-main {
+    display:block;
+    text-align:left;
+    padding-bottom:10px
+  }
+  .data-table:not(.compact) td.cell-actions {
+    justify-content:flex-end;
+    padding-top:10px
+  }
+  .data-table:not(.compact) td.cell-main::before,.data-table:not(.compact) td.cell-actions::before {
+    content:none
+  }
+  .data-table:not(.compact) .cell-wrap {
+    min-width:0;
+    max-width:none
+  }
+  .data-table:not(.compact) .cell-stack,.data-table:not(.compact) .reading-group {
+    align-items:flex-end
+  }
+  .data-table:not(.compact) .badge-row {
+    justify-content:flex-end
+  }
+}
+@container (max-width:480px) {
+  .data-table.compact thead {
+    display:none
+  }
+  .data-table.compact,.data-table.compact tbody,.data-table.compact tr,.data-table.compact td {
+    display:block
+  }
+  .data-table.compact tr {
+    padding:16px 20px;
+    border-bottom:1px solid var(--border)
+  }
+  .data-table.compact tbody tr:last-child {
+    border-bottom:0
+  }
+  .data-table.compact td {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:6px 0;
+    border:0;
+    white-space:normal;
+    text-align:right
+  }
+  .data-table.compact td::before {
+    content:attr(data-label);
+    flex:none;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:.6px;
+    text-transform:uppercase;
+    color:var(--muted);
+    text-align:left
+  }
+  .data-table.compact td.cell-main {
+    display:block;
+    text-align:left;
+    padding-bottom:10px
+  }
+  .data-table.compact td.cell-actions {
+    justify-content:flex-end;
+    padding-top:10px
+  }
+  .data-table.compact td.cell-main::before,.data-table.compact td.cell-actions::before {
+    content:none
+  }
+  .data-table.compact .cell-wrap {
+    min-width:0;
+    max-width:none
+  }
+  .data-table.compact .cell-stack,.data-table.compact .reading-group {
+    align-items:flex-end
+  }
+  .data-table.compact .badge-row {
+    justify-content:flex-end
   }
 }
