@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Activity } from 'lucide-react'
 import { loadWithRecovery } from '../api/client'
 import { monitoringApi } from '../api/endpoints'
 import { Empty, PanelHeading } from '../components/ui/Feedback'
@@ -13,15 +12,14 @@ export function ActivityPage({ version, onError }: { version: number; onError: (
     <section className="panel">
       <PanelHeading title="Registro de la central" subtitle="Las 100 acciones más recientes, con su autor y fecha" />
       {events.length ? (
-        <div className="activity-list">
+        <ol className="activity-list">
           {events.map(event => (
-            <article className="activity-row" key={event.id}>
-              <span className="activity-icon"><Activity size={17} /></span>
+            <li className="activity-row" key={event.id}>
+              <time className="mono" dateTime={event.createdAt}>{date(event.createdAt, true)}</time>
               <div><strong>{event.actor}</strong><p>{event.description}</p></div>
-              <time>{date(event.createdAt, true)}</time>
-            </article>
+            </li>
           ))}
-        </div>
+        </ol>
       ) : <Empty title="Sin actividad registrada" text="Las acciones de administración aparecerán aquí." />}
     </section>
   )

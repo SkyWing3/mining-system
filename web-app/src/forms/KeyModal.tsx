@@ -18,7 +18,7 @@ export function KeyModal({ apiKey, close }: { apiKey: string; close: () => void 
   return (
     <Modal title="Credencial de la manilla" subtitle="Se muestra una sola vez. Guárdala en la configuración del dispositivo." close={close}>
       <div className="key-content">
-        <span className="key-icon"><KeyRound size={25} /></span>
+        <span className="key-icon" aria-hidden="true"><KeyRound size={22} /></span>
         <p>Coloca esta credencial en <code>connection.api_key</code> dentro de <code>device/config/settings.json</code>.</p>
         <pre className="api-key" tabIndex={0}>{apiKey}</pre>
         <button className="button secondary" onClick={() => void copy()}>

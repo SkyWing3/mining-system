@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Edit3, ShieldCheck } from 'lucide-react'
 import { loadWithRecovery } from '../api/client'
 import { usersApi } from '../api/endpoints'
-import { Empty } from '../components/ui/Feedback'
+import { Chip, Empty } from '../components/ui/Feedback'
 import { SearchField, Select } from '../components/ui/controls'
 import type { User } from '../types/domain'
 import { date, initials, roleName } from '../utils/format'
@@ -26,7 +26,7 @@ export function UsersPage({ version, edit, onError }: { version: number; edit: (
           onChange={setRole}
           options={[{ value: '', label: 'Todos los roles' }, ...Object.entries(roleName).map(([value, label]) => ({ value, label }))]}
         />
-        <span>{users.length} usuarios registrados</span>
+        <span className="table-count"><b className="mono">{users.length}</b> usuarios registrados</span>
       </div>
       {items.length ? (
         <div className="table-scroll">
@@ -37,13 +37,13 @@ export function UsersPage({ version, edit, onError }: { version: number; edit: (
                 <tr key={user.id}>
                   <td className="cell-main" data-label="Usuario">
                     <div className="table-person">
-                      <span className="avatar neutral">{initials(user.name)}</span>
+                      <span className="avatar neutral" aria-hidden="true">{initials(user.name)}</span>
                       <div><strong>{user.name}</strong><small>{user.email}</small></div>
                     </div>
                   </td>
-                  <td data-label="Rol"><span className={`role-badge ${user.role.toLowerCase()}`}>{roleName[user.role]}</span></td>
-                  <td data-label="Estado"><span className={`account-status ${user.active ? 'active' : ''}`}><span />{user.active ? 'Activo' : 'Inactivo'}</span></td>
-                  <td className="muted" data-label="Registro">{date(user.createdAt, true)}</td>
+                  <td data-label="Rol"><Chip tone={user.role === 'Admin' ? 'solid' : user.role === 'Miner' ? 'brand' : 'outline'} className="role-badge">{roleName[user.role]}</Chip></td>
+                  <td data-label="Estado"><span className={`account-status ${user.active ? 'active' : ''}`}><span aria-hidden="true" />{user.active ? 'Activo' : 'Inactivo'}</span></td>
+                  <td className="muted mono" data-label="Registro">{date(user.createdAt, true)}</td>
                   <td className="cell-actions" data-label="Acciones">
                     <button className="button secondary small-button" onClick={() => edit(user)}><Edit3 size={15} />Editar</button>
                   </td>

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, PointerEvent, RefObject } from 'react'
 import { date } from '../../utils/format'
 
@@ -186,7 +186,8 @@ function useWidth(element: RefObject<HTMLElement | null>) {
   return width
 }
 
-export function Sparkline({ points, label }: { points: ChartPoint[]; label: string }) {
+// Memoized: live cards re-render every second for their clock, the curve only when its points change.
+export const Sparkline = memo(function Sparkline({ points, label }: { points: ChartPoint[]; label: string }) {
   const valid = points.filter((point): point is { time: number; value: number } => point.value !== null)
   if (valid.length < 2) return <div className="sparkline empty-sparkline" aria-hidden="true" />
   const first = valid[0].time
@@ -208,4 +209,4 @@ export function Sparkline({ points, label }: { points: ChartPoint[]; label: stri
       <circle className="chart-dot" cx={x(latest.time)} cy={y(latest.value)} r={4} />
     </svg>
   )
-}
+})

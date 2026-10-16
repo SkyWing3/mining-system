@@ -6,7 +6,9 @@ export type MetricKey = 'temperatureC' | 'objectTemperatureC' | 'gas' | 'battery
 
 export interface Metric {
   key: MetricKey
+  // Short name shared with the live cards; the description names the series for charts and screen readers.
   label: string
+  description: string
   unit: string
   decimals: number
   value: (reading: Reading) => number | null
@@ -16,12 +18,12 @@ export interface Metric {
 export function metricsFor(readings: Reading[]): Metric[] {
   const calibrated = readings.some(reading => reading.gasPpm !== null)
   return [
-    { key: 'temperatureC', label: 'Temperatura', unit: '°C', decimals: 1, value: reading => reading.temperatureC },
-    { key: 'objectTemperatureC', label: 'Objeto', unit: '°C', decimals: 1, value: reading => reading.objectTemperatureC },
+    { key: 'temperatureC', label: 'Ambiente', description: 'temperatura ambiente', unit: '°C', decimals: 1, value: reading => reading.temperatureC },
+    { key: 'objectTemperatureC', label: 'Objeto', description: 'temperatura de objeto', unit: '°C', decimals: 1, value: reading => reading.objectTemperatureC },
     calibrated
-      ? { key: 'gas', label: 'Gas', unit: 'ppm', decimals: 0, value: reading => reading.gasPpm }
-      : { key: 'gas', label: 'Gas', unit: 'V', decimals: 3, value: reading => reading.gasVoltage },
-    { key: 'batteryPercent', label: 'Batería', unit: '%', decimals: 0, value: reading => reading.batteryPercent },
+      ? { key: 'gas', label: 'CO', description: 'CO', unit: 'ppm', decimals: 0, value: reading => reading.gasPpm }
+      : { key: 'gas', label: 'CO (sin calibrar)', description: 'tensión del sensor de CO', unit: 'V', decimals: 3, value: reading => reading.gasVoltage },
+    { key: 'batteryPercent', label: 'Batería', description: 'batería', unit: '%', decimals: 0, value: reading => reading.batteryPercent },
   ]
 }
 

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { CheckCheck, Mic } from 'lucide-react'
 import { loadWithRecovery } from '../api/client'
 import { voiceApi } from '../api/endpoints'
-import { Empty, Pagination, Spinner } from '../components/ui/Feedback'
+import { Chip, Empty, Pagination, SectionBar, Spinner } from '../components/ui/Feedback'
 import { Select } from '../components/ui/controls'
 import { VoicePlayer } from '../components/voice/VoicePlayer'
 import type { Device, PagedResult, VoiceMessage } from '../types/domain'
@@ -51,9 +51,9 @@ export function VoicePage({ version, devices, onError }: { version: number; devi
   return (
     <section className="panel">
       <div className="message-toolbar">
-        <div className="tabs">
-          <button className={pending ? 'selected' : ''} onClick={() => { setPending(true); setPage(1) }}>Sin escuchar</button>
-          <button className={!pending ? 'selected' : ''} onClick={() => { setPending(false); setPage(1) }}>Todos</button>
+        <div className="tabs" role="group" aria-label="Estado de escucha">
+          <button className={pending ? 'selected' : ''} aria-pressed={pending} onClick={() => { setPending(true); setPage(1) }}>Sin escuchar</button>
+          <button className={!pending ? 'selected' : ''} aria-pressed={!pending} onClick={() => { setPending(false); setPage(1) }}>Todos</button>
         </div>
         <Select
           aria-label="Filtrar manilla de voz"
@@ -62,20 +62,17 @@ export function VoicePage({ version, devices, onError }: { version: number; devi
           options={[{ value: '', label: 'Todas las manillas' }, ...devices.map(device => ({ value: device.id, label: device.name }))]}
         />
       </div>
-      <div className="message-inbox-heading">
-        <span>MENSAJES DE VOZ <b>{result?.total ?? 0}</b></span>
-        <span><Mic size={14} />Micrófono INMP441 de las manillas</span>
-      </div>
+      <SectionBar label="Mensajes de voz" count={result?.total ?? 0} meta={<><Mic size={14} aria-hidden="true" />Micrófono INMP441 de las manillas</>} />
       {error ? <Empty title="No se pudo cargar la voz" text={error} />
         : loading && !result ? <Spinner label="Cargando mensajes de voz…" />
         : result?.items.length ? (
           <div className="voice-list">
             {result.items.map(voice => (
               <article className="voice-row" key={voice.id}>
-                <span className="mini-avatar">{initials(voice.minerName)}</span>
+                <span className={`voice-mark ${voice.reviewedAt ? '' : 'pending'}`} aria-hidden="true">{initials(voice.minerName)}</span>
                 <div className="voice-body">
                   <strong>{voice.minerName}</strong>
-                  <small>{voice.deviceName} · {voice.zone} · {date(voice.receivedAt, true)}</small>
+                  <small>{voice.deviceName} · {voice.zone} · <span className="mono">{date(voice.receivedAt, true)}</span></small>
                   <VoicePlayer
                     src={voiceApi.audioUrl(voice.id)}
                     durationMs={voice.durationMs}
@@ -84,7 +81,7 @@ export function VoicePage({ version, devices, onError }: { version: number; devi
                 </div>
                 <div className="voice-end">
                   {voice.reviewedAt
-                    ? <span className="reviewed"><CheckCheck size={14} /> Escuchado por {voice.reviewedBy}</span>
+                    ? <Chip tone="neutral" className="reviewed" icon={<CheckCheck size={13} aria-hidden="true" />}>Escuchado por {voice.reviewedBy}</Chip>
                     : (
                       <button className="button secondary small-button" disabled={busy === voice.id} onClick={() => void review(voice)}>
                         <CheckCheck size={15} />{busy === voice.id ? 'Guardando…' : 'Marcar como escuchado'}

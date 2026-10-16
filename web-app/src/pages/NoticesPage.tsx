@@ -52,7 +52,7 @@ export function NoticesPage({ version, compose, onError }: { version: number; co
                     </td>
                     <td data-label="Enviado">
                       <div className="cell-stack">
-                        <span>{date(notice.createdAt, true)}</span>
+                        <span className="mono">{date(notice.createdAt, true)}</span>
                         <span className="cell-note">por {notice.createdBy}</span>
                       </div>
                     </td>
@@ -74,12 +74,20 @@ export function NoticesPage({ version, compose, onError }: { version: number; co
   )
 }
 
+// Sent → delivered → read: how far the notice got on its way to the miner.
+const reached: Record<Notice['status'], number> = { pending: 1, delivered: 2, read: 3, expired: 1 }
+
 function NoticeStatus({ notice }: { notice: Notice }) {
   const detail = notice.status === 'read' ? notice.readAt : notice.status === 'delivered' ? notice.deliveredAt : notice.status === 'pending' ? notice.expiresAt : null
   return (
     <span className={`notice-status ${notice.status}`}>
-      <span className="notice-status-label"><span />{noticeStatusName[notice.status]}</span>
-      {detail && <small>{notice.status === 'pending' ? `Caduca ${date(detail)}` : date(detail)}</small>}
+      <span className="notice-steps" aria-hidden="true">
+        {[1, 2, 3].map(step => <i key={step} className={step <= reached[notice.status] ? 'done' : ''} />)}
+      </span>
+      <span className="notice-status-text">
+        <span className="notice-status-label">{noticeStatusName[notice.status]}</span>
+        {detail && <small className="mono">{notice.status === 'pending' ? `Caduca ${date(detail)}` : date(detail)}</small>}
+      </span>
     </span>
   )
 }

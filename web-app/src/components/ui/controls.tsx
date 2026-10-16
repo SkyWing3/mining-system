@@ -49,7 +49,8 @@ interface TextFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string
 }
 
-export function TextField({ label, hint, name, type = 'text', id: suppliedId, ...props }: TextFieldProps) {
+// Autocomplete stays off unless the field asks for the user's own data (WCAG 1.3.5), such as the login.
+export function TextField({ label, hint, name, type = 'text', id: suppliedId, autoComplete = 'off', ...props }: TextFieldProps) {
   const generatedId = useId()
   const id = suppliedId ?? generatedId
   const error = useContext(FormErrors)[name]
@@ -62,7 +63,7 @@ export function TextField({ label, hint, name, type = 'text', id: suppliedId, ..
       name={name}
       data-input-type={type}
       type={type === 'password' && visible ? 'text' : type}
-      autoComplete="off"
+      autoComplete={autoComplete}
       spellCheck={false}
       aria-invalid={error ? true : undefined}
       aria-describedby={description}

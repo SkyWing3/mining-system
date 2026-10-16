@@ -1,11 +1,16 @@
+import { memo } from 'react'
 import { LogOut } from 'lucide-react'
 import { Brand } from '../components/ui/Brand'
 import { Tooltip } from '../components/ui/controls'
 import type { Page, User } from '../types/domain'
 import { initials, roleName } from '../utils/format'
 import { pageInfo } from './pages'
+import type { PageGroup } from './pages'
 
-export function Sidebar({ user, page, open, counts, navigate, logout }: {
+// Counts that mean a safety condition are red; the others are informative.
+const urgentCounts: Page[] = ['live', 'alerts']
+
+export const Sidebar = memo(function Sidebar({ user, page, open, counts, navigate, logout }: {
   user: User
   page: Page
   open: boolean
@@ -14,12 +19,17 @@ export function Sidebar({ user, page, open, counts, navigate, logout }: {
   logout: () => void
 }) {
   const pages: Page[] = ['dashboard', 'live', 'messages', 'alerts', 'voice', 'notices', 'devices', ...(user.role === 'Admin' ? ['users' as const] : []), 'activity']
+  const groups = (['Monitoreo', 'Gestión'] as PageGroup[]).map(group => ({ group, pages: pages.filter(key => pageInfo[key].group === group) }))
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
       <Brand compact />
-      <div className="sidebar-label">CENTRAL DE OPERACIONES</div>
       <nav aria-label="Navegación principal">
-        {pages.map(key => <NavItem key={key} page={key} active={page === key} count={counts[key]} navigate={navigate} />)}
+        {groups.map(({ group, pages: items }) => (
+          <div className="nav-group" key={group}>
+            <span className="sidebar-label" aria-hidden="true">{group}</span>
+            {items.map(key => <NavItem key={key} page={key} active={page === key} count={counts[key]} navigate={navigate} />)}
+          </div>
+        ))}
       </nav>
       <div className="sidebar-bottom">
         <NavItem page="settings" active={page === 'settings'} navigate={navigate} />
@@ -33,16 +43,15 @@ export function Sidebar({ user, page, open, counts, navigate, logout }: {
       </div>
     </aside>
   )
-}
+})
 
 function NavItem({ page, active, count, navigate }: { page: Page; active: boolean; count?: number; navigate: (page: Page) => void }) {
   const { icon: Icon, navigation } = pageInfo[page]
   return (
     <button className={`nav-item ${active ? 'active' : ''}`} onClick={() => navigate(page)} aria-current={active ? 'page' : undefined}>
-      <Icon size={19} strokeWidth={1.7} />
+      <Icon size={18} strokeWidth={1.75} aria-hidden="true" />
       <span>{navigation}</span>
-      {!!count && <span className={`nav-count ${page === 'live' ? 'danger' : ''}`}>{count}</span>}
+      {!!count && <span className={`nav-count mono ${urgentCounts.includes(page) ? 'danger' : ''}`}>{count}</span>}
     </button>
   )
 }
-

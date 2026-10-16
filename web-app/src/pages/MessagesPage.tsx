@@ -3,7 +3,7 @@ import { Download, Radio } from 'lucide-react'
 import { loadWithRecovery } from '../api/client'
 import { monitoringApi } from '../api/endpoints'
 import { MessageRows } from '../components/messages/MessageRows'
-import { Empty, Pagination, Spinner } from '../components/ui/Feedback'
+import { Empty, Pagination, SectionBar, Spinner } from '../components/ui/Feedback'
 import { SearchField, Select } from '../components/ui/controls'
 import type { Device, Message, PagedResult } from '../types/domain'
 import { date, plural } from '../utils/format'
@@ -64,9 +64,9 @@ export function MessagesPage({ alerts, version, devices, review, onError }: {
     <section className="panel messages-panel">
       <div className="message-toolbar">
         {alerts && (
-          <div className="tabs">
-            <button className={pending ? 'selected' : ''} onClick={() => filter(setPending)(true)}>Pendientes</button>
-            <button className={!pending ? 'selected' : ''} onClick={() => filter(setPending)(false)}>Todas las alertas</button>
+          <div className="tabs" role="group" aria-label="Estado de revisión">
+            <button className={pending ? 'selected' : ''} aria-pressed={pending} onClick={() => filter(setPending)(true)}>Pendientes</button>
+            <button className={!pending ? 'selected' : ''} aria-pressed={!pending} onClick={() => filter(setPending)(false)}>Todas las alertas</button>
           </div>
         )}
         <SearchField label="Buscar mensajes" value={search} onChange={filter(setSearch)} placeholder="Buscar mensaje, minero o zona…" />
@@ -93,10 +93,11 @@ export function MessagesPage({ alerts, version, devices, review, onError }: {
           <Download size={16} />Exportar página
         </button>
       </div>
-      <div className="message-inbox-heading">
-        <span>{alerts ? 'REPORTES CRÍTICOS' : 'BANDEJA DE ENTRADA'} <b>{result?.total ?? 0}</b></span>
-        <span><Radio size={14} />Recepción desde las manillas</span>
-      </div>
+      <SectionBar
+        label={alerts ? 'Reportes críticos' : 'Bandeja de entrada'}
+        count={result?.total ?? 0}
+        meta={<><Radio size={14} aria-hidden="true" />Recepción desde las manillas</>}
+      />
       {error ? <Empty title="No se pudo actualizar la bandeja" text={error} />
         : loading && !result ? <Spinner label="Cargando mensajes…" />
         : result?.items.length ? <MessageRows messages={result.items} review={review} />

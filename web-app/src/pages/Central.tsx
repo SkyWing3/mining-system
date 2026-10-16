@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCheck, KeyRound, Megaphone, Plus, TriangleAlert, WifiOff } from 'lucide-react'
 import { ApiError } from '../api/client'
 import { authApi, devicesApi, monitoringApi } from '../api/endpoints'
@@ -11,9 +11,11 @@ import { KeyModal } from '../forms/KeyModal'
 import { UserForm } from '../forms/UserForm'
 import { useCentralData, useVersions } from '../hooks/useCentralData'
 import type { Scope } from '../hooks/useCentralData'
+import { DangerBand } from '../layout/DangerBand'
 import { pageInfo } from '../layout/pages'
 import { Sidebar } from '../layout/Sidebar'
 import { Toast, Topbar } from '../layout/Topbar'
+import { LinkContext, presenceKnown } from '../realtime/LinkContext'
 import { useLiveTelemetry } from '../realtime/liveTelemetry'
 import { useRealtime } from '../realtime/useRealtime'
 import type { RealtimeHandlers } from '../realtime/useRealtime'
@@ -59,7 +61,9 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
   const [versions, bump] = useVersions()
   const [resync, setResync] = useState(0)
   const [error, setError] = useState('')
-  const [toast, setToast] = useState<ToastState | null>(null)
+  // Critical notices stay until closed and are never replaced by an informative one.
+  const [alerts, setAlerts] = useState<ToastState[]>([])
+  const [notice, setNotice] = useState<ToastState | null>(null)
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState('')
@@ -70,13 +74,17 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
     else setError((failure as Error).message)
   }, [signOut])
   const clearError = useCallback(() => setError(''), [])
+  const showToast = useCallback((next: ToastState) => {
+    if (next.critical) setAlerts(current => [next, ...current.filter(item => item.text !== next.text)].slice(0, 10))
+    else setNotice(next)
+  }, [])
   const { overview, devices, miners, loading, applyTelemetry, applyMessage } = useCentralData(versions, handleError, clearError)
 
   const { append } = live
   const handlers = useMemo<RealtimeHandlers>(() => ({
     messageReceived: message => {
       applyMessage(message)
-      setToast({
+      showToast({
         text: `${message.minerName}: ${message.text}${message.detail ? ` (${message.detail})` : ''}`,
         critical: message.severity === 'critical',
         target: message.severity === 'critical' ? { page: 'alerts', label: 'Ver alerta' } : undefined,
@@ -89,7 +97,7 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
       append(event.deviceId, event.reading)
     },
     voiceMessageReceived: voice => {
-      setToast({ text: `${voice.minerName} envió un mensaje de voz.`, critical: false, target: { page: 'voice', label: 'Escuchar' } })
+      showToast({ text: `${voice.minerName} envió un mensaje de voz.`, critical: false, target: { page: 'voice', label: 'Escuchar' } })
       bump('summary', 'voice')
     },
     voiceMessageReviewed: () => bump('summary', 'voice', 'activity'),
@@ -99,7 +107,7 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
       bump()
       setResync(value => value + 1)
     },
-  }), [applyMessage, applyTelemetry, append, bump])
+  }), [applyMessage, applyTelemetry, append, bump, showToast])
   const connection = useRealtime(user.id, handlers)
 
   const navigate = useCallback((next: Page) => {
@@ -109,11 +117,33 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
     setActionError('')
   }, [])
   const closeDialog = useCallback(() => setDialog(null), [])
-  const closeToast = useCallback(() => setToast(null), [])
-  const open = (next: Dialog) => {
+  const closeAlerts = useCallback(() => setAlerts([]), [])
+  const closeNotice = useCallback(() => setNotice(null), [])
+  // After moving to another page, focus its heading so keyboard and screen-reader users land on the new content.
+  const heading = useRef<HTMLHeadingElement>(null)
+  const firstPage = useRef(true)
+  useEffect(() => {
+    if (firstPage.current) {
+      firstPage.current = false
+      return
+    }
+    heading.current?.focus()
+  }, [page])
+  // Stable callbacks, so a live reading re-renders only the rows and cards of the manilla that sent it.
+  const open = useCallback((next: Dialog) => {
     setActionError('')
     setDialog(next)
-  }
+  }, [])
+  const inspect = useCallback((device: Device) => open({ kind: 'telemetry', deviceId: device.id }), [open])
+  const reviewMessage = useCallback((message: Message) => open({ kind: 'review', message }), [open])
+  const deviceActions = useMemo(() => ({
+    edit: (device: Device) => open({ kind: 'device', device }),
+    rotate: (device: Device) => open({ kind: 'rotate', device }),
+    notify: (device: Device) => open({ kind: 'notice', deviceId: device.id }),
+    add: () => open({ kind: 'device', device: null }),
+  }), [open])
+  const openNavigation = useCallback(() => setSidebarOpen(true), [])
+  const showAlerts = useCallback(() => navigate('alerts'), [navigate])
 
   async function runAction(action: () => Promise<void>) {
     setBusy(true)
@@ -130,7 +160,7 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
   const review = (message: Message) => runAction(async () => {
     await monitoringApi.review(message.id)
     setDialog(null)
-    setToast({ text: 'La revisión quedó registrada.', critical: false })
+    showToast({ text: 'La revisión quedó registrada.', critical: false })
     bump('summary', 'messages')
   })
 
@@ -140,18 +170,20 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
     bump('devices')
   })
 
-  async function logout() {
-    try {
-      await authApi.logout()
-      signOut()
-    } catch (failure) {
-      handleError(failure)
-    }
-  }
+  const logout = useCallback(() => {
+    authApi.logout().then(signOut, handleError)
+  }, [signOut, handleError])
 
-  const liveDanger = devices.filter(device => device.active && device.online && device.reading?.level === 'danger').length
+  const activeDevices = devices.filter(device => device.active)
+  const onlineDevices = activeDevices.filter(device => device.online)
+  const dangerNow = onlineDevices.filter(device => device.reading?.level === 'danger')
+  // Reported danger and then went silent: the worst case, so it keeps the alarm instead of fading out.
+  const dangerLost = activeDevices.filter(device => !device.online && device.reading?.level === 'danger')
+  const liveDanger = dangerNow.length
   const telemetryDevice = dialog?.kind === 'telemetry' ? devices.find(device => device.id === dialog.deviceId) : undefined
-  const inspect = (device: Device) => open({ kind: 'telemetry', deviceId: device.id })
+  const pendingAlerts = overview?.pendingAlerts
+  const pendingVoice = overview?.pendingVoice
+  const counts = useMemo(() => ({ alerts: pendingAlerts, voice: pendingVoice, live: liveDanger }), [pendingAlerts, pendingVoice, liveDanger])
   const headingAction = {
     users: <button className="button primary" onClick={() => open({ kind: 'user', user: null })}><Plus size={17} />Crear usuario</button>,
     devices: <button className="button primary" onClick={() => open({ kind: 'device', device: null })}><Plus size={17} />Registrar manilla</button>,
@@ -159,48 +191,55 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
   }[page as 'users' | 'devices' | 'notices']
 
   return (
+    <LinkContext.Provider value={connection}>
     <div className="app-shell">
+      <a className="skip-link" href="#contenido">Saltar al contenido</a>
       {sidebarOpen && <button className="sidebar-overlay" aria-label="Cerrar navegación" onClick={() => setSidebarOpen(false)} />}
       <Sidebar
         user={user}
         page={page}
         open={sidebarOpen}
-        counts={{ alerts: overview?.pendingAlerts, voice: overview?.pendingVoice, live: liveDanger }}
+        counts={counts}
         navigate={navigate}
-        logout={() => void logout()}
+        logout={logout}
       />
       <div className="workspace">
         <Topbar
           user={user}
-          title={pageInfo[page].title}
-          pendingAlerts={overview?.pendingAlerts ?? 0}
-          openNavigation={() => setSidebarOpen(true)}
-          showAlerts={() => navigate('alerts')}
+          connection={connection}
+          loaded={!loading}
+          online={onlineDevices.length}
+          active={activeDevices.length}
+          liveDanger={liveDanger}
+          pendingAlerts={pendingAlerts ?? 0}
+          openNavigation={openNavigation}
+          showAlerts={showAlerts}
         />
-        <main className="main-content">
+        <DangerBand current={dangerNow} lost={dangerLost} series={live.series} visible={page !== 'dashboard'} inspect={inspect} navigate={navigate} />
+        <main className="main-content" id="contenido" tabIndex={-1}>
           <div className="page-heading">
             <div>
-              <span className="eyebrow">{page === 'dashboard' ? 'TU OPERACIÓN, CONECTADA' : 'MINING SYSTEM'}</span>
-              <h1>{pageInfo[page].title}</h1>
+              <h1 ref={heading} tabIndex={-1}>{pageInfo[page].title}</h1>
               <p>{pageInfo[page].description}</p>
             </div>
             {headingAction && <div className="page-heading-actions">{headingAction}</div>}
           </div>
-          {connection !== 'online' && (
+          {!presenceKnown(connection) && (
             <div className="connection-warning" role="status">
-              <WifiOff size={17} />El enlace en vivo se está restableciendo. Los datos visibles pueden estar desactualizados.
+              <WifiOff size={17} aria-hidden="true" /><span>El enlace en vivo se está restableciendo. Los datos visibles pueden estar desactualizados y el estado de cada manilla es desconocido.</span>
             </div>
           )}
-          {error && <div className="error-banner" role="alert"><TriangleAlert size={18} /><span>{error}</span></div>}
+          {error && <div className="error-banner" role="alert"><TriangleAlert size={18} aria-hidden="true" /><span>{error}</span></div>}
           {loading || !overview ? <Spinner label="Cargando la operación…" /> : (
             <>
               {page === 'dashboard' && (
                 <DashboardPage
                   overview={overview}
                   devices={devices}
-                  liveDanger={liveDanger}
+                  dangerNow={dangerNow}
+                  dangerLost={dangerLost}
                   navigate={navigate}
-                  review={message => open({ kind: 'review', message })}
+                  review={reviewMessage}
                   inspect={inspect}
                 />
               )}
@@ -213,50 +252,48 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
                   alerts={page === 'alerts'}
                   version={versions.messages}
                   devices={devices}
-                  review={message => open({ kind: 'review', message })}
+                  review={reviewMessage}
                   onError={handleError}
                 />
               )}
               {page === 'voice' && <VoicePage version={versions.voice} devices={devices} onError={handleError} />}
               {page === 'notices' && <NoticesPage version={versions.notices} compose={() => open({ kind: 'notice' })} onError={handleError} />}
               {page === 'devices' && (
-                <DevicesPage
-                  devices={devices}
-                  edit={device => open({ kind: 'device', device })}
-                  rotate={device => open({ kind: 'rotate', device })}
-                  inspect={inspect}
-                  notify={device => open({ kind: 'notice', deviceId: device.id })}
-                  add={() => open({ kind: 'device', device: null })}
-                />
+                <DevicesPage devices={devices} inspect={inspect} {...deviceActions} />
               )}
               {page === 'users' && <UsersPage version={versions.users} edit={editing => open({ kind: 'user', user: editing })} onError={handleError} />}
               {page === 'activity' && <ActivityPage version={versions.activity} onError={handleError} />}
               {page === 'settings' && (
-                <SettingsPage user={user} saved={() => setToast({ text: 'Contraseña actualizada. Tu acceso está listo.', critical: false })} />
+                <SettingsPage user={user} saved={() => showToast({ text: 'Contraseña actualizada. Tu acceso está listo.', critical: false })} />
               )}
             </>
           )}
           <footer className="main-footer">
-            <span>MINING SYSTEM <span className="dot-separator">·</span> Seguridad conectada</span>
+            <span>Mining System <span className="dot-separator">·</span> Central de operaciones</span>
             <span>Hora de la central: Bolivia (UTC−4)</span>
           </footer>
         </main>
       </div>
 
-      {toast && (
-        <Toast
-          text={toast.text}
-          critical={toast.critical}
-          close={closeToast}
-          action={toast.target && {
-            label: toast.target.label,
-            run: () => {
-              navigate(toast.target!.page)
-              setToast(null)
-            },
-          }}
-        />
-      )}
+      <div className="toast-stack">
+        {alerts[0] && (
+          <Toast
+            text={alerts[0].text}
+            critical
+            more={alerts.length - 1}
+            close={closeAlerts}
+            action={{ label: alerts.length > 1 ? 'Ver alertas' : 'Ver alerta', run: () => { navigate('alerts'); closeAlerts() } }}
+          />
+        )}
+        {notice && (
+          <Toast
+            text={notice.text}
+            critical={false}
+            close={closeNotice}
+            action={notice.target && { label: notice.target.label, run: () => { navigate(notice.target!.page); closeNotice() } }}
+          />
+        )}
+      </div>
       {dialog?.kind === 'user' && <UserForm user={dialog.user} close={closeDialog} saved={() => bump('users', 'devices', 'summary', 'activity')} />}
       {dialog?.kind === 'device' && (
         <DeviceForm
@@ -266,7 +303,7 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
           saved={key => {
             setDialog(key ? { kind: 'key', apiKey: key } : null)
             bump('devices', 'summary', 'activity')
-            if (!key) setToast({ text: 'Manilla actualizada.', critical: false })
+            if (!key) showToast({ text: 'Manilla actualizada.', critical: false })
           }}
         />
       )}
@@ -282,7 +319,8 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
           close={closeDialog}
           sent={count => {
             setDialog(null)
-            setToast({ text: count === 1 ? 'Aviso enviado a la manilla.' : `Aviso enviado a ${count} manillas.`, critical: false, target: { page: 'notices', label: 'Ver estado' } })
+            // Created means queued: delivery and reading are confirmed later by the manilla.
+            showToast({ text: count === 1 ? 'Aviso en cola para la manilla: pendiente de entrega.' : `Aviso en cola para ${count} manillas: pendiente de entrega.`, critical: false, target: { page: 'notices', label: 'Ver estado' } })
             bump('notices', 'summary', 'activity')
           }}
         />
@@ -321,5 +359,6 @@ export function Central({ user, signOut }: { user: User; signOut: () => void }) 
         </ConfirmModal>
       )}
     </div>
+    </LinkContext.Provider>
   )
 }

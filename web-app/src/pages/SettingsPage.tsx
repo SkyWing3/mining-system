@@ -4,12 +4,24 @@ import { Check, Clock3, KeyRound, Megaphone, MessageSquare, Radio, Wifi } from '
 import type { LucideIcon } from 'lucide-react'
 import { authApi } from '../api/endpoints'
 import { Brand } from '../components/ui/Brand'
-import { PanelHeading } from '../components/ui/Feedback'
+import { Chip, PanelHeading } from '../components/ui/Feedback'
 import { ApplicationForm, TextField } from '../components/ui/controls'
 import type { User } from '../types/domain'
 import { initials, roleName } from '../utils/format'
 
-const palette = ['#dec1af', '#491a06', '#373946', '#852a3b', '#6c4b68']
+// Swatches read the design tokens (styles/index.css), so this page always shows the colors in use.
+const palette = [
+  { name: 'Arena', token: '--sand' },
+  { name: 'Tierra', token: '--earth' },
+  { name: 'Carbón', token: '--charcoal' },
+  { name: 'Vino', token: '--wine' },
+  { name: 'Ciruela', token: '--plum' },
+]
+const safety = [
+  { name: 'Normal', token: '--ok' },
+  { name: 'Precaución', token: '--warn' },
+  { name: 'Peligro', token: '--danger' },
+]
 
 export function SettingsPage({ user, saved }: { user: User; saved: () => void }) {
   const [busy, setBusy] = useState(false)
@@ -44,14 +56,14 @@ export function SettingsPage({ user, saved }: { user: User; saved: () => void })
       <section className="panel">
         <PanelHeading title="Tu cuenta" subtitle="Información de acceso y seguridad" />
         <div className="account-summary">
-          <span className="avatar large">{initials(user.name)}</span>
-          <div><strong>{user.name}</strong><p>{user.email}</p><span className="role-badge">{roleName[user.role]}</span></div>
+          <span className="avatar large" aria-hidden="true">{initials(user.name)}</span>
+          <div><strong>{user.name}</strong><p>{user.email}</p><Chip tone="outline" className="role-badge">{roleName[user.role]}</Chip></div>
         </div>
         <ApplicationForm className="password-form" onSubmit={submit}>
           <h3>Cambiar contraseña</h3>
-          <TextField label="Contraseña actual" name="currentPassword" type="password" required />
-          <TextField label="Nueva contraseña" name="newPassword" type="password" required minLength={10} maxLength={128} placeholder="Al menos 10 caracteres" />
-          <TextField label="Confirmar nueva contraseña" name="confirm" type="password" required minLength={10} maxLength={128} />
+          <TextField label="Contraseña actual" name="currentPassword" type="password" autoComplete="current-password" required />
+          <TextField label="Nueva contraseña" name="newPassword" type="password" autoComplete="new-password" required minLength={10} maxLength={128} placeholder="Al menos 10 caracteres" />
+          <TextField label="Confirmar nueva contraseña" name="confirm" type="password" autoComplete="new-password" required minLength={10} maxLength={128} />
           {error && <div className="form-error" role="alert">{error}</div>}
           {success && <div className="success-note" role="status"><Check size={16} />Contraseña actualizada</div>}
           <button className="button primary" disabled={busy}><KeyRound size={16} />{busy ? 'Guardando…' : 'Actualizar contraseña'}</button>
@@ -62,8 +74,9 @@ export function SettingsPage({ user, saved }: { user: User; saved: () => void })
           <PanelHeading title="Identidad del sistema" subtitle="Una marca pensada para una operación clara" />
           <div className="brand-settings">
             <Brand />
-            <div className="palette" aria-label="Paleta de marca">{palette.map(color => <span key={color} style={{ background: color }} />)}</div>
-            <p>Arena, tierra, carbón, vino y ciruela.<br />Una interfaz clara con blanco como base.</p>
+            <Swatches label="Paleta de marca" colors={palette} />
+            <Swatches label="Colores de seguridad" colors={safety} />
+            <p>Arena, tierra, carbón, vino y ciruela identifican la central sobre una base clara.<br />Verde, amarillo y rojo se reservan para los estados de seguridad.</p>
           </div>
         </section>
         <section className="panel system-settings">
@@ -80,5 +93,26 @@ export function SettingsPage({ user, saved }: { user: User; saved: () => void })
 }
 
 function SystemDetail({ icon: Icon, title, text }: { icon: LucideIcon; title: string; text: string }) {
-  return <div className="system-detail"><Icon size={19} /><div><strong>{title}</strong><p>{text}</p></div></div>
+  return <div className="system-detail"><Icon size={18} aria-hidden="true" /><div><strong>{title}</strong><p>{text}</p></div></div>
+}
+
+function Swatches({ label, colors }: { label: string; colors: { name: string; token: string }[] }) {
+  const [values] = useState(() => {
+    const root = getComputedStyle(document.documentElement)
+    return colors.map(item => root.getPropertyValue(item.token).trim().toUpperCase())
+  })
+  return (
+    <div className="palette-group">
+      <span className="palette-label">{label}</span>
+      <ul className="palette" aria-label={label}>
+        {colors.map((item, index) => (
+          <li key={item.token}>
+            <span style={{ background: `var(${item.token})` }} aria-hidden="true" />
+            <small>{item.name}</small>
+            <code>{values[index]}</code>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }

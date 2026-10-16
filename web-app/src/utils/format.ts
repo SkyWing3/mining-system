@@ -7,16 +7,25 @@ export function parseDate(value: string) {
   return new Date(value.endsWith('Z') || /[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`)
 }
 
+// A control room reads 24-hour time: no "a. m./p. m." to misread during a shift change.
 export function date(value: string | null, full = false) {
   if (!value) return 'Sin conexión registrada'
   const options: Intl.DateTimeFormatOptions = full
-    ? { dateStyle: 'medium', timeStyle: 'short', timeZone: TIME_ZONE }
-    : { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: TIME_ZONE }
+    ? { dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23', timeZone: TIME_ZONE }
+    : { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: TIME_ZONE }
   return new Intl.DateTimeFormat('es-BO', options).format(parseDate(value))
 }
 
 export function longDate(value: Date) {
   return new Intl.DateTimeFormat('es-BO', { day: '2-digit', month: 'long', year: 'numeric', timeZone: TIME_ZONE }).format(value)
+}
+
+export function shortDate(value: Date) {
+  return new Intl.DateTimeFormat('es-BO', { weekday: 'short', day: '2-digit', month: 'short', timeZone: TIME_ZONE }).format(value)
+}
+
+export function clock(value: Date) {
+  return new Intl.DateTimeFormat('es-BO', { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZone: TIME_ZONE }).format(value)
 }
 
 export function elapsed(value: string, now: number) {

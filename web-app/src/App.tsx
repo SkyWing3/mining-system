@@ -35,10 +35,10 @@ export default function App() {
     return (
       <div className="startup">
         <Brand />
-        <div>
+        <div className="startup-state">
           {error ? (
             <>
-              <WifiOff size={32} />
+              <WifiOff size={32} aria-hidden="true" />
               <h1>No pudimos conectar con la central</h1>
               <p role="alert">{error}</p>
               <p role="status">La conexión se restablecerá automáticamente.</p>

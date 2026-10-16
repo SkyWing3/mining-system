@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { HttpTransportType, HubConnectionBuilder, HubConnectionState, LogLevel } from '@microsoft/signalr'
 import type { ChangeCategory, Message, Notice, TelemetryEvent, VoiceMessage } from '../types/domain'
 
-export type LinkStatus = 'connecting' | 'online' | 'offline'
+// 'starting' is the first attempt right after loading, while the data just fetched is still current.
+export type LinkStatus = 'starting' | 'connecting' | 'online' | 'offline'
+
+// After this long without opening the link, the first attempt counts as a connection problem.
+const STARTUP_GRACE_MS = 5000
 
 // Events sent by backend/Realtime/MiningHub.cs (IMiningClient).
 export interface RealtimeHandlers {
@@ -18,7 +22,7 @@ export interface RealtimeHandlers {
 }
 
 export function useRealtime(userId: string, handlers: RealtimeHandlers): LinkStatus {
-  const [status, setStatus] = useState<LinkStatus>('connecting')
+  const [status, setStatus] = useState<LinkStatus>('starting')
   const current = useRef(handlers)
   useEffect(() => {
     current.current = handlers
@@ -91,6 +95,7 @@ export function useRealtime(userId: string, handlers: RealtimeHandlers): LinkSta
     }
     window.addEventListener('offline', offline)
     window.addEventListener('online', online)
+    const grace = setTimeout(() => setStatus(current => current === 'starting' ? 'connecting' : current), STARTUP_GRACE_MS)
     // Defer opening the socket until after React's development effect cleanup.
     timer = setTimeout(() => {
       if (!navigator.onLine) setStatus('offline')
@@ -99,6 +104,7 @@ export function useRealtime(userId: string, handlers: RealtimeHandlers): LinkSta
     return () => {
       disposed = true
       clearTimeout(timer)
+      clearTimeout(grace)
       window.removeEventListener('offline', offline)
       window.removeEventListener('online', online)
       void connection.stop()

@@ -1,27 +1,95 @@
+/*
+ * Mining System · design tokens and base elements.
+ * Light control-room surfaces: neutral stone and white, structure by hairlines,
+ * and color reserved for safety states (ISO 3864 green, yellow and red). No gradients.
+ */
 :root {
-  font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  color:#373946;
-  background:var(--surface);
-  font-synthesis:none;
-  text-rendering:optimizeLegibility;
-  -webkit-font-smoothing:antialiased;
-  -moz-osx-font-smoothing:grayscale;
   color-scheme:light;
+  --font-sans:'IBM Plex Sans Variable','IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  /* Brand palette (README): identity only, never a state. */
   --sand:#dec1af;
   --earth:#491a06;
   --charcoal:#373946;
   --wine:#852a3b;
   --plum:#6c4b68;
-  --accent-plum:#542744;
-  --ink:#252631;
-  --muted:#595461;
-  --border:#e5e7ec;
-  --control-border:#c8cbd3;
-  --paper:#fff;
+
+  /* Neutral surfaces and text. */
+  --canvas:#f2f1ee;
   --surface:#fff;
-  --chart-grid:#eceff3;
-  --sidebar-muted:#cbd0dc;
-  --sidebar-border:#ffffff1a
+  --surface-2:#f7f6f4;
+  --surface-3:#ebe9e5;
+  --ink:#1f2028;
+  --ink-2:#4a4b57;
+  --ink-3:#5f5e66;
+  --line:#dedbd5;
+  --line-strong:#c9c5bd;
+  --control:#8e8a82;
+
+  /* Navigation rail. */
+  --rail:var(--charcoal);
+  --rail-deep:#2a2c36;
+  --rail-ink:#fff;
+  --rail-muted:#c8ccd8;
+  --rail-line:#ffffff1f;
+  --rail-hover:#ffffff12;
+  --rail-active:#ffffff1c;
+  --rail-scrollbar:#ffffff40;
+  /* Translucent white over a dark fill: rail counts, buttons inside dark toasts. */
+  --fill-on-dark:#ffffff1f;
+
+  /* Safety states. */
+  --ok:#1d6e45;
+  --ok-bg:#e5f1ea;
+  --ok-line:#9fcbb2;
+  --warn:#e8b400;
+  --warn-ink:#7a4f00;
+  --warn-bg:#fff3cc;
+  --warn-line:#d9b54a;
+  --warn-bg-hover:#fdebb3;
+  --danger:#b3261e;
+  --danger-ink:#9e2119;
+  --danger-bg:#fbe9e7;
+  --danger-line:#e6a59f;
+  --danger-bg-hover:#f8dcd9;
+
+  /* Data ink. */
+  --series:var(--plum);
+  --chart-grid:#e7e4df;
+
+  /* Text and icons on dark or saturated fills, and other shared literals. */
+  --on-fill:#fff;
+  --on-earth:#f3e6dd;
+  --rail-ink-2:#e4e6ee;
+  --warn-edge:#c99a00;
+  --disabled-fill:#8b8a91;
+  --scrim:#1f2028a6;
+
+  --focus:var(--ink);
+  --radius-1:2px;
+  --radius-2:4px;
+  --radius-3:6px;
+  --shadow-overlay:0 18px 44px #1f20282e,0 2px 6px #1f202814;
+  --shadow-popover:0 4px 14px #1f202826;
+  --shadow-drawer:12px 0 40px #1f20282e;
+  --shadow-raised:0 1px 2px #1f20281f;
+  /* Hover veil over a segmented control's track, and the edge drawn around color swatches. */
+  --veil:#ffffff8c;
+  --swatch-edge:#1f20281a;
+  --ease-out:cubic-bezier(.2,.7,.2,1);
+  --ease-in:cubic-bezier(.4,0,1,1);
+  --duration-fast:120ms;
+  --duration-base:180ms;
+  --duration-slow:260ms;
+
+  font-family:var(--font-sans);
+  color:var(--ink);
+  background:var(--canvas);
+  font-synthesis:none;
+  text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale
 }
 * {
   box-sizing:border-box;
@@ -29,15 +97,21 @@
 }
 body {
   margin:0;
-  min-width:320px
+  min-width:320px;
+  font-size:14px;
+  line-height:1.5;
+  background:var(--canvas)
 }
 button,input,textarea {
-  font:inherit
+  font:inherit;
+  color:inherit
 }
 button {
   cursor:pointer;
   appearance:none;
-  background:transparent
+  background:transparent;
+  border:0;
+  touch-action:manipulation
 }
 button:disabled {
   cursor:not-allowed;
@@ -47,27 +121,35 @@ a {
   color:inherit
 }
 button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,[tabindex]:focus-visible {
-  outline:3px solid var(--wine);
-  outline-offset:3px
+  outline:2px solid var(--focus);
+  outline-offset:2px
 }
 input:not([type="hidden"]) {
   appearance:none;
   -webkit-appearance:none;
   width:100%;
-  height:44px;
-  border:1px solid var(--control-border);
-  border-radius:7px;
-  padding:0 13px;
-  background:#fff;
+  height:42px;
+  border:1px solid var(--control);
+  border-radius:var(--radius-2);
+  padding:0 12px;
+  background:var(--surface);
   box-shadow:none;
   color:var(--ink);
-  font-size:14px
+  font-size:14px;
+  transition:border-color var(--duration-fast),box-shadow var(--duration-fast)
 }
 input::placeholder {
-  color:var(--muted)
+  color:var(--ink-3)
+}
+input:hover:not(:disabled) {
+  border-color:var(--ink-2)
 }
 input:focus {
-  border-color:var(--plum)
+  border-color:var(--ink);
+  box-shadow:0 0 0 1px var(--ink)
+}
+input:focus-visible {
+  outline:none
 }
 input::-ms-reveal,input::-ms-clear,
 input::-webkit-search-cancel-button,input::-webkit-search-decoration {
@@ -75,50 +157,50 @@ input::-webkit-search-cancel-button,input::-webkit-search-decoration {
 }
 * {
   scrollbar-width:thin;
-  scrollbar-color:var(--control-border) var(--paper)
+  scrollbar-color:var(--line-strong) transparent
 }
 ::-webkit-scrollbar { width:8px; height:8px }
-::-webkit-scrollbar-track { background:var(--paper) }
+::-webkit-scrollbar-track { background:transparent }
 ::-webkit-scrollbar-thumb {
-  background:var(--control-border);
-  border:2px solid var(--paper);
+  background:var(--line-strong);
+  border:2px solid var(--surface);
   border-radius:6px
 }
 label {
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:6px;
   font-size:13px;
-  font-weight:600
+  font-weight:600;
+  color:var(--ink)
 }
 label small {
-  color:var(--muted);
+  color:var(--ink-3);
   font-weight:400;
-  font-size:11px
+  font-size:12px
 }
 h1,h2,h3,p {
   margin:0
 }
 h1,h2,h3 {
-  color:var(--ink)
+  color:var(--ink);
+  font-stretch:87.5%;
+  text-wrap:balance
 }
 svg {
   flex-shrink:0
 }
-button {
-  border:0
-}
 code {
-  font-size:12px;
-  font-family:ui-monospace,SFMono-Regular,monospace;
-  background:var(--paper);
+  font-size:12.5px;
+  font-family:var(--font-mono);
+  background:var(--surface-3);
   color:var(--earth);
-  border-radius:4px;
-  padding:2px 5px
+  border-radius:var(--radius-1);
+  padding:1px 5px
 }
 ::selection {
-  background:var(--charcoal);
-  color:var(--paper)
+  background:var(--sand);
+  color:var(--earth)
 }
 .sr-only {
   position:absolute;
@@ -127,4 +209,8 @@ code {
   overflow:hidden;
   clip:rect(0,0,0,0);
   white-space:nowrap
+}
+.mono {
+  font-family:var(--font-mono);
+  font-variant-numeric:tabular-nums
 }

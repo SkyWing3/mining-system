@@ -1,55 +1,90 @@
+/* Form controls drawn by the application: fields, checkbox, select list and tooltip. */
 .app-field {
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:6px;
   min-width:0
 }
 .field-hint {
-  color:var(--muted);
-  font-size:11px;
-  line-height:1.5
-}
-.field-error {
-  color:var(--wine);
+  color:var(--ink-3);
   font-size:12px;
   line-height:1.5
 }
+.field-error {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:var(--danger-ink);
+  font-size:12.5px;
+  font-weight:500;
+  line-height:1.5
+}
+.field-error::before {
+  content:"";
+  width:6px;
+  height:6px;
+  flex:none;
+  background:var(--danger);
+  border-radius:1px;
+  transform:rotate(45deg)
+}
 input[aria-invalid="true"] {
-  border-color:var(--wine)
+  border-color:var(--danger);
+  box-shadow:inset 3px 0 0 var(--danger)
+}
+input[aria-invalid="true"]:focus {
+  box-shadow:inset 3px 0 0 var(--danger),0 0 0 1px var(--danger)
+}
+.password-input {
+  position:relative
+}
+.password-input input {
+  padding-right:46px
 }
 .password-input .password-toggle {
+  position:absolute;
+  right:4px;
   top:50%;
   transform:translateY(-50%);
-  border-radius:4px
+  width:36px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border-radius:var(--radius-1);
+  color:var(--ink-3);
+  transition:color var(--duration-fast),background var(--duration-fast)
 }
 .password-toggle:hover {
-  color:var(--wine);
-  background:var(--surface)
+  color:var(--ink);
+  background:var(--surface-3)
 }
 .search-clear {
   display:grid;
   place-items:center;
-  width:25px;
-  height:25px;
+  width:26px;
+  height:26px;
   padding:0;
   flex-shrink:0;
-  border-radius:4px;
-  background:transparent;
-  color:var(--muted)
+  border-radius:var(--radius-1);
+  color:var(--ink-3)
 }
-.search-clear:hover { color:var(--wine) }
+.search-clear:hover {
+  color:var(--ink);
+  background:var(--surface-3)
+}
 .app-checkbox {
   flex-direction:row;
   align-items:center;
-  gap:9px;
+  gap:10px;
   cursor:pointer;
-  width:fit-content
+  width:fit-content;
+  font-weight:500
 }
 .checkbox-control {
   position:relative;
   display:inline-flex;
-  width:19px;
-  height:19px;
+  width:18px;
+  height:18px;
   flex-shrink:0
 }
 .checkbox-control input {
@@ -67,24 +102,29 @@ input[aria-invalid="true"] {
   place-items:center;
   width:100%;
   height:100%;
-  border:1px solid var(--control-border);
-  border-radius:4px;
-  color:var(--paper);
-  background:var(--paper);
-  pointer-events:none
+  border:1px solid var(--control);
+  border-radius:var(--radius-1);
+  color:var(--surface);
+  background:var(--surface);
+  pointer-events:none;
+  transition:background var(--duration-fast),border-color var(--duration-fast)
 }
-.checkbox-box svg { visibility:hidden }
+.checkbox-box svg {
+  visibility:hidden
+}
 .checkbox-control input:checked + .checkbox-box {
-  background:var(--wine);
-  border-color:var(--wine)
+  background:var(--charcoal);
+  border-color:var(--charcoal)
 }
-.checkbox-control input:checked + .checkbox-box svg { visibility:visible }
+.checkbox-control input:checked + .checkbox-box svg {
+  visibility:visible
+}
 .checkbox-control input:focus-visible + .checkbox-box {
-  outline:3px solid var(--wine);
-  outline-offset:3px
+  outline:2px solid var(--focus);
+  outline-offset:2px
 }
 .app-checkbox:has(input:disabled) {
-  color:var(--muted);
+  color:var(--ink-3);
   cursor:not-allowed
 }
 .app-select {
@@ -93,73 +133,98 @@ input[aria-invalid="true"] {
 }
 .select-trigger {
   width:100%;
-  height:44px;
+  height:42px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
-  padding:0 13px;
-  border:1px solid var(--control-border);
-  border-radius:7px;
-  background:var(--paper);
+  gap:10px;
+  padding:0 10px 0 12px;
+  border:1px solid var(--control);
+  border-radius:var(--radius-2);
+  background:var(--surface);
   color:var(--ink);
   font-size:14px;
-  text-align:left
+  text-align:left;
+  transition:border-color var(--duration-fast)
+}
+.select-trigger:hover:not(:disabled) {
+  border-color:var(--ink-2)
 }
 .select-trigger > span {
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap
 }
-.select-trigger svg { color:var(--charcoal) }
-.select-trigger[aria-expanded="true"] { border-color:var(--plum) }
-.select-trigger[aria-expanded="true"] svg { transform:rotate(180deg) }
+.select-trigger svg {
+  color:var(--ink-2);
+  transition:transform var(--duration-base) var(--ease-out)
+}
+.select-trigger[aria-expanded="true"] {
+  border-color:var(--ink);
+  box-shadow:0 0 0 1px var(--ink)
+}
+.select-trigger[aria-expanded="true"] svg {
+  transform:rotate(180deg)
+}
 .select-trigger:disabled {
-  background:var(--surface);
-  color:var(--muted)
+  background:var(--surface-2);
+  color:var(--ink-3)
 }
 .select-list {
   position:fixed;
   z-index:100;
   overflow-y:auto;
   overscroll-behavior:contain;
-  padding:5px;
-  background:var(--paper);
-  border:1px solid var(--border);
-  border-radius:8px;
-  box-shadow:0 8px 24px #25263118;
-  font-size:13px
+  padding:4px;
+  background:var(--surface);
+  border:1px solid var(--line-strong);
+  border-radius:var(--radius-2);
+  box-shadow:var(--shadow-overlay);
+  font-size:13.5px;
+  animation:popover-in var(--duration-base) var(--ease-out)
 }
 .select-option {
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:14px;
-  min-height:38px;
-  padding:9px 10px;
-  border-radius:4px;
+  min-height:36px;
+  padding:8px 10px;
+  border-radius:var(--radius-1);
   color:var(--ink);
   cursor:pointer;
-  line-height:1.5
+  line-height:1.4
 }
-.select-option.highlighted { background:#f0f1f4 }
+.select-option.highlighted {
+  background:var(--surface-3)
+}
 .select-option[aria-selected="true"] {
-  font-weight:650;
-  color:var(--wine)
+  font-weight:600;
+  box-shadow:inset 2px 0 0 var(--charcoal)
 }
-.tooltip-anchor { display:inline-flex }
+.tooltip-anchor {
+  display:inline-flex
+}
 .app-tooltip {
   position:fixed;
   z-index:110;
   max-width:min(280px,calc(100vw - 24px));
-  padding:8px 11px;
-  background:var(--charcoal);
-  color:var(--paper);
-  border-radius:5px;
+  padding:6px 9px;
+  background:var(--ink);
+  color:var(--surface);
+  border-radius:var(--radius-1);
   font-size:12px;
-  line-height:1.5;
+  font-weight:500;
+  line-height:1.45;
   pointer-events:none;
-  box-shadow:0 3px 12px #25263115
+  box-shadow:var(--shadow-popover);
+  animation:fade-in var(--duration-fast) var(--ease-out)
+}
+@keyframes popover-in {
+  from { transform:translateY(-4px) }
+}
+@keyframes fade-in {
+  from { opacity:0 }
 }
 @media (pointer:coarse) {
   .app-field input { font-size:16px }
