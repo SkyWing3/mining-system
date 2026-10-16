@@ -1,22 +1,73 @@
-test_duplicate_and_bus_pins_rejected (test_interface.InterfaceTests.test_duplicate_and_bus_pins_rejected) ... ok
+test_button_feedback_and_unmonitored_link (test_alerts.ControllerTests.test_button_feedback_and_unmonitored_link) ... ok
+test_danger_alarm_can_be_silenced_and_resumes (test_alerts.ControllerTests.test_danger_alarm_can_be_silenced_and_resumes) ... ok
+test_led_follows_link_and_level (test_alerts.ControllerTests.test_led_follows_link_and_level) ... ok
+test_notice_double_vibration_and_blue_blink (test_alerts.ControllerTests.test_notice_double_vibration_and_blue_blink) ... ok
+test_simulated_pattern_timing (test_alerts.ControllerTests.test_simulated_pattern_timing) ... ok
+test_gpio_devices_use_configured_pins_and_polarity (test_alerts.GpioOutputTests.test_gpio_devices_use_configured_pins_and_polarity) ... ok
+test_danger_sends_one_automatic_alarm_per_transition (test_app.ApplicationTests.test_danger_sends_one_automatic_alarm_per_transition) ... ok
+test_message_from_menu_is_queued (test_app.ApplicationTests.test_message_from_menu_is_queued) ... ok
+test_notice_is_confirmed_durably (test_app.ApplicationTests.test_notice_is_confirmed_durably) ... ok
+test_recording_stops_at_the_limit_and_can_be_discarded (test_app.ApplicationTests.test_recording_stops_at_the_limit_and_can_be_discarded) ... ok
+test_run_loop_redraws_only_changed_frames (test_app.ApplicationTests.test_run_loop_redraws_only_changed_frames) ... ok
+test_unconfigured_device_never_claims_delivery (test_app.ApplicationTests.test_unconfigured_device_never_claims_delivery) ... ok
+test_voice_flow_records_queues_and_confirms_upload (test_app.ApplicationTests.test_voice_flow_records_queues_and_confirms_upload) ... ok
+test_queue_limit_and_persistence (test_audio.VoiceUploadTests.test_queue_limit_and_persistence) ... ok
+test_transient_errors_keep_and_invalid_audio_is_quarantined (test_audio.VoiceUploadTests.test_transient_errors_keep_and_invalid_audio_is_quarantined) ... Subida de voz pendiente (409): rechazado
+Subida de voz pendiente (503): rechazado
+ok
+test_unreachable_central_is_retried (test_audio.VoiceUploadTests.test_unreachable_central_is_retried) ... Subida de voz pendiente (0): <urlopen error [Errno 61] Connection refused>
+ok
+test_upload_sends_headers_and_removes_on_success (test_audio.VoiceUploadTests.test_upload_sends_headers_and_removes_on_success) ... ok
+test_arecord_recorder_streams_raw_samples (test_audio.WavTests.test_arecord_recorder_streams_raw_samples) ... ok
+test_encode_produces_mono_16_bit_pcm (test_audio.WavTests.test_encode_produces_mono_16_bit_pcm) ... ok
+test_normalize_raises_quiet_audio_without_clipping (test_audio.WavTests.test_normalize_raises_quiet_audio_without_clipping) ... ok
+test_short_or_missing_recordings_fail (test_audio.WavTests.test_short_or_missing_recordings_fail) ... ok
+test_simulated_recorder_uses_elapsed_time (test_audio.WavTests.test_simulated_recorder_uses_elapsed_time) ... ok
+test_duplicate_and_bus_pins_rejected (test_interface.ConfigTests.test_duplicate_and_bus_pins_rejected) ... ok
+test_example_config_loads (test_interface.ConfigTests.test_example_config_loads) ... ok
+test_gpio_callbacks_queue_correct_actions_and_close (test_interface.ConfigTests.test_gpio_callbacks_queue_correct_actions_and_close) ... ok
+test_invalid_values_rejected (test_interface.ConfigTests.test_invalid_values_rejected) ... ok
+test_minimal_legacy_config_uses_defaults (test_interface.ConfigTests.test_minimal_legacy_config_uses_defaults) ... ok
+test_relative_queues_resolve_against_the_file (test_interface.ConfigTests.test_relative_queues_resolve_against_the_file) ... ok
 test_every_page_returns_to_same_selection (test_interface.InterfaceTests.test_every_page_returns_to_same_selection) ... ok
-test_example_config_loads (test_interface.InterfaceTests.test_example_config_loads) ... ok
 test_frames_are_native_monochrome_and_change_on_navigation (test_interface.InterfaceTests.test_frames_are_native_monochrome_and_change_on_navigation) ... ok
-test_gpio_callbacks_queue_correct_actions_and_close (test_interface.InterfaceTests.test_gpio_callbacks_queue_correct_actions_and_close) ... ok
+test_identity_and_link_state (test_interface.InterfaceTests.test_identity_and_link_state) ... ok
+test_live_readings_change_the_frames (test_interface.InterfaceTests.test_live_readings_change_the_frames) ... ok
+test_notice_and_alarm_overlays_take_priority (test_interface.InterfaceTests.test_notice_and_alarm_overlays_take_priority) ... ok
 test_wrap_and_scroll_keep_selection_visible (test_interface.InterfaceTests.test_wrap_and_scroll_keep_selection_visible) ... ok
-test_cancel_never_enqueues (test_messages.MessageTests.test_cancel_never_enqueues) ... ok
-test_concurrent_writers_preserve_all_messages_and_ack_isolated (test_messages.MessageTests.test_concurrent_writers_preserve_all_messages_and_ack_isolated) ... ok
-test_every_code_can_be_selected_and_returned (test_messages.MessageTests.test_every_code_can_be_selected_and_returned) ... ok
-test_failed_storage_never_claims_queue_or_delivery (test_messages.MessageTests.test_failed_storage_never_claims_queue_or_delivery) ... ok
-test_legacy_file_is_preserved_and_rejected_as_queue_directory (test_messages.MessageTests.test_legacy_file_is_preserved_and_rejected_as_queue_directory) ... ok
-test_mismatched_ack_keeps_message_in_outbox (test_messages.MessageTests.test_mismatched_ack_keeps_message_in_outbox) ... ok
-test_outbox_survives_restart_and_only_removes_acknowledged_message (test_messages.MessageTests.test_outbox_survives_restart_and_only_removes_acknowledged_message) ... ok
-test_selection_does_not_send_until_confirmed (test_messages.MessageTests.test_selection_does_not_send_until_confirmed) ... ok
-test_unconfigured_menu_does_not_claim_delivery (test_messages.MessageTests.test_unconfigured_menu_does_not_claim_delivery) ... ok
-test_wrap_keeps_message_selection_visible (test_messages.MessageTests.test_wrap_keeps_message_selection_visible) ... ok
+test_delivers_queue_and_reports_identity (test_messages.ClientTests.test_delivers_queue_and_reports_identity) ... ok
+test_invalid_frame_is_rejected_and_unassigned_is_kept (test_messages.ClientTests.test_invalid_frame_is_rejected_and_unassigned_is_kept) ... ok
+test_live_telemetry_is_sent_periodically (test_messages.ClientTests.test_live_telemetry_is_sent_periodically) ... ok
+test_mismatched_ack_keeps_message_in_outbox (test_messages.ClientTests.test_mismatched_ack_keeps_message_in_outbox) ... Enlace con la central interrumpido: La confirmación no corresponde al mensaje
+ok
+test_pushed_notice_is_shown_and_confirmed (test_messages.ClientTests.test_pushed_notice_is_shown_and_confirmed) ... ok
+test_cancel_never_sends (test_messages.MessageMenuTests.test_cancel_never_sends) ... ok
+test_every_code_can_be_selected_and_returned (test_messages.MessageMenuTests.test_every_code_can_be_selected_and_returned) ... ok
+test_failure_never_claims_delivery (test_messages.MessageMenuTests.test_failure_never_claims_delivery) ... ok
+test_selection_does_not_send_until_confirmed (test_messages.MessageMenuTests.test_selection_does_not_send_until_confirmed) ... ok
+test_wrap_keeps_message_selection_visible (test_messages.MessageMenuTests.test_wrap_keeps_message_selection_visible) ... ok
+test_catalog_and_detail_rules (test_messages.OutboxTests.test_catalog_and_detail_rules) ... ok
+test_concurrent_writers_preserve_all_entries_and_ack_isolated (test_messages.OutboxTests.test_concurrent_writers_preserve_all_entries_and_ack_isolated) ... ok
+test_failed_storage_never_leaves_partial_entries (test_messages.OutboxTests.test_failed_storage_never_leaves_partial_entries) ... ok
+test_legacy_file_is_preserved_and_rejected_as_queue_directory (test_messages.OutboxTests.test_legacy_file_is_preserved_and_rejected_as_queue_directory) ... ok
+test_notice_confirmations_can_skip_blocked_messages (test_messages.OutboxTests.test_notice_confirmations_can_skip_blocked_messages) ... ok
+test_outbox_survives_restart_and_only_removes_acknowledged_entry (test_messages.OutboxTests.test_outbox_survives_restart_and_only_removes_acknowledged_entry) ... ok
+test_rejected_entries_are_quarantined (test_messages.OutboxTests.test_rejected_entries_are_quarantined) ... ok
+test_ads1115_single_shot_config_and_voltage (test_sensors.DriverTests.test_ads1115_single_shot_config_and_voltage) ... ok
+test_ads1115_timeout_and_invalid_channel (test_sensors.DriverTests.test_ads1115_timeout_and_invalid_channel) ... ok
+test_co_requires_warmup_and_calibration_for_ppm (test_sensors.DriverTests.test_co_requires_warmup_and_calibration_for_ppm) ... ok
+test_hardware_source_isolates_each_sensor_failure (test_sensors.DriverTests.test_hardware_source_isolates_each_sensor_failure) ... Sensor co sin lectura: i2c timeout
+Sensor thermometer sin lectura: nack
+ok
+test_mlx90614_celsius_and_error_flag (test_sensors.DriverTests.test_mlx90614_celsius_and_error_flag) ... ok
+test_simulated_source_is_marked_and_can_spike (test_sensors.DriverTests.test_simulated_source_is_marked_and_can_spike) ... ok
+test_hub_publishes_and_expires_stale_samples (test_sensors.HubTests.test_hub_publishes_and_expires_stale_samples) ... ok
+test_telemetry_drops_out_of_range_values_and_keeps_level (test_sensors.HubTests.test_telemetry_drops_out_of_range_values_and_keeps_level) ... ok
+test_classify_uses_hysteresis (test_sensors.LevelTests.test_classify_uses_hysteresis) ... ok
+test_heat_group_combines_ambient_and_object (test_sensors.LevelTests.test_heat_group_combines_ambient_and_object) ... ok
+test_level_changes_only_after_consecutive_samples (test_sensors.LevelTests.test_level_changes_only_after_consecutive_samples) ... ok
 
 ----------------------------------------------------------------------
-Ran 16 tests in 0.055s
+Ran 62 tests in 5.034s
 
 OK
-
