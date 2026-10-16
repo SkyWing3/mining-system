@@ -115,7 +115,7 @@
 .chip.warn {
   background:var(--warn);
   border-color:var(--warn-edge);
-  color:var(--ink)
+  color:var(--warn-ink)
 }
 .chip.danger {
   background:var(--danger);
@@ -1146,7 +1146,7 @@
 }
 .status-board.warn .status-board-icon {
   background:var(--warn);
-  color:var(--ink)
+  color:var(--warn-ink)
 }
 .status-board.danger {
   border-color:var(--danger)
@@ -1486,7 +1486,7 @@
   background:var(--danger)
 }
 .zone-track .caution {
-  background:var(--warn)
+  background:var(--warn-edge)
 }
 .zone-track .normal {
   background:var(--ok-line)
@@ -1536,7 +1536,7 @@
 }
 .message-symbol.warning {
   background:var(--warn);
-  color:var(--ink)
+  color:var(--warn-ink)
 }
 .message-body {
   flex:1;
@@ -2379,7 +2379,7 @@ tbody tr:hover {
     max-width:none;
     align-items:stretch
   }
-  /* On a phone the band scrolls away; the sticky topbar keeps the red "en peligro" chip. */
+  /* On a phone the band scrolls away; the sticky topbar keeps the wine "en peligro" chip. */
   .danger-band {
     position:static;
     padding:10px 16px

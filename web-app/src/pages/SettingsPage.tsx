@@ -17,10 +17,11 @@ const palette = [
   { name: 'Vino', token: '--wine' },
   { name: 'Ciruela', token: '--plum' },
 ]
-const safety = [
-  { name: 'Normal', token: '--ok' },
-  { name: 'Precaución', token: '--warn' },
-  { name: 'Peligro', token: '--danger' },
+// The states reuse the brand: no color outside the palette.
+const states = [
+  { name: 'Peligro · Vino', token: '--wine' },
+  { name: 'Precaución · Arena', token: '--sand' },
+  { name: 'Normal · Carbón', token: '--charcoal' },
 ]
 
 export function SettingsPage({ user, saved }: { user: User; saved: () => void }) {
@@ -75,8 +76,8 @@ export function SettingsPage({ user, saved }: { user: User; saved: () => void })
           <div className="brand-settings">
             <Brand />
             <Swatches label="Paleta de marca" colors={palette} />
-            <Swatches label="Colores de seguridad" colors={safety} />
-            <p>Arena, tierra, carbón, vino y ciruela identifican la central sobre una base clara.<br />Verde, amarillo y rojo se reservan para los estados de seguridad.</p>
+            <Swatches label="Colores de los estados" colors={states} />
+            <p>Arena, tierra, carbón, vino y ciruela identifican la central y también marcan sus estados: vino para peligro, arena con texto tierra para precaución y carbón para normal. Cada estado va siempre con su nombre o su icono.</p>
           </div>
         </section>
         <section className="panel system-settings">

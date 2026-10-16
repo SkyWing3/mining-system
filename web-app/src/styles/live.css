@@ -62,7 +62,7 @@
   color:var(--warn-ink)
 }
 .live-summary li.caution.active .live-summary-mark {
-  background:var(--warn)
+  background:var(--warn-edge)
 }
 .live-summary li.normal.active .live-summary-mark {
   background:var(--ok)

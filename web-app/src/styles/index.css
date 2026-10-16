@@ -1,37 +1,38 @@
 /*
  * Mining System · design tokens and base elements.
- * Light control-room surfaces: neutral stone and white, structure by hairlines,
- * and color reserved for safety states (ISO 3864 green, yellow and red). No gradients.
+ * Every color is one of the five brand colors (README), white, or a mix of them.
+ * States use the brand too: vino = peligro, arena with tierra text = precaución, carbón = normal.
+ * Light control-room surfaces, structure by hairlines. No gradients.
  */
 :root {
   color-scheme:light;
   --font-sans:'IBM Plex Sans Variable','IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 
-  /* Brand palette (README): identity only, never a state. */
+  /* Brand palette (README). */
   --sand:#dec1af;
   --earth:#491a06;
   --charcoal:#373946;
   --wine:#852a3b;
   --plum:#6c4b68;
 
-  /* Neutral surfaces and text. */
-  --canvas:#f2f1ee;
+  /* Surfaces: white and sand tints. Text and hairlines: charcoal and its tints. */
+  --canvas:color-mix(in srgb,var(--sand) 16%,#fff);
   --surface:#fff;
-  --surface-2:#f7f6f4;
-  --surface-3:#ebe9e5;
-  --ink:#1f2028;
-  --ink-2:#4a4b57;
-  --ink-3:#5f5e66;
-  --line:#dedbd5;
-  --line-strong:#c9c5bd;
-  --control:#8e8a82;
+  --surface-2:color-mix(in srgb,var(--sand) 9%,#fff);
+  --surface-3:color-mix(in srgb,var(--sand) 26%,#fff);
+  --ink:var(--charcoal);
+  --ink-2:color-mix(in srgb,var(--charcoal) 88%,#fff);
+  --ink-3:color-mix(in srgb,var(--charcoal) 79%,#fff);
+  --line:color-mix(in srgb,var(--charcoal) 14%,#fff);
+  --line-strong:color-mix(in srgb,var(--charcoal) 24%,#fff);
+  --control:color-mix(in srgb,var(--charcoal) 56%,#fff);
 
   /* Navigation rail. */
   --rail:var(--charcoal);
-  --rail-deep:#2a2c36;
+  --rail-deep:color-mix(in srgb,var(--charcoal) 86%,var(--earth));
   --rail-ink:#fff;
-  --rail-muted:#c8ccd8;
+  --rail-muted:color-mix(in srgb,#fff 76%,var(--charcoal));
   --rail-line:#ffffff1f;
   --rail-hover:#ffffff12;
   --rail-active:#ffffff1c;
@@ -39,44 +40,43 @@
   /* Translucent white over a dark fill: rail counts, buttons inside dark toasts. */
   --fill-on-dark:#ffffff1f;
 
-  /* Safety states. */
-  --ok:#1d6e45;
-  --ok-bg:#e5f1ea;
-  --ok-line:#9fcbb2;
-  --warn:#e8b400;
-  --warn-ink:#7a4f00;
-  --warn-bg:#fff3cc;
-  --warn-line:#d9b54a;
-  --warn-bg-hover:#fdebb3;
-  --danger:#b3261e;
-  --danger-ink:#9e2119;
-  --danger-bg:#fbe9e7;
-  --danger-line:#e6a59f;
-  --danger-bg-hover:#f8dcd9;
+  /* States, always with a text label or icon. Normal stays quiet so danger stands out. */
+  --ok:color-mix(in srgb,var(--charcoal) 62%,#fff);
+  --ok-line:color-mix(in srgb,var(--charcoal) 40%,#fff);
+  --warn:var(--sand);
+  --warn-ink:var(--earth);
+  --warn-bg:color-mix(in srgb,var(--sand) 36%,#fff);
+  --warn-bg-hover:color-mix(in srgb,var(--sand) 48%,#fff);
+  --warn-line:color-mix(in srgb,var(--earth) 28%,var(--sand));
+  /* Caution edges and marks that must read on white: sand deepened with earth. */
+  --warn-edge:color-mix(in srgb,var(--earth) 50%,var(--sand));
+  --danger:var(--wine);
+  --danger-ink:var(--wine);
+  --danger-bg:color-mix(in srgb,var(--wine) 9%,#fff);
+  --danger-bg-hover:color-mix(in srgb,var(--wine) 12%,#fff);
 
   /* Data ink. */
   --series:var(--plum);
-  --chart-grid:#e7e4df;
+  --chart-grid:color-mix(in srgb,var(--charcoal) 10%,#fff);
 
-  /* Text and icons on dark or saturated fills, and other shared literals. */
+  /* Text and icons on dark or saturated fills, and other shared values. */
   --on-fill:#fff;
-  --on-earth:#f3e6dd;
-  --rail-ink-2:#e4e6ee;
-  --warn-edge:#c99a00;
-  --disabled-fill:#8b8a91;
-  --scrim:#1f2028a6;
+  --on-earth:color-mix(in srgb,var(--sand) 45%,#fff);
+  --rail-ink-2:color-mix(in srgb,#fff 88%,var(--charcoal));
+  --disabled-fill:color-mix(in srgb,var(--charcoal) 58%,#fff);
+  --scrim:color-mix(in srgb,var(--charcoal) 70%,transparent);
 
   --focus:var(--ink);
   --radius-1:2px;
   --radius-2:4px;
   --radius-3:6px;
-  --shadow-overlay:0 18px 44px #1f20282e,0 2px 6px #1f202814;
-  --shadow-popover:0 4px 14px #1f202826;
-  --shadow-drawer:12px 0 40px #1f20282e;
-  --shadow-raised:0 1px 2px #1f20281f;
+  --shadow-overlay:0 18px 44px color-mix(in srgb,var(--charcoal) 20%,transparent),0 2px 6px color-mix(in srgb,var(--charcoal) 9%,transparent);
+  --shadow-popover:0 4px 14px color-mix(in srgb,var(--charcoal) 16%,transparent);
+  --shadow-drawer:12px 0 40px color-mix(in srgb,var(--charcoal) 20%,transparent);
+  --shadow-raised:0 1px 2px color-mix(in srgb,var(--charcoal) 14%,transparent);
   /* Hover veil over a segmented control's track, and the edge drawn around color swatches. */
   --veil:#ffffff8c;
-  --swatch-edge:#1f20281a;
+  --swatch-edge:color-mix(in srgb,var(--charcoal) 12%,transparent);
   --ease-out:cubic-bezier(.2,.7,.2,1);
   --ease-in:cubic-bezier(.4,0,1,1);
   --duration-fast:120ms;

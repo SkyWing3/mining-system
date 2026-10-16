@@ -7,7 +7,7 @@ import { initials, roleName } from '../utils/format'
 import { pageInfo } from './pages'
 import type { PageGroup } from './pages'
 
-// Counts that mean a safety condition are red; the others are informative.
+// Counts that mean a safety condition use the danger color (wine); the others are informative.
 const urgentCounts: Page[] = ['live', 'alerts']
 
 export const Sidebar = memo(function Sidebar({ user, page, open, counts, navigate, logout }: {

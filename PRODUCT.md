@@ -70,8 +70,8 @@ Es una plataforma propia de punta a punta (manilla, central y panel) que no depe
 - **Nombre:** Mining System · Central de operaciones.
 - **Idioma:** solo español, con la jornada y la hora de Bolivia (confirmado).
 - **Terminología del dominio:** *manilla* (el nodo portátil), *central* (servidor, API y base de datos), *operador* (supervisor o administrador), *minero*, *reporte*, *aviso*, *alerta* y *zona*.
-- **Paleta (confirmada como obligatoria):** blanco y `#DEC1AF`, `#491A06`, `#373946`, `#852A3B`, `#6C4B68`; solo modo claro y sin gradientes. Estos colores identifican la central y no expresan estados.
-- **Colores de seguridad (confirmados el 2026-10-16):** verde, amarillo y rojo (referencia ISO 3864) solo para normal, precaución y peligro, siempre acompañados de texto o icono. La base es clara y neutra, como en una sala de control; se descartó un tema oscuro.
+- **Paleta (confirmada como obligatoria, sin excepciones):** blanco y `#DEC1AF`, `#491A06`, `#373946`, `#852A3B`, `#6C4B68`, más mezclas de ellos con blanco; solo modo claro y sin gradientes. No se usa ningún color fuera de la paleta.
+- **Colores de los estados (confirmados el 2026-10-16):** se usa la marca, no colores de seguridad externos: vino `#852A3B` para peligro, arena `#DEC1AF` con texto tierra `#491A06` para precaución y carbón `#373946` para normal; ciruela `#6C4B68` para datos y series. Cada estado va siempre con texto o icono. Se descartaron el verde, amarillo y rojo de ISO 3864 y un tema oscuro.
 - **Activos:** `web-app/public/favicon.svg` y `web-app/public/icons.svg`.
 - **Voz observada en la interfaz actual (no confirmada como compromiso):** directa y en segunda persona, centrada en el equipo. Por ejemplo: «La información esencial de tu operación, en un solo lugar.»
 
