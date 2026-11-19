@@ -105,6 +105,10 @@ GPIOZERO_PIN_FACTORY=lgpio .venv/bin/python -m src.main --config config/settings
 
 Consultar [OLED, sensores y alertas](docs/hardware/oled-buttons.md), [lista de componentes](docs/componentes.tex), [cableado completo](docs/conexiones.tex) y [diagrama de cableado](docs/imagenes/cableado.png). Para conectar otra Raspberry Pi, servir la central en su interfaz de red: `MINING_BIND_URL=http://0.0.0.0:5080 ./scripts/serve.sh`.
 
+### Manilla con ESP32-S3
+
+[`esp32-device/`](esp32-device/README.md) es el mismo software portado a un ESP32-S3 DevKitC con PlatformIO: mismo menú, alertas, colas y protocolo, sin ADS1115 (el SEN0564 usa el ADC interno). Se configura por la consola serie y la central no necesita cambios.
+
 ## Aplicación compilada
 
 ```sh
@@ -172,6 +176,7 @@ Hardware de la manilla: OLED SSD1306, tres botones, SEN0564 leído mediante un A
 | `backend/` | API ASP.NET Core en capas: `Domain`, `Data` (EF Core y migraciones), `DTOs`, `Services`, `Realtime` (SignalR y WebSocket de manillas), `Workers`, `Controllers`, `Middleware`, `Configuration`. |
 | `web-app/` | Central React: `api`, `realtime`, `hooks`, `layout`, `pages`, `components`, `forms`, `styles` y pruebas de navegador. |
 | `device/` | Manilla: `sensors`, `alerts`, `audio`, `communication`, `display`, `input`, `tools`, orquestación (`app.py`) y simulador. |
+| `esp32-device/` | Manilla en ESP32-S3 (PlatformIO): lógica portable en `lib/core`, controladores y tareas de FreeRTOS en `src`, pruebas nativas en `test`. |
 | `tests/` | Pruebas unitarias .NET, de integración de API/WebSockets y del despliegue Docker. |
 | `docs/` | [Contrato de API y tiempo real](docs/api.md), hardware y documentación existente. |
 | `scripts/` | Desarrollo, compilación, ejecución y pruebas. |

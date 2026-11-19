@@ -1,0 +1,5 @@
+# Compilación y dependencias de PlatformIO
+.pio/
+.vscode/
+# Configuración real con credenciales (usar config/settings.example.json como base)
+config/settings.json

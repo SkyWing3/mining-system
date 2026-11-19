@@ -1,0 +1,10 @@
+{
+  "name": "mining-core",
+  "version": "1.0.0",
+  "description": "Lógica de la manilla minera independiente del hardware: menú, umbrales, alertas, protocolo, colas y configuración.",
+  "frameworks": "*",
+  "platforms": "*",
+  "build": {
+    "libArchive": false
+  }
+}

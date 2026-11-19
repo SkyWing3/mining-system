@@ -1,0 +1,9 @@
+# ESP32-S3 con 16 MB de flash: aplicación de 3 MB y ~12,9 MB de LittleFS para
+# la configuración y las colas (mensajes y voz). La partición se llama "spiffs"
+# porque es la etiqueta que usan por defecto LittleFS y "pio run -t uploadfs".
+# Name,   Type, SubType,  Offset,   Size
+nvs,      data, nvs,      0x9000,   0x5000
+phy_init, data, phy,      0xe000,   0x1000
+factory,  app,  factory,  0x10000,  0x300000
+coredump, data, coredump, 0x310000, 0x10000
+spiffs,   data, spiffs,   0x320000, 0xCE0000

@@ -1,0 +1,40 @@
+{
+  "wifi": {"ssid": "", "password": ""},
+  "i2c": {"sda": 8, "scl": 9, "frequency": 100000},
+  "display": {"address": "0x3C", "rotate": 0},
+  "buttons": {"up": 5, "down": 6, "enter": 7, "bounce_seconds": 0.08},
+  "connection": {
+    "url": "ws://franco-rasp4.local/ws/device",
+    "api_key": "",
+    "heartbeat_seconds": 20,
+    "telemetry_seconds": 2
+  },
+  "sensors": {
+    "sample_seconds": 1,
+    "simulated": false,
+    "co": {"enabled": true, "pin": 4, "samples": 16, "warmup_seconds": 180, "calibration": null},
+    "mlx90614": {"enabled": true, "address": "0x5A"}
+  },
+  "alerts": {
+    "enabled": true,
+    "led": {"red": 15, "green": 16, "blue": 17, "active_high": true},
+    "buzzer": {"pin": 18, "active_high": false},
+    "motor": {"pin": 10},
+    "button_feedback": true,
+    "silence_seconds": 60,
+    "confirm_samples": 3,
+    "thresholds": {
+      "co_ppm": {"caution": 35, "danger": 200},
+      "ambient_c": {"caution": 32, "danger": 38},
+      "object_c": {"caution": 60, "danger": 90}
+    }
+  },
+  "voice": {
+    "enabled": true,
+    "pins": {"sck": 12, "ws": 13, "sd": 14},
+    "slot": "left",
+    "sample_rate": 16000,
+    "max_seconds": 30,
+    "max_pending": 20
+  }
+}
