@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "outputDir": "apps/twin-web/public/content/textures",
+  "textures": [
+    { "id": "quarry_wall_02", "source": "polyhaven", "role": "rock-wall", "maxResolution": "4k" },
+    { "id": "rock_face", "source": "polyhaven", "role": "rock-wall-oxidized", "maxResolution": "4k" },
+    { "id": "brown_mud_rocks_01", "source": "polyhaven", "role": "floor-wet", "maxResolution": "4k" },
+    { "id": "rocky_trail", "source": "polyhaven", "role": "floor-dry", "maxResolution": "2k" },
+    { "id": "granular_concrete", "source": "polyhaven", "role": "shotcrete", "maxResolution": "2k" },
+    { "id": "rough_wood", "source": "polyhaven", "role": "timber", "maxResolution": "2k" },
+    { "id": "green_metal_rust", "source": "polyhaven", "role": "painted-metal", "maxResolution": "2k" },
+    { "id": "rust_coarse_01", "source": "polyhaven", "role": "rusted-steel", "maxResolution": "2k" }
+  ]
+}

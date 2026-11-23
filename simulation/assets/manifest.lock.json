@@ -1,0 +1,1330 @@
+{
+  "lockfileVersion": 1,
+  "manifestVersion": 1,
+  "generator": {
+    "script": "scripts/fetch-assets.mjs",
+    "sharp": "0.35.5",
+    "vips": "8.18.7"
+  },
+  "outputDir": "apps/twin-web/public/content/textures",
+  "textures": [
+    {
+      "id": "quarry_wall_02",
+      "role": "rock-wall",
+      "source": "polyhaven",
+      "title": "Quarry Wall 02",
+      "authors": [
+        {
+          "name": "Dimitrios Savva",
+          "contribution": "All"
+        }
+      ],
+      "license": "CC0-1.0",
+      "page": "https://polyhaven.com/a/quarry_wall_02",
+      "maxResolution": "4k",
+      "dimensionsMm": [
+        1800,
+        1800
+      ],
+      "polyhavenFilesHash": "de887111b06488463d4a3d22108d9f78ee295df2",
+      "downloadedAt": "2026-11-22T20:36:01.981Z",
+      "files": [
+        {
+          "map": "Diffuse",
+          "resolution": "4k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/quarry_wall_02/quarry_wall_02_diff_4k.jpg",
+          "md5": "0e4bcae5a5b0d707a91722e23de3fbaf",
+          "sha256": "bbf5ef3d15a06313dbf4a4c3326ec6d1ba7020f99895121ca878b063fa7d845b",
+          "bytes": 15031587,
+          "cachePath": "assets/cache/quarry_wall_02/Diffuse_4k.jpg",
+          "downloadedAt": "2026-11-22T20:36:00.236Z"
+        },
+        {
+          "map": "nor_gl",
+          "resolution": "4k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/quarry_wall_02/quarry_wall_02_nor_gl_4k.jpg",
+          "md5": "604cd66fec4e7cc38a7d76318c2b20e4",
+          "sha256": "95277e0586ef700b872ae0b94a6a231aefa5255f8a865ae6853a5dd1ab730744",
+          "bytes": 17426899,
+          "cachePath": "assets/cache/quarry_wall_02/nor_gl_4k.jpg",
+          "downloadedAt": "2026-11-22T20:36:01.981Z"
+        },
+        {
+          "map": "arm",
+          "resolution": "4k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/quarry_wall_02/quarry_wall_02_arm_4k.jpg",
+          "md5": "f4bf11208e0ddc5a0e600d2c2f049aea",
+          "sha256": "8905120d9ee7219e2c7416bad0497b80df65b58726d560fcd0bb6964a3f14efb",
+          "bytes": 9685084,
+          "cachePath": "assets/cache/quarry_wall_02/arm_4k.jpg",
+          "downloadedAt": "2026-11-22T20:35:58.094Z"
+        }
+      ],
+      "derived": [],
+      "variants": [
+        {
+          "map": "albedo",
+          "resolution": "1k",
+          "path": "quarry_wall_02/1k/albedo.jpg",
+          "bytes": 273389,
+          "sha256": "42f37b553fcc96af67b85f6675e1bfc5e7da694e4932f2937316778f2cbf2005",
+          "sourceSha256": "bbf5ef3d15a06313dbf4a4c3326ec6d1ba7020f99895121ca878b063fa7d845b",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "2k",
+          "path": "quarry_wall_02/2k/albedo.jpg",
+          "bytes": 1190037,
+          "sha256": "71aabf31af7f625366ff431b1a9dceb1d28825cab4ca03b358c2181fa0bc5174",
+          "sourceSha256": "bbf5ef3d15a06313dbf4a4c3326ec6d1ba7020f99895121ca878b063fa7d845b",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 2048,
+            "height": 2048,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "4k",
+          "path": "quarry_wall_02/4k/albedo.jpg",
+          "bytes": 15031587,
+          "sha256": "bbf5ef3d15a06313dbf4a4c3326ec6d1ba7020f99895121ca878b063fa7d845b",
+          "sourceSha256": "bbf5ef3d15a06313dbf4a4c3326ec6d1ba7020f99895121ca878b063fa7d845b",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "1k",
+          "path": "quarry_wall_02/1k/normal.jpg",
+          "bytes": 1120491,
+          "sha256": "1b377262aefa482c7f7c76572c5e668f928a393afd79849042b034440a170592",
+          "sourceSha256": "95277e0586ef700b872ae0b94a6a231aefa5255f8a865ae6853a5dd1ab730744",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "2k",
+          "path": "quarry_wall_02/2k/normal.jpg",
+          "bytes": 3718020,
+          "sha256": "cda888a2026e2f0d7800222f188de6bc8fbefb76b7d7b6bcad2f605ea8da6201",
+          "sourceSha256": "95277e0586ef700b872ae0b94a6a231aefa5255f8a865ae6853a5dd1ab730744",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 2048,
+            "height": 2048,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "4k",
+          "path": "quarry_wall_02/4k/normal.jpg",
+          "bytes": 17426899,
+          "sha256": "95277e0586ef700b872ae0b94a6a231aefa5255f8a865ae6853a5dd1ab730744",
+          "sourceSha256": "95277e0586ef700b872ae0b94a6a231aefa5255f8a865ae6853a5dd1ab730744",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "1k",
+          "path": "quarry_wall_02/1k/arm.jpg",
+          "bytes": 207236,
+          "sha256": "868bbb13765eb7c1fd7ab21cffdf10c641b77e2c2df6a67204b809084a9b091a",
+          "sourceSha256": "8905120d9ee7219e2c7416bad0497b80df65b58726d560fcd0bb6964a3f14efb",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "path": "quarry_wall_02/2k/arm.jpg",
+          "bytes": 801680,
+          "sha256": "def1c9e48bcfc29b95c06867f516bd185f190e8c1bedb9f90e65e76fc4c08b2e",
+          "sourceSha256": "8905120d9ee7219e2c7416bad0497b80df65b58726d560fcd0bb6964a3f14efb",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 2048,
+            "height": 2048,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "4k",
+          "path": "quarry_wall_02/4k/arm.jpg",
+          "bytes": 9685084,
+          "sha256": "8905120d9ee7219e2c7416bad0497b80df65b58726d560fcd0bb6964a3f14efb",
+          "sourceSha256": "8905120d9ee7219e2c7416bad0497b80df65b58726d560fcd0bb6964a3f14efb",
+          "transform": {
+            "method": "copy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rock_face",
+      "role": "rock-wall-oxidized",
+      "source": "polyhaven",
+      "title": "Rock Face",
+      "authors": [
+        {
+          "name": "Greg Zaal",
+          "contribution": "Photography"
+        },
+        {
+          "name": "Dario Barresi",
+          "contribution": "Processing"
+        }
+      ],
+      "license": "CC0-1.0",
+      "page": "https://polyhaven.com/a/rock_face",
+      "maxResolution": "4k",
+      "dimensionsMm": [
+        2380,
+        2380
+      ],
+      "polyhavenFilesHash": "99a9a8ad19728556cbd1a53440087998ae007697",
+      "downloadedAt": "2026-11-22T20:36:11.942Z",
+      "files": [
+        {
+          "map": "Diffuse",
+          "resolution": "4k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/rock_face/rock_face_diff_4k.jpg",
+          "md5": "bd14c0c0141ebee097ca38c607003181",
+          "sha256": "f22c19c46d8a03b199b92d779d1e28a00481098177fba41c4f84cf100c5e7164",
+          "bytes": 11665139,
+          "cachePath": "assets/cache/rock_face/Diffuse_4k.jpg",
+          "downloadedAt": "2026-11-22T20:36:10.350Z"
+        },
+        {
+          "map": "nor_gl",
+          "resolution": "4k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/rock_face/rock_face_nor_gl_4k.jpg",
+          "md5": "3ff25aa6f54efe13823ef2b83beba3f2",
+          "sha256": "b486e62629b35dd3ae4c820012846a477b1e667e9329b37ff9b06516e0a4d9d3",
+          "bytes": 14512278,
+          "cachePath": "assets/cache/rock_face/nor_gl_4k.jpg",
+          "downloadedAt": "2026-11-22T20:36:11.938Z"
+        },
+        {
+          "map": "arm",
+          "resolution": "4k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/rock_face/rock_face_arm_4k.jpg",
+          "md5": "359c74457930cbed4835a845e1787a15",
+          "sha256": "f27f9ae0fc103b4104bd4ea3558eddeb1c01ef6919d719dfea1da646085552da",
+          "bytes": 5660924,
+          "cachePath": "assets/cache/rock_face/arm_4k.jpg",
+          "downloadedAt": "2026-11-22T20:36:11.942Z"
+        }
+      ],
+      "derived": [],
+      "variants": [
+        {
+          "map": "albedo",
+          "resolution": "1k",
+          "path": "rock_face/1k/albedo.jpg",
+          "bytes": 186850,
+          "sha256": "70951eab433a9f51cb2e3da028f9b58dad25fe78825e696d74f04e6d28d37a1d",
+          "sourceSha256": "f22c19c46d8a03b199b92d779d1e28a00481098177fba41c4f84cf100c5e7164",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "2k",
+          "path": "rock_face/2k/albedo.jpg",
+          "bytes": 768456,
+          "sha256": "3cad8d45b5968058b99adf0c76bf01a66353e296a715c9bc9f7fdb9c15a6d4ce",
+          "sourceSha256": "f22c19c46d8a03b199b92d779d1e28a00481098177fba41c4f84cf100c5e7164",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 2048,
+            "height": 2048,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "4k",
+          "path": "rock_face/4k/albedo.jpg",
+          "bytes": 11665139,
+          "sha256": "f22c19c46d8a03b199b92d779d1e28a00481098177fba41c4f84cf100c5e7164",
+          "sourceSha256": "f22c19c46d8a03b199b92d779d1e28a00481098177fba41c4f84cf100c5e7164",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "1k",
+          "path": "rock_face/1k/normal.jpg",
+          "bytes": 1084922,
+          "sha256": "6d6d962f2fdd94449f9d65ec50e4b0b67edc3753512b5dcabffb7767e6fa8454",
+          "sourceSha256": "b486e62629b35dd3ae4c820012846a477b1e667e9329b37ff9b06516e0a4d9d3",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "2k",
+          "path": "rock_face/2k/normal.jpg",
+          "bytes": 3351742,
+          "sha256": "98f3693a84076ff3141722ef3d37c913e32c2efae550794a6052077bfebd55fe",
+          "sourceSha256": "b486e62629b35dd3ae4c820012846a477b1e667e9329b37ff9b06516e0a4d9d3",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 2048,
+            "height": 2048,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "4k",
+          "path": "rock_face/4k/normal.jpg",
+          "bytes": 14512278,
+          "sha256": "b486e62629b35dd3ae4c820012846a477b1e667e9329b37ff9b06516e0a4d9d3",
+          "sourceSha256": "b486e62629b35dd3ae4c820012846a477b1e667e9329b37ff9b06516e0a4d9d3",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "1k",
+          "path": "rock_face/1k/arm.jpg",
+          "bytes": 177791,
+          "sha256": "eba87a6ff013674f8aaeb8063e1ddaae4f06ec712ebad4f22ce46e358c3f6606",
+          "sourceSha256": "f27f9ae0fc103b4104bd4ea3558eddeb1c01ef6919d719dfea1da646085552da",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "path": "rock_face/2k/arm.jpg",
+          "bytes": 565289,
+          "sha256": "6391ffd74ba477ccee81266f511a9fa93d5a06997fd3be910028b3b375fbe3c3",
+          "sourceSha256": "f27f9ae0fc103b4104bd4ea3558eddeb1c01ef6919d719dfea1da646085552da",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 2048,
+            "height": 2048,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "4k",
+          "path": "rock_face/4k/arm.jpg",
+          "bytes": 5660924,
+          "sha256": "f27f9ae0fc103b4104bd4ea3558eddeb1c01ef6919d719dfea1da646085552da",
+          "sourceSha256": "f27f9ae0fc103b4104bd4ea3558eddeb1c01ef6919d719dfea1da646085552da",
+          "transform": {
+            "method": "copy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "brown_mud_rocks_01",
+      "role": "floor-wet",
+      "source": "polyhaven",
+      "title": "Brown Mud Rocks 01",
+      "authors": [
+        {
+          "name": "Rob Tuytel",
+          "contribution": "All"
+        }
+      ],
+      "license": "CC0-1.0",
+      "page": "https://polyhaven.com/a/brown_mud_rocks_01",
+      "maxResolution": "4k",
+      "dimensionsMm": [
+        1300,
+        1300
+      ],
+      "polyhavenFilesHash": "303c0f36bd4d15ecdec08c7bba20b55b0b31c7e6",
+      "downloadedAt": "2026-11-22T20:36:21.022Z",
+      "files": [
+        {
+          "map": "Diffuse",
+          "resolution": "4k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/brown_mud_rocks_01/brown_mud_rocks_01_diff_4k.jpg",
+          "md5": "ef2d880e0ab367249daea48aa4238063",
+          "sha256": "7e1779ba00ae69e89bb910ae0ee9be090ce60333d1a9e9bc278b4aee91ac7622",
+          "bytes": 9905590,
+          "cachePath": "assets/cache/brown_mud_rocks_01/Diffuse_4k.jpg",
+          "downloadedAt": "2026-11-22T20:36:18.067Z"
+        },
+        {
+          "map": "nor_gl",
+          "resolution": "4k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/brown_mud_rocks_01/brown_mud_rocks_01_nor_gl_4k.jpg",
+          "md5": "7052120e309425aa403eb3c228a6d619",
+          "sha256": "54fd1f72cd09816170b89a54ae470b49a3c01e6fd58d65b5da57945d2efdb7f1",
+          "bytes": 12956197,
+          "cachePath": "assets/cache/brown_mud_rocks_01/nor_gl_4k.jpg",
+          "downloadedAt": "2026-11-22T20:36:21.022Z"
+        },
+        {
+          "map": "arm",
+          "resolution": "4k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/4k/brown_mud_rocks_01/brown_mud_rocks_01_arm_4k.jpg",
+          "md5": "e585063ba746df334c9b6d991cf785d4",
+          "sha256": "89d3817e75714a9a810c60e34d87f322f18828fd4f3aa0b34d1bc736a2ab6fe8",
+          "bytes": 6272287,
+          "cachePath": "assets/cache/brown_mud_rocks_01/arm_4k.jpg",
+          "downloadedAt": "2026-11-22T20:36:20.418Z"
+        }
+      ],
+      "derived": [],
+      "variants": [
+        {
+          "map": "albedo",
+          "resolution": "1k",
+          "path": "brown_mud_rocks_01/1k/albedo.jpg",
+          "bytes": 430440,
+          "sha256": "e8d3a7b598b5f16eaa8e6f9d14a86fd18223c1eeed3ef833ea379ee7222b642e",
+          "sourceSha256": "7e1779ba00ae69e89bb910ae0ee9be090ce60333d1a9e9bc278b4aee91ac7622",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "2k",
+          "path": "brown_mud_rocks_01/2k/albedo.jpg",
+          "bytes": 1569324,
+          "sha256": "ad1e51b6d34da75a2f97f414bee37ad458672cdc9917a63e64173336751a2e1b",
+          "sourceSha256": "7e1779ba00ae69e89bb910ae0ee9be090ce60333d1a9e9bc278b4aee91ac7622",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 2048,
+            "height": 2048,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "4k",
+          "path": "brown_mud_rocks_01/4k/albedo.jpg",
+          "bytes": 9905590,
+          "sha256": "7e1779ba00ae69e89bb910ae0ee9be090ce60333d1a9e9bc278b4aee91ac7622",
+          "sourceSha256": "7e1779ba00ae69e89bb910ae0ee9be090ce60333d1a9e9bc278b4aee91ac7622",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "1k",
+          "path": "brown_mud_rocks_01/1k/normal.jpg",
+          "bytes": 1273435,
+          "sha256": "354452d0deb9d5592c5bb9ecbb33339980e471b0a24e23f9ff092cdba90509b7",
+          "sourceSha256": "54fd1f72cd09816170b89a54ae470b49a3c01e6fd58d65b5da57945d2efdb7f1",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "2k",
+          "path": "brown_mud_rocks_01/2k/normal.jpg",
+          "bytes": 4101150,
+          "sha256": "b967295eb48e4a97c2841db2e8d6e66cd638e4fe7b4d8c3de19767b7404d7e47",
+          "sourceSha256": "54fd1f72cd09816170b89a54ae470b49a3c01e6fd58d65b5da57945d2efdb7f1",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 2048,
+            "height": 2048,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "4k",
+          "path": "brown_mud_rocks_01/4k/normal.jpg",
+          "bytes": 12956197,
+          "sha256": "54fd1f72cd09816170b89a54ae470b49a3c01e6fd58d65b5da57945d2efdb7f1",
+          "sourceSha256": "54fd1f72cd09816170b89a54ae470b49a3c01e6fd58d65b5da57945d2efdb7f1",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "1k",
+          "path": "brown_mud_rocks_01/1k/arm.jpg",
+          "bytes": 1074958,
+          "sha256": "19968321956b00143592be8bdc187043e7818d258f36a9131f82e86804b1ef81",
+          "sourceSha256": "89d3817e75714a9a810c60e34d87f322f18828fd4f3aa0b34d1bc736a2ab6fe8",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "path": "brown_mud_rocks_01/2k/arm.jpg",
+          "bytes": 3325766,
+          "sha256": "716225d45fbcecfc1b6b9543aeeffaab91a387087fee013fc98cfccafc276c0f",
+          "sourceSha256": "89d3817e75714a9a810c60e34d87f322f18828fd4f3aa0b34d1bc736a2ab6fe8",
+          "transform": {
+            "method": "resize",
+            "from": "4k",
+            "width": 2048,
+            "height": 2048,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "4k",
+          "path": "brown_mud_rocks_01/4k/arm.jpg",
+          "bytes": 6272287,
+          "sha256": "89d3817e75714a9a810c60e34d87f322f18828fd4f3aa0b34d1bc736a2ab6fe8",
+          "sourceSha256": "89d3817e75714a9a810c60e34d87f322f18828fd4f3aa0b34d1bc736a2ab6fe8",
+          "transform": {
+            "method": "copy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rocky_trail",
+      "role": "floor-dry",
+      "source": "polyhaven",
+      "title": "Rocky Trail",
+      "authors": [
+        {
+          "name": "Amal Kumar",
+          "contribution": "All"
+        }
+      ],
+      "license": "CC0-1.0",
+      "page": "https://polyhaven.com/a/rocky_trail",
+      "maxResolution": "2k",
+      "dimensionsMm": [
+        2000,
+        2000
+      ],
+      "polyhavenFilesHash": "28bcb1dab9a77017ed72c89762f695f3184c905b",
+      "downloadedAt": "2026-11-22T20:36:29.652Z",
+      "files": [
+        {
+          "map": "Diffuse",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rocky_trail/rocky_trail_diff_2k.jpg",
+          "md5": "7327bf7d48d33688fb12465222ee3f22",
+          "sha256": "5434c6377a0b74be356c6f1f0a13842a38111a3dcec9934bf74f7c6f6396c54b",
+          "bytes": 4208713,
+          "cachePath": "assets/cache/rocky_trail/Diffuse_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:29.652Z"
+        },
+        {
+          "map": "nor_gl",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rocky_trail/rocky_trail_nor_gl_2k.jpg",
+          "md5": "4642b3c833d526b23c96baa84f5bf429",
+          "sha256": "c8783873d83d7a14cb339332ddf59ee7ee31c68c4cd72770e2f673402755c93c",
+          "bytes": 5525906,
+          "cachePath": "assets/cache/rocky_trail/nor_gl_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:29.121Z"
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rocky_trail/rocky_trail_arm_2k.jpg",
+          "md5": "97daa9ca7cc355d7fe3389a1b555a407",
+          "sha256": "cb3ec682ee4fc1d95b6d0a05dadcb03a0438f73ed0d7bb55b205c2c84d29dbef",
+          "bytes": 3986946,
+          "cachePath": "assets/cache/rocky_trail/arm_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:29.417Z"
+        }
+      ],
+      "derived": [],
+      "variants": [
+        {
+          "map": "albedo",
+          "resolution": "1k",
+          "path": "rocky_trail/1k/albedo.jpg",
+          "bytes": 360334,
+          "sha256": "2510d649f731b83c620cabc94cba34930770f4c97e87b0f771b167cc4aa89373",
+          "sourceSha256": "5434c6377a0b74be356c6f1f0a13842a38111a3dcec9934bf74f7c6f6396c54b",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "2k",
+          "path": "rocky_trail/2k/albedo.jpg",
+          "bytes": 4208713,
+          "sha256": "5434c6377a0b74be356c6f1f0a13842a38111a3dcec9934bf74f7c6f6396c54b",
+          "sourceSha256": "5434c6377a0b74be356c6f1f0a13842a38111a3dcec9934bf74f7c6f6396c54b",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "1k",
+          "path": "rocky_trail/1k/normal.jpg",
+          "bytes": 1242360,
+          "sha256": "63c72dbb0fcd380d9d0cd130bb3de4a2f431d0eb38dace9859af6fbb0f9571b8",
+          "sourceSha256": "c8783873d83d7a14cb339332ddf59ee7ee31c68c4cd72770e2f673402755c93c",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "2k",
+          "path": "rocky_trail/2k/normal.jpg",
+          "bytes": 5525906,
+          "sha256": "c8783873d83d7a14cb339332ddf59ee7ee31c68c4cd72770e2f673402755c93c",
+          "sourceSha256": "c8783873d83d7a14cb339332ddf59ee7ee31c68c4cd72770e2f673402755c93c",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "1k",
+          "path": "rocky_trail/1k/arm.jpg",
+          "bytes": 644888,
+          "sha256": "c7ff37ecadf1d2372e9b83551652c4cb04701973beda70654d7a4ad70aa54e8c",
+          "sourceSha256": "cb3ec682ee4fc1d95b6d0a05dadcb03a0438f73ed0d7bb55b205c2c84d29dbef",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "path": "rocky_trail/2k/arm.jpg",
+          "bytes": 3986946,
+          "sha256": "cb3ec682ee4fc1d95b6d0a05dadcb03a0438f73ed0d7bb55b205c2c84d29dbef",
+          "sourceSha256": "cb3ec682ee4fc1d95b6d0a05dadcb03a0438f73ed0d7bb55b205c2c84d29dbef",
+          "transform": {
+            "method": "copy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "granular_concrete",
+      "role": "shotcrete",
+      "source": "polyhaven",
+      "title": "Granular Concrete",
+      "authors": [
+        {
+          "name": "Dario Barresi",
+          "contribution": "Processing"
+        },
+        {
+          "name": "Michael Jenkins",
+          "contribution": "Photography"
+        }
+      ],
+      "license": "CC0-1.0",
+      "page": "https://polyhaven.com/a/granular_concrete",
+      "maxResolution": "2k",
+      "dimensionsMm": [
+        2400,
+        2400
+      ],
+      "polyhavenFilesHash": "f732484dd86604392cb3c588724a88b1c7787ec1",
+      "downloadedAt": "2026-11-22T20:36:33.350Z",
+      "files": [
+        {
+          "map": "Diffuse",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/granular_concrete/granular_concrete_diff_2k.jpg",
+          "md5": "005d50042c9d61cf9da9c71ce882e45f",
+          "sha256": "37b70522207aff7a3ca7c70118b80ecc2d07a9fee983c2d544c5838e5fe8c8f5",
+          "bytes": 3397045,
+          "cachePath": "assets/cache/granular_concrete/Diffuse_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:33.271Z"
+        },
+        {
+          "map": "nor_gl",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/granular_concrete/granular_concrete_nor_gl_2k.jpg",
+          "md5": "924897193be071ce80c02cd58de27a08",
+          "sha256": "56308c513a2aaebf532a01afcc7e9c0a5a0760b76a45ca2b6706215616a1ebd4",
+          "bytes": 5054567,
+          "cachePath": "assets/cache/granular_concrete/nor_gl_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:33.350Z"
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/granular_concrete/granular_concrete_arm_2k.jpg",
+          "md5": "accbccb1fdd1155f5026867230ac0d3e",
+          "sha256": "5b28835f860e7532195ed03c05c55b9538bc572e1e095dc8500d95439162f247",
+          "bytes": 4136668,
+          "cachePath": "assets/cache/granular_concrete/arm_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:33.274Z"
+        }
+      ],
+      "derived": [],
+      "variants": [
+        {
+          "map": "albedo",
+          "resolution": "1k",
+          "path": "granular_concrete/1k/albedo.jpg",
+          "bytes": 249329,
+          "sha256": "1b72d2187ea26d8b4a2acc70118842fadd4520bfc479fa8108f96388db78a7dd",
+          "sourceSha256": "37b70522207aff7a3ca7c70118b80ecc2d07a9fee983c2d544c5838e5fe8c8f5",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "2k",
+          "path": "granular_concrete/2k/albedo.jpg",
+          "bytes": 3397045,
+          "sha256": "37b70522207aff7a3ca7c70118b80ecc2d07a9fee983c2d544c5838e5fe8c8f5",
+          "sourceSha256": "37b70522207aff7a3ca7c70118b80ecc2d07a9fee983c2d544c5838e5fe8c8f5",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "1k",
+          "path": "granular_concrete/1k/normal.jpg",
+          "bytes": 1142549,
+          "sha256": "787d4171647bea3c8b9bc7927dd1e92b6ccec858d48b2c6df6da62e40d79ed4a",
+          "sourceSha256": "56308c513a2aaebf532a01afcc7e9c0a5a0760b76a45ca2b6706215616a1ebd4",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "2k",
+          "path": "granular_concrete/2k/normal.jpg",
+          "bytes": 5054567,
+          "sha256": "56308c513a2aaebf532a01afcc7e9c0a5a0760b76a45ca2b6706215616a1ebd4",
+          "sourceSha256": "56308c513a2aaebf532a01afcc7e9c0a5a0760b76a45ca2b6706215616a1ebd4",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "1k",
+          "path": "granular_concrete/1k/arm.jpg",
+          "bytes": 602006,
+          "sha256": "2edd0c003fce9caae44366771d694b2bd5c207ea1be067eec3fb1b260f69474a",
+          "sourceSha256": "5b28835f860e7532195ed03c05c55b9538bc572e1e095dc8500d95439162f247",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "path": "granular_concrete/2k/arm.jpg",
+          "bytes": 4136668,
+          "sha256": "5b28835f860e7532195ed03c05c55b9538bc572e1e095dc8500d95439162f247",
+          "sourceSha256": "5b28835f860e7532195ed03c05c55b9538bc572e1e095dc8500d95439162f247",
+          "transform": {
+            "method": "copy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rough_wood",
+      "role": "timber",
+      "source": "polyhaven",
+      "title": "Rough Wood",
+      "authors": [
+        {
+          "name": "Rob Tuytel",
+          "contribution": "All"
+        }
+      ],
+      "license": "CC0-1.0",
+      "page": "https://polyhaven.com/a/rough_wood",
+      "maxResolution": "2k",
+      "dimensionsMm": [
+        500,
+        500
+      ],
+      "polyhavenFilesHash": "2d89c64601e620069e9caaf3ede0d7494d430138",
+      "downloadedAt": "2026-11-22T20:36:35.915Z",
+      "files": [
+        {
+          "map": "Diffuse",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rough_wood/rough_wood_diff_2k.jpg",
+          "md5": "f5f9c55696f047ceaa49dc97c5aa5526",
+          "sha256": "0bd2b3195db9b54d55aa0f842801220ec5e1d389f5fc1e670b378bdaca3f8e7b",
+          "bytes": 2223327,
+          "cachePath": "assets/cache/rough_wood/Diffuse_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:35.915Z"
+        },
+        {
+          "map": "nor_gl",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rough_wood/rough_wood_nor_gl_2k.jpg",
+          "md5": "62594f2d00eb246581b9d4fde30209f1",
+          "sha256": "b75cb1e989407e442c3255f3e05ea8c40162c0e5dc2efc9ef2515fce61319194",
+          "bytes": 2520021,
+          "cachePath": "assets/cache/rough_wood/nor_gl_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:35.426Z"
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rough_wood/rough_wood_arm_2k.jpg",
+          "md5": "2f6ee37ee8810aeeb72a14a7d345ba9f",
+          "sha256": "bd7597ff0d2d6682e6990a0204b67260c001cdffe01acf95e8f8b43881edb4af",
+          "bytes": 575486,
+          "cachePath": "assets/cache/rough_wood/arm_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:35.031Z"
+        }
+      ],
+      "derived": [],
+      "variants": [
+        {
+          "map": "albedo",
+          "resolution": "1k",
+          "path": "rough_wood/1k/albedo.jpg",
+          "bytes": 273706,
+          "sha256": "82c8bdbfb7e29f6f09bc7d3542c5fa1e0a642c7dfdac619e8fa3e444f3970e3d",
+          "sourceSha256": "0bd2b3195db9b54d55aa0f842801220ec5e1d389f5fc1e670b378bdaca3f8e7b",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "2k",
+          "path": "rough_wood/2k/albedo.jpg",
+          "bytes": 2223327,
+          "sha256": "0bd2b3195db9b54d55aa0f842801220ec5e1d389f5fc1e670b378bdaca3f8e7b",
+          "sourceSha256": "0bd2b3195db9b54d55aa0f842801220ec5e1d389f5fc1e670b378bdaca3f8e7b",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "1k",
+          "path": "rough_wood/1k/normal.jpg",
+          "bytes": 796763,
+          "sha256": "863d5852ab6da80178df53b24eebcb2a2829841398a2a4d9fa55943020e34ac8",
+          "sourceSha256": "b75cb1e989407e442c3255f3e05ea8c40162c0e5dc2efc9ef2515fce61319194",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "2k",
+          "path": "rough_wood/2k/normal.jpg",
+          "bytes": 2520021,
+          "sha256": "b75cb1e989407e442c3255f3e05ea8c40162c0e5dc2efc9ef2515fce61319194",
+          "sourceSha256": "b75cb1e989407e442c3255f3e05ea8c40162c0e5dc2efc9ef2515fce61319194",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "1k",
+          "path": "rough_wood/1k/arm.jpg",
+          "bytes": 250987,
+          "sha256": "4bddccacbf18cf1b5778c5ac5ce5458030ac3092f2c438759a81fd5a14e3458c",
+          "sourceSha256": "bd7597ff0d2d6682e6990a0204b67260c001cdffe01acf95e8f8b43881edb4af",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "path": "rough_wood/2k/arm.jpg",
+          "bytes": 575486,
+          "sha256": "bd7597ff0d2d6682e6990a0204b67260c001cdffe01acf95e8f8b43881edb4af",
+          "sourceSha256": "bd7597ff0d2d6682e6990a0204b67260c001cdffe01acf95e8f8b43881edb4af",
+          "transform": {
+            "method": "copy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "green_metal_rust",
+      "role": "painted-metal",
+      "source": "polyhaven",
+      "title": "Green Metal Rust",
+      "authors": [
+        {
+          "name": "Rob Tuytel",
+          "contribution": "All"
+        }
+      ],
+      "license": "CC0-1.0",
+      "page": "https://polyhaven.com/a/green_metal_rust",
+      "maxResolution": "2k",
+      "dimensionsMm": [
+        1000,
+        1000
+      ],
+      "polyhavenFilesHash": "fd6cc162a0eb0eb8e0e2fb4d7f1b977dda4626b3",
+      "downloadedAt": "2026-11-22T20:37:26.400Z",
+      "files": [
+        {
+          "map": "Diffuse",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/green_metal_rust/green_metal_rust_diff_2k.jpg",
+          "md5": "fed1afb0e3b6f5a5710cee229fd54897",
+          "sha256": "727515554ffb6410be82d3625a2837fe46612cb186ec391f77c50bd52c4d7ab2",
+          "bytes": 787402,
+          "cachePath": "assets/cache/green_metal_rust/Diffuse_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:37.298Z"
+        },
+        {
+          "map": "nor_gl",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/green_metal_rust/green_metal_rust_nor_gl_2k.jpg",
+          "md5": "379dfb43f495a44569674717e974b920",
+          "sha256": "45ec5d256c91ccf4a87dd4c4a90f6c58b460f3862287f014bfde432055ece239",
+          "bytes": 357436,
+          "cachePath": "assets/cache/green_metal_rust/nor_gl_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:36.964Z"
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/green_metal_rust/green_metal_rust_arm_2k.jpg",
+          "md5": "d2b0d367da9f077b0f5727be761896fa",
+          "sha256": "5e6592a800b82bff8cd24fa0ceb84588c1396ee56992ab8c85fd44f607f4de46",
+          "bytes": 477556,
+          "cachePath": "assets/cache/green_metal_rust/arm_2k.jpg",
+          "downloadedAt": "2026-11-22T20:37:26.400Z"
+        }
+      ],
+      "derived": [],
+      "variants": [
+        {
+          "map": "albedo",
+          "resolution": "1k",
+          "path": "green_metal_rust/1k/albedo.jpg",
+          "bytes": 75760,
+          "sha256": "062a9272932fe868762fe05b39c6fe5dc2f98561469030a8f87798075f82f3f3",
+          "sourceSha256": "727515554ffb6410be82d3625a2837fe46612cb186ec391f77c50bd52c4d7ab2",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "2k",
+          "path": "green_metal_rust/2k/albedo.jpg",
+          "bytes": 787402,
+          "sha256": "727515554ffb6410be82d3625a2837fe46612cb186ec391f77c50bd52c4d7ab2",
+          "sourceSha256": "727515554ffb6410be82d3625a2837fe46612cb186ec391f77c50bd52c4d7ab2",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "1k",
+          "path": "green_metal_rust/1k/normal.jpg",
+          "bytes": 96095,
+          "sha256": "0ead172be176b5fb88a5930dc800e3c52dcac4197c2ab7a19a6a58ae62431d50",
+          "sourceSha256": "45ec5d256c91ccf4a87dd4c4a90f6c58b460f3862287f014bfde432055ece239",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "2k",
+          "path": "green_metal_rust/2k/normal.jpg",
+          "bytes": 357436,
+          "sha256": "45ec5d256c91ccf4a87dd4c4a90f6c58b460f3862287f014bfde432055ece239",
+          "sourceSha256": "45ec5d256c91ccf4a87dd4c4a90f6c58b460f3862287f014bfde432055ece239",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "1k",
+          "path": "green_metal_rust/1k/arm.jpg",
+          "bytes": 185221,
+          "sha256": "e7c9ef647d2a7cf3106ff10d35d747d9e05ddec95f683aecff841477fe1ac14e",
+          "sourceSha256": "5e6592a800b82bff8cd24fa0ceb84588c1396ee56992ab8c85fd44f607f4de46",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "path": "green_metal_rust/2k/arm.jpg",
+          "bytes": 477556,
+          "sha256": "5e6592a800b82bff8cd24fa0ceb84588c1396ee56992ab8c85fd44f607f4de46",
+          "sourceSha256": "5e6592a800b82bff8cd24fa0ceb84588c1396ee56992ab8c85fd44f607f4de46",
+          "transform": {
+            "method": "copy"
+          }
+        }
+      ]
+    },
+    {
+      "id": "rust_coarse_01",
+      "role": "rusted-steel",
+      "source": "polyhaven",
+      "title": "Rust Coarse 01",
+      "authors": [
+        {
+          "name": "Dimitrios Savva",
+          "contribution": "Photography"
+        },
+        {
+          "name": "Rico Cilliers",
+          "contribution": "Processing"
+        }
+      ],
+      "license": "CC0-1.0",
+      "page": "https://polyhaven.com/a/rust_coarse_01",
+      "maxResolution": "2k",
+      "dimensionsMm": [
+        2200,
+        2200
+      ],
+      "polyhavenFilesHash": "c20faac0db66a29d5b52f5c45a4ca333e5d6471d",
+      "downloadedAt": "2026-11-22T20:36:41.515Z",
+      "files": [
+        {
+          "map": "Diffuse",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rust_coarse_01/rust_coarse_01_diff_2k.jpg",
+          "md5": "c1f3d0f3e8ea08bfed17bd27a5bb4a45",
+          "sha256": "5b8801674fa53ff1b6f7853300f50aa7a1b31e69278554803bd957fe9fa7e392",
+          "bytes": 3519719,
+          "cachePath": "assets/cache/rust_coarse_01/Diffuse_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:41.515Z"
+        },
+        {
+          "map": "nor_gl",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rust_coarse_01/rust_coarse_01_nor_gl_2k.jpg",
+          "md5": "70e8ba5a8244cffb052b9ba194610867",
+          "sha256": "495d3c87da059827ffaf49dae59f967cb3e0b187f4426ab0a47088c3fa83e50b",
+          "bytes": 3685688,
+          "cachePath": "assets/cache/rust_coarse_01/nor_gl_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:38.559Z"
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rust_coarse_01/rust_coarse_01_arm_2k.jpg",
+          "md5": "85be306b28a377c9a60217d107c3dcdf",
+          "sha256": "22f10597662e8d5268f79960d23c4a03790a2083f9f05d0680c3535152b26843",
+          "bytes": 3527204,
+          "cachePath": "assets/cache/rust_coarse_01/arm_2k.jpg",
+          "downloadedAt": "2026-11-22T20:36:39.576Z"
+        }
+      ],
+      "derived": [],
+      "variants": [
+        {
+          "map": "albedo",
+          "resolution": "1k",
+          "path": "rust_coarse_01/1k/albedo.jpg",
+          "bytes": 235619,
+          "sha256": "c4bbca079de252963dfab0a64db69af6219f3beb2c09a4b7932834eca1b4b343",
+          "sourceSha256": "5b8801674fa53ff1b6f7853300f50aa7a1b31e69278554803bd957fe9fa7e392",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:2:0"
+          }
+        },
+        {
+          "map": "albedo",
+          "resolution": "2k",
+          "path": "rust_coarse_01/2k/albedo.jpg",
+          "bytes": 3519719,
+          "sha256": "5b8801674fa53ff1b6f7853300f50aa7a1b31e69278554803bd957fe9fa7e392",
+          "sourceSha256": "5b8801674fa53ff1b6f7853300f50aa7a1b31e69278554803bd957fe9fa7e392",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "1k",
+          "path": "rust_coarse_01/1k/normal.jpg",
+          "bytes": 533370,
+          "sha256": "a0b7e84fa2028f3df5ecaaaa60647cfdd79e7acec9aff9fdac67afdc8ccb70b1",
+          "sourceSha256": "495d3c87da059827ffaf49dae59f967cb3e0b187f4426ab0a47088c3fa83e50b",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 95,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "normal",
+          "resolution": "2k",
+          "path": "rust_coarse_01/2k/normal.jpg",
+          "bytes": 3685688,
+          "sha256": "495d3c87da059827ffaf49dae59f967cb3e0b187f4426ab0a47088c3fa83e50b",
+          "sourceSha256": "495d3c87da059827ffaf49dae59f967cb3e0b187f4426ab0a47088c3fa83e50b",
+          "transform": {
+            "method": "copy"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "1k",
+          "path": "rust_coarse_01/1k/arm.jpg",
+          "bytes": 382011,
+          "sha256": "0391e3baf2fee0953b01e7810ba32f6aa2c7058a28d3b2506cfdb5326bd0a860",
+          "sourceSha256": "22f10597662e8d5268f79960d23c4a03790a2083f9f05d0680c3535152b26843",
+          "transform": {
+            "method": "resize",
+            "from": "2k",
+            "width": 1024,
+            "height": 1024,
+            "kernel": "lanczos3",
+            "encoder": "mozjpeg",
+            "quality": 90,
+            "chromaSubsampling": "4:4:4"
+          }
+        },
+        {
+          "map": "arm",
+          "resolution": "2k",
+          "path": "rust_coarse_01/2k/arm.jpg",
+          "bytes": 3527204,
+          "sha256": "22f10597662e8d5268f79960d23c4a03790a2083f9f05d0680c3535152b26843",
+          "sourceSha256": "22f10597662e8d5268f79960d23c4a03790a2083f9f05d0680c3535152b26843",
+          "transform": {
+            "method": "copy"
+          }
+        }
+      ]
+    }
+  ]
+}

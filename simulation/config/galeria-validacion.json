@@ -1,0 +1,61 @@
+{
+  "name": "galeria-validacion",
+  "seed": 20261122,
+  "profiles": {
+    "socavon-entibado": { "width": 3.0, "wallHeight": 2.45, "archRise": 0.45 },
+    "galeria-roca": { "width": 3.6, "wallHeight": 2.3, "archRise": 1.15 },
+    "galeria-arcos": { "width": 3.8, "wallHeight": 2.1, "archRise": 1.55 },
+    "galeria-shotcrete": { "width": 4.0, "wallHeight": 2.4, "archRise": 1.3 },
+    "crucero": { "width": 3.0, "wallHeight": 2.2, "archRise": 0.95 }
+  },
+  "nodes": [
+    { "id": "A0", "position": [0, 0, 0], "kind": "end", "zone": "Socavón principal" },
+    { "id": "A1", "position": [36, 0.12, 2], "kind": "junction", "zone": "Socavón principal" },
+    { "id": "A2", "position": [62, 0.2, 0], "kind": "junction", "zone": "Galería principal N1" },
+    { "id": "A3", "position": [98, 0.3, -4], "kind": "junction", "zone": "Galería principal N1" },
+    { "id": "A4", "position": [140, 0.4, -2], "kind": "chamber", "size": [14, 6.5, 11], "zone": "Zona de carguío" },
+    { "id": "F1", "position": [160, 0.45, 7], "kind": "face", "zone": "Frente de avance" },
+    { "id": "C1", "position": [64, 0.2, 40], "kind": "refuge", "size": [5, 3.2, 6], "zone": "Refugio N1" }
+  ],
+  "segments": [
+    {
+      "id": "S1", "from": "A0", "to": "A1", "profile": "socavon-entibado", "zone": "Socavón principal",
+      "supports": [{ "from": 0, "to": 40, "support": "timber" }],
+      "infrastructure": { "rails": true, "cables": true, "lampSpacing": 8 }
+    },
+    {
+      "id": "S2", "from": "A1", "to": "A2", "via": [[50, 0.16, 3]], "profile": "galeria-roca", "zone": "Galería principal N1",
+      "supports": [{ "from": 0, "to": 40, "support": "bare" }],
+      "infrastructure": { "rails": true, "pipes": true, "duct": true, "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S3", "from": "A2", "to": "A3", "via": [[80, 0.25, -3]], "profile": "galeria-arcos", "zone": "Galería principal N1",
+      "supports": [{ "from": 0, "to": 50, "support": "steel-arch" }],
+      "infrastructure": { "rails": true, "pipes": true, "duct": true, "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S4", "from": "A3", "to": "A4", "profile": "galeria-shotcrete", "zone": "Galería principal N1",
+      "supports": [{ "from": 0, "to": 60, "support": "shotcrete" }],
+      "infrastructure": { "rails": true, "pipes": true, "duct": true, "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S5", "from": "A4", "to": "F1", "via": [[152, 0.42, 2]], "profile": "galeria-roca", "zone": "Frente de avance",
+      "supports": [{ "from": 0, "to": 40, "support": "bare" }],
+      "infrastructure": { "pipes": true, "duct": true, "lampSpacing": 9 }
+    },
+    {
+      "id": "S6", "from": "A2", "to": "C1", "via": [[63, 0.2, 20]], "profile": "crucero", "zone": "Crucero N1",
+      "supports": [{ "from": 0, "to": 50, "support": "bare" }],
+      "infrastructure": { "cables": true, "lampSpacing": 9 }
+    }
+  ],
+  "signs": [
+    { "id": "ppe-entrada", "segment": "S1", "at": 5, "side": "left", "kind": "ppe" },
+    { "id": "locomotoras", "segment": "S1", "at": 14, "side": "right", "kind": "caution-rail" },
+    { "id": "refugio-s2", "segment": "S2", "at": 18, "side": "right", "kind": "refuge" },
+    { "id": "no-fumar", "segment": "S3", "at": 8, "side": "left", "kind": "no-smoking" },
+    { "id": "monitoreo", "segment": "S3", "at": 26, "side": "right", "kind": "monitoring" },
+    { "id": "salida", "segment": "S4", "at": 12, "side": "left", "kind": "exit" },
+    { "id": "refugio-s6", "segment": "S6", "at": 30, "side": "right", "kind": "refuge" }
+  ]
+}

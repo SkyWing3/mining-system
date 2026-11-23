@@ -1,0 +1,12 @@
+{
+  "name": "@twin/mine-generator",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Generación determinista de galerías (sin dependencias de render).",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@twin/shared-types": "0.1.0",
+    "simplex-noise": "^4.0.3"
+  }
+}

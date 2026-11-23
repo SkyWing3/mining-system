@@ -30,6 +30,7 @@ device/config/*
 [Bb]in/
 [Oo]bj/
 packages/
+!/simulation/packages/
 TestResults/
 *.user
 *.suo

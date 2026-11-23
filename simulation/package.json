@@ -1,0 +1,35 @@
+{
+  "name": "mining-digital-twin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Gemelo digital de una mina subterránea ficticia integrado con la central de Mining System.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @twin/web",
+    "build": "npm run build -w @twin/web",
+    "preview": "npm run preview -w @twin/web",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "bench": "playwright test --project=bench",
+    "assets:fetch": "node scripts/fetch-assets.mjs",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^24.13.3",
+    "oxlint": "^1.81.0",
+    "sharp": "^0.35.5",
+    "typescript": "~6.0.2",
+    "vitest": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}

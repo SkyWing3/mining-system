@@ -1,0 +1,14 @@
+# Dependencias y resultados de compilación
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Recursos descargados y generados (se reconstruyen con npm run assets:fetch)
+assets/cache/
+apps/twin-web/public/content/
+
+# Resultados de pruebas y benchmarks
+test-results/
+playwright-report/
+blob-report/
+tests/output/
