@@ -1,0 +1,8 @@
+{
+  "name": "@twin/device-sim",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Manilla ESP32-S3 virtual: port de la lógica de esp32-device/lib/core (sin dependencias de render).",
+  "exports": { ".": "./src/index.ts" }
+}

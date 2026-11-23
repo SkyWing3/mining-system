@@ -1,9 +1,10 @@
-// Interfaz sobre la vista 3D (Fase 1): identidad, controles de cámara y calidad,
-// diagnóstico de rendimiento y ayudas de navegación. Los paneles de datos llegan en F5.
+// Interfaz sobre la vista 3D: identidad, controles de cámara y calidad, minero
+// controlable con su manilla simulada, diagnóstico de rendimiento y ayudas de navegación.
 import { useEffect, useState, type ReactNode } from 'react'
-import { Activity, Eye, Footprints, Gauge, Layers, Lightbulb, LightbulbOff, Maximize2, Minimize2, Mountain, Scissors } from 'lucide-react'
+import { Activity, Eye, Gauge, HardHat, Layers, Lightbulb, LightbulbOff, Maximize2, Minimize2, Mountain, Scissors, ScanEye, Volume2, VolumeX, Watch } from 'lucide-react'
 import { QUALITY_PROFILES, type QualityLevel } from '@twin/graphics-engine'
-import { useTwin } from '../state/store.ts'
+import { isMinerMode, useTwin } from '../state/store.ts'
+import { BraceletPanel, CentralPanel } from './DevicePanels.tsx'
 
 function useClock(): string {
   const [now, setNow] = useState(() => new Date())
@@ -23,7 +24,7 @@ function Button({ active, onClick, children, label, testId, disabled }: { active
       aria-pressed={active}
       data-testid={testId}
       disabled={disabled}
-      onClick={onClick}
+      onClick={event => { onClick(); event.currentTarget.blur() }}
       className={`flex h-9 items-center gap-2 rounded-md border px-3 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${active ? 'border-sand-300/60 bg-ink-700 text-ink-100' : 'border-ink-700 bg-ink-850/90 text-ink-300 hover:bg-ink-800 hover:text-ink-100'}`}
     >
       {children}
@@ -69,26 +70,27 @@ function Diagnostics() {
 }
 
 function requestLock() {
-  const canvas = document.querySelector('canvas')
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="twin-canvas"] canvas')
   void canvas?.requestPointerLock()?.catch?.(() => undefined)
 }
 
 export function Hud({ layoutName }: { layoutName: string }) {
   const state = useTwin()
   const clock = useClock()
-  const firstPerson = state.cameraMode === 'first-person'
+  const minerMode = isMinerMode(state.cameraMode)
   const generating = state.generation.status === 'running'
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
-      if (event.code === 'KeyH' && !firstPerson) useTwin.getState().togglePanels()
+      if ((event.target as HTMLElement)?.closest?.('input, select, textarea')) return
+      if (event.code === 'KeyH') useTwin.getState().togglePanels()
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
-  }, [firstPerson])
+  }, [])
 
-  const enterFirstPerson = () => {
-    state.setCameraMode('first-person')
+  const enterMiner = () => {
+    if (!minerMode) state.setCameraMode('third-person')
     requestLock()
   }
 
@@ -100,18 +102,24 @@ export function Hud({ layoutName }: { layoutName: string }) {
             <Mountain size={20} className="text-sand-300" />
             <div>
               <div className="text-sm font-semibold">Mining System · Gemelo digital</div>
-              <div className="text-xs text-ink-400">{layoutName} — escenario ficticio · Fase 1: validación gráfica</div>
+              <div className="text-xs text-ink-400">{layoutName} — escenario ficticio · minero y manilla simulados</div>
             </div>
           </div>
           <div className="flex items-center gap-4 text-xs">
-            <span className="rounded border border-ink-700 px-2 py-1 text-ink-300" title="La Fase 1 no consume telemetría.">Sin datos de dispositivos</span>
+            <span className="rounded border border-sand-300/50 px-2 py-1 text-sand-300" title="La manilla, la central y el ambiente son simulados; no hay conexión con la central real.">Datos simulados · sin conexión a la central real</span>
             <span className="font-mono text-ink-300 tabular-nums">{clock}</span>
           </div>
         </header>
       ) : <div />}
 
-      <div className="flex flex-1 items-start justify-end p-3">
-        {state.panelsVisible && state.showDiagnostics ? <div className="pointer-events-auto"><Diagnostics /></div> : null}
+      <div className="flex min-h-0 flex-1 items-start justify-between gap-3 p-3">
+        {state.panelsVisible ? <div className="max-h-full w-[21rem] overflow-y-auto"><BraceletPanel /></div> : <div />}
+        {state.panelsVisible ? (
+          <div className="flex max-h-full w-[22rem] flex-col items-end gap-3 overflow-y-auto">
+            {state.showDiagnostics ? <div className="pointer-events-auto"><Diagnostics /></div> : null}
+            <div className="w-full"><CentralPanel /></div>
+          </div>
+        ) : null}
       </div>
 
       {state.assetError ? (
@@ -124,28 +132,36 @@ export function Hud({ layoutName }: { layoutName: string }) {
         </div>
       ) : null}
 
-      {firstPerson && state.pointerLocked ? (
+      {minerMode && state.pointerLocked ? (
         <>
-          <div className="absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink-100/70" />
-          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 rounded bg-ink-950/70 px-3 py-1 text-xs text-ink-300">WASD mover · Shift correr · F linterna · Esc supervisión</div>
+          {state.cameraMode === 'first-person' ? <div className="absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink-100/70" /> : null}
+          <div className="absolute bottom-20 left-1/2 -translate-x-1/2 rounded bg-ink-950/70 px-3 py-1 text-xs whitespace-nowrap text-ink-300">
+            WASD caminar · Shift correr · Ratón mirar · Rueda distancia · V vista · Q mirar la manilla · ↑ ↓ Enter pulsadores · F linterna · Esc pausa
+          </div>
         </>
       ) : null}
-      {firstPerson && !state.pointerLocked && !state.viewpoint && !state.autopilot.active ? (
-        <button type="button" onClick={requestLock} className="pointer-events-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-ink-600 bg-ink-900/90 px-5 py-3 text-sm">
-          Haz clic para controlar la cámara
+      {minerMode && !state.pointerLocked && !state.viewpoint && !state.autopilot.active ? (
+        <button type="button" data-testid="resume-miner" onClick={requestLock} className="pointer-events-auto absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-ink-600 bg-ink-900/90 px-5 py-3 text-sm">
+          Haz clic para controlar al minero
+          <span className="mt-1 block text-[11px] text-ink-400">El teclado funciona aunque el ratón esté libre</span>
         </button>
       ) : null}
 
       {state.panelsVisible ? (
         <footer className="pointer-events-auto flex flex-wrap items-center justify-between gap-3 border-t border-ink-800 bg-ink-950/85 px-4 py-2 backdrop-blur">
           <div className="flex items-center gap-2">
-            <Button label="Vista de supervisión (orbital)" testId="mode-orbit" active={!firstPerson} onClick={() => state.setCameraMode('orbit')}><Eye size={16} />Supervisión</Button>
-            <Button label="Recorrer en primera persona" testId="mode-first-person" active={firstPerson} disabled={state.generation.status !== 'done'} onClick={enterFirstPerson}><Footprints size={16} />Primera persona</Button>
-            {!firstPerson ? (
+            <Button label="Vista de supervisión (orbital)" testId="mode-orbit" active={!minerMode} onClick={() => state.setCameraMode('orbit')}><Eye size={16} />Supervisión</Button>
+            <Button label="Controlar al minero (WASD)" testId="mode-miner" active={minerMode} disabled={state.generation.status !== 'done'} onClick={enterMiner}><HardHat size={16} />Minero</Button>
+            {!minerMode ? (
               <Button label="Cortar la bóveda para ver el interior" active={state.roofCut} onClick={() => state.setRoofCut(!state.roofCut)}><Scissors size={16} />Corte de bóveda</Button>
             ) : (
-              <Button label="Linterna del casco (F)" active={state.headlamp} onClick={state.toggleHeadlamp}>{state.headlamp ? <Lightbulb size={16} /> : <LightbulbOff size={16} />}Linterna</Button>
+              <>
+                <Button label="Primera o tercera persona (V)" testId="toggle-view" onClick={() => state.setCameraMode(state.cameraMode === 'first-person' ? 'third-person' : 'first-person')}><ScanEye size={16} />{state.cameraMode === 'first-person' ? '1.ª persona' : '3.ª persona'}</Button>
+                <Button label="Linterna del casco (F)" active={state.headlamp} onClick={state.toggleHeadlamp}>{state.headlamp ? <Lightbulb size={16} /> : <LightbulbOff size={16} />}Linterna</Button>
+              </>
             )}
+            <Button label="Levantar la muñeca para mirar la manilla (mantener Q)" testId="check-bracelet" active={state.checkingBracelet} onClick={() => state.setCheckingBracelet(!state.checkingBracelet)}><Watch size={16} />Manilla</Button>
+            <Button label="Sonido del buzzer de la manilla" active={state.sound} onClick={state.toggleSound}>{state.sound ? <Volume2 size={16} /> : <VolumeX size={16} />}</Button>
             <label className="ml-2 flex items-center gap-2 text-xs text-ink-400">
               Velocidad
               <input type="range" min={0.6} max={4} step={0.1} value={state.walkSpeed} onChange={event => state.setWalkSpeed(Number(event.target.value))} className="w-24 accent-sand-300" />
@@ -162,7 +178,7 @@ export function Hud({ layoutName }: { layoutName: string }) {
                   role="radio"
                   aria-checked={state.quality === level}
                   data-testid={`quality-${level}`}
-                  onClick={() => state.setQuality(level)}
+                  onClick={event => { state.setQuality(level); event.currentTarget.blur() }}
                   className={`h-9 px-3 text-sm ${state.quality === level ? 'bg-ink-700 text-ink-100' : 'bg-ink-850/90 text-ink-400 hover:text-ink-100'}`}
                 >
                   {QUALITY_PROFILES[level].label}

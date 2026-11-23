@@ -134,3 +134,21 @@ Regla central: **el motor gráfico nunca produce datos**. Solo lee del almacén 
 - **Decisión.** Para lecturas reales se muestra el `level` recibido, identificado como «nivel calculado por la manilla». El gemelo no recalcula ese nivel con otros umbrales. Los umbrales de `config/thresholds.json` se aplican solo a métricas simuladas. El CO sin calibrar (solo `gasVoltage`) se muestra como tensión, con calidad `uncalibrated` y sin equivalencia en ppm.
 - **Consecuencias.** El operador y el minero ven el mismo estado de alarma. Si una manilla se reconfigura, el gemelo sigue siendo coherente sin cambios.
 - **Estado.** Aceptada (Fase 0, revisión).
+
+## ADR-013 — Minero controlable con la manilla simulada
+
+- **Contexto.** El usuario pidió controlar a un minero dentro de la mina, «como un juego pero realista», con la manilla de `esp32-device/` en la muñeca transmitiendo según el lugar donde está. La manilla real no conoce su posición (la zona la asigna la central), no tiene simulador de escritorio y los navegadores no pueden enviar la cabecera `X-Device-Key` que exige `/ws/device`.
+- **Decisión.**
+  - **Minero:** modelo procedural articulado (sin recursos externos) con overol de alta visibilidad, cintas reflectivas, casco con lámpara, respirador, botas de goma, batería y autorrescatador. Animación procedural de marcha, carrera, reposo y «mirar la manilla». Usa la misma cápsula contra BVH que la primera persona (ADR-005). Cámara en tercera persona detrás del hombro con colisión por rayo contra la roca, y primera persona desde los ojos del modelo (tecla V).
+  - **Manilla:** `packages/device-sim` es un port en TypeScript de `esp32-device/lib/core`: umbrales con confirmación e histéresis, controlador de alertas (LED, buzzer, motor), menú y renderizador de la OLED de 128×64, cola durable en memoria, sesión del enlace (una solicitud en vuelo, heartbeat, telemetría cada 2 s) y alarmas automáticas `CO_ALARM` y `HEAT_ALARM`. Las tramas tienen el formato exacto de `docs/api.md` y llevan `"simulated": true`.
+  - **Ambiente:** `packages/mine-environment` calcula CO y temperatura en cualquier punto. Las fuentes decaen con la distancia medida por las galerías (Dijkstra sobre el grafo de nodos) y, si son transitorias (voladura), con una vida media. La manilla mide ese ambiente con la dinámica y el ruido de sus sensores.
+  - **Central simulada:** local, responde con los mismos `ack`, identidad y avisos que la central real. No hay conexión con la central real.
+- **Alternativas descartadas.**
+  - Personaje con animaciones de Mixamo: licencia de redistribución dudosa.
+  - Personajes CC0 estilizados (Quaternius, Kenney): no encajan con la estética realista. Se reconsiderarán en F3 para los demás trabajadores.
+  - Conectar el navegador directo a `/ws/device`: imposible sin la cabecera `X-Device-Key`. Haría falta un relé (Node) o un cambio en el backend; queda como decisión del usuario (D6).
+- **Consecuencias.**
+  - El comportamiento visible (niveles, LED, buzzer, pantallas, tramas) sale del mismo algoritmo que el firmware y se verifica con pruebas portadas de `esp32-device/test`.
+  - La fuente de la OLED se aproxima con Canvas 2D (Arial con umbral a 1 bit), no con las fuentes Helvetica de U8g2.
+  - El modelo ambiental es didáctico: no resuelve caudales ni ventilación (eso es F4).
+- **Estado.** Aceptada (2026-11-23).

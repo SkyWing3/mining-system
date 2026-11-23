@@ -1,6 +1,6 @@
 # PLAN — Gemelo digital minero (Mining IoT Digital Twin)
 
-Estado: **Fase 0 completada. Fase 1 implementada y probada (2026-11-22); pendiente de revisión visual del usuario antes de la Fase 2.**
+Estado: **Fase 0 completada. Fase 1 implementada y probada (2026-11-22). Fase 2A (minero controlable y manilla simulada) implementada y probada (2026-11-23) a pedido del usuario. Sigue la Fase 2B (construcción de la mina completa).**
 Rama base: **`develop`** (contiene `esp32-device/`, la central con MySQL y la web actual). `main` está desactualizada respecto del sistema en uso.
 
 Este documento define qué se construirá, en qué orden, con qué dependencias y cómo se demostrará que cada parte funciona. Las decisiones de arquitectura con su justificación están en [ARCHITECTURE.md](ARCHITECTURE.md); la evaluación de licencias, en [THIRD_PARTY_ASSETS.md](THIRD_PARTY_ASSETS.md); la evidencia de avance, en [PROGRESS.md](PROGRESS.md); la estrategia de pruebas, en [TESTING.md](TESTING.md).
@@ -206,7 +206,21 @@ Al finalizar hay una **revisión visual con el usuario** antes de la Fase 2.
 
 **Criterios de aceptación F1:** typecheck, lint, pruebas y build correctos; misma semilla → mismo hash de geometría; paredes irregulares con PBR, humedad y suciedad sin repetición evidente; recorrido en primera persona sin atravesar paredes; FPS medidos por perfil (objetivo ≥ 60 en Alto a 1440p en el equipo de desarrollo, RTX 4070 Ti; se informa el valor real); sin solicitudes externas; revisión visual del usuario.
 
-### FASE 2 — Construcción de la mina
+### FASE 2A — Minero controlable y manilla simulada ✅ (añadida el 2026-11-23)
+
+El usuario pidió adelantar esta parte: «controlar a un minero dentro de la mina, como un juego pero realista, con las métricas de simulación reales», y ver la manilla «que simula el envío de datos basado en donde me encuentro».
+
+| ID | Tarea | Criterio de aceptación |
+| --- | --- | --- |
+| F2A.1 | Minero procedural con EPP y animación de marcha, carrera, reposo y «mirar la manilla» | Visible en supervisión, tercera y primera persona |
+| F2A.2 | Control en tercera persona (WASD relativo a la cámara) y primera persona (V) con la cápsula de colisión | E2E: avanza con W y no atraviesa el hastial |
+| F2A.3 | Cámara de tercera persona con colisión contra la roca | La cámara no queda detrás de la roca |
+| F2A.4 | `packages/device-sim`: port de `esp32-device/lib/core` | Pruebas portadas de `esp32-device/test` |
+| F2A.5 | `packages/mine-environment`: CO y temperatura por ubicación y tiempo | Pruebas: bocamina limpia, frente en peligro tras la voladura, propagación por las galerías |
+| F2A.6 | Central simulada (ack, identidad, avisos) y registro de tramas | Telemetría cada 2 s con `"simulated": true`; `CO_ALARM` al entrar en peligro |
+| F2A.7 | Interfaz: OLED ampliada, pulsadores, LED, buzzer con sonido, motor, lecturas frente al modelo, central y escenario | E2E y capturas |
+
+### FASE 2B — Construcción de la mina (antes «Fase 2»)
 
 | ID | Tarea |
 | --- | --- |

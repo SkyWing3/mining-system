@@ -1,23 +1,25 @@
 # Gemelo digital minero (simulation/)
 
-Simulador 3D y gemelo digital de una mina subterránea **ficticia** inspirada en operaciones de Bolivia. Se integra con la central de Mining System (`backend/`, rama `develop`) para visualizar el estado de las manillas ESP32-S3, sus mensajes y las condiciones ambientales.
+Simulador 3D y gemelo digital de una mina subterránea **ficticia** inspirada en operaciones de Bolivia. Se controla a un minero que lleva la manilla del proyecto (`esp32-device/`, ESP32-S3) y la manilla mide y transmite según el lugar de la mina donde está. Más adelante se integrará con la central de Mining System (`backend/`, rama `develop`).
 
 > Prototipo de monitoreo y apoyo visual. No sustituye equipos certificados, protocolos de seguridad minera ni sistemas oficiales de emergencia. Las representaciones de gases son visualizaciones de datos o escenarios didácticos, no predicciones físicas.
 
 ## Estado
 
 - **Fase 0** (auditoría, investigación y plan): completada.
-- **Fase 1** (fundación gráfica): implementada y probada; pendiente de tu revisión visual antes de construir la mina completa. Detalle en [PROGRESS.md](PROGRESS.md).
+- **Fase 1** (fundación gráfica): implementada y probada.
+- **Fase 2A** (minero controlable y manilla simulada, pedida el 2026-11-23): implementada y probada. Detalle en [PROGRESS.md](PROGRESS.md).
 
-La Fase 1 entrega una **galería de validación** de unos 200 m con:
+Hoy el gemelo tiene:
 
-- tramos entibados, en roca desnuda, con arcos de acero y con concreto lanzado;
-- un cruce, una cámara de carguío, un frente ciego y un refugio;
-- vista de supervisión con corte de bóveda;
-- recorrido en primera persona con colisión y linterna;
-- 4 perfiles gráficos y diagnóstico de render.
+- una **galería de validación** de unos 200 m: tramos entibados, en roca desnuda, con arcos de acero y con concreto lanzado, un cruce, una zona de carguío, un frente ciego y un refugio;
+- un **minero** con equipo de protección que se controla con WASD, choca con la roca y se ve en tercera o primera persona;
+- su **manilla ESP32-S3 simulada**, con la misma lógica que el firmware: pantalla OLED con el menú real, LED, buzzer y motor, umbrales con confirmación e histéresis, alarmas automáticas y tramas de telemetría cada 2 s;
+- un **ambiente simulado** que depende de la ubicación: aire fresco en la bocamina, escape diésel en la zona de carguío y humos de voladura en el frente que se disipan con el tiempo;
+- una **central simulada** local que responde a la manilla y le envía avisos;
+- vista de supervisión con corte de bóveda, 4 perfiles gráficos y diagnóstico de render.
 
-Todavía no consume telemetría.
+Todos los datos son simulados y así se rotulan. **No hay conexión con la central real**: los navegadores no pueden enviar la cabecera `X-Device-Key` que exige `/ws/device` (ver ARCHITECTURE.md, ADR-013).
 
 ## Requisitos
 
@@ -38,16 +40,19 @@ npm run dev               # http://localhost:5180
 
 | Modo | Controles |
 | --- | --- |
-| Supervisión | Arrastrar: orbitar · rueda: acercar · botón derecho: desplazar · «Corte de bóveda» muestra el interior |
-| Primera persona | Clic para capturar el ratón · WASD o flechas: mover · Shift: correr · F: linterna · **Esc: volver a supervisión** |
-| General | H: ocultar o mostrar paneles · selector de perfil Bajo/Medio/Alto/Ultra |
+| Supervisión | Arrastrar: orbitar · rueda: acercar · botón derecho: desplazar · «Corte de bóveda» muestra el interior · la etiqueta sigue al minero |
+| Minero | Botón «Minero» y clic para capturar el ratón · **WASD: caminar** · Shift: correr · ratón: mirar · rueda: distancia de la cámara · **V: primera o tercera persona** · F: linterna del casco · Esc: liberar el ratón (pausa) |
+| Manilla | **Mantener Q: mirar la manilla** · **↑ ↓ Enter: pulsadores subir, bajar y enter** (también con los botones del panel) |
+| General | H: ocultar o mostrar paneles · selector de perfil Bajo/Medio/Alto/Ultra · «Supervisión» vuelve a la vista orbital |
+
+El panel **Central simulada** permite cortar el enlace (la manilla encola y luego entrega), enviar avisos de la central (Evacuar ahora, Ir al refugio…) y alterar el escenario: nueva voladura en el frente, picos de gas o de calor como los comandos `simulate gas` y `simulate heat` de la consola del firmware, y el modo con el CO sin calibrar.
 
 ## Verificación
 
 ```sh
 npm run typecheck
 npm run lint
-npm test                              # Vitest: generador y colisión
+npm test                              # Vitest: generador, colisión, ambiente y manilla
 npm run build
 npx playwright test --project=e2e     # humo: render, errores de consola, sin solicitudes externas
 npx playwright test --project=visual  # capturas en tests/output/screenshots/<perfil>/

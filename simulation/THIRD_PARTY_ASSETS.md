@@ -35,6 +35,13 @@ Licencias verificadas con la API de GitHub el 2026-11-22.
 
 No se copió código de los repositorios descartados (sin licencia o AGPL).
 
+### Minero y manilla (Fase 2A)
+
+- **El minero no usa recursos externos.** Es geometría procedural (tornos, cápsulas, `RoundedBoxGeometry` de three, MIT), y el mapa normal de la tela se genera en el navegador. Se descartaron los personajes de Mixamo por su licencia de redistribución.
+- **La manilla es un port propio** de `esp32-device/lib/core` (código de este mismo repositorio).
+- **La OLED** usa la fuente Arial del sistema rasterizada a 1 bit. No se copiaron las fuentes de U8g2.
+- No se agregaron dependencias npm.
+
 ## 2. Evaluación de repositorios de referencia
 
 Verificado el **2026-11-22** con la API de GitHub (campo `license`), la lectura de `LICENSE`/`README` y los árboles de archivos.

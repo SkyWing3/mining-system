@@ -49,6 +49,25 @@
       "infrastructure": { "cables": true, "lampSpacing": 9 }
     }
   ],
+  "environment": {
+    "intake": { "node": "A0", "temperatureC": 11 },
+    "rockTemperatureC": 27,
+    "warmingLength": 140,
+    "backgroundCoPpm": 0.5,
+    "surfaceOffsetC": 2,
+    "sources": [
+      {
+        "id": "voladura-f1", "label": "Humos de voladura del frente F1", "node": "F1",
+        "coPpm": 700, "heatC": 7, "surfaceHeatC": 12, "length": 26,
+        "halfLifeMinutes": 7, "startedMinutesAgo": 5
+      },
+      {
+        "id": "diesel-a4", "label": "Escape diésel en la zona de carguío", "node": "A4",
+        "coPpm": 42, "heatC": 5, "surfaceHeatC": 4, "length": 14, "fluctuation": 0.3
+      }
+    ],
+    "shelters": [{ "node": "C1", "temperatureC": 18, "radius": 6 }]
+  },
   "signs": [
     { "id": "ppe-entrada", "segment": "S1", "at": 5, "side": "left", "kind": "ppe" },
     { "id": "locomotoras", "segment": "S1", "at": 14, "side": "right", "kind": "caution-rail" },

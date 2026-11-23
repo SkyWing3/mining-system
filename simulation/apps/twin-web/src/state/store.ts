@@ -1,7 +1,12 @@
 import { create } from 'zustand'
 import { suggestQuality, type QualityLevel, type RenderDiagnostics } from '@twin/graphics-engine'
 
-export type CameraMode = 'orbit' | 'first-person'
+/** Supervisión orbital, o el minero controlable visto en primera o tercera persona. */
+export type CameraMode = 'orbit' | 'first-person' | 'third-person'
+
+export function isMinerMode(mode: CameraMode): boolean {
+  return mode !== 'orbit'
+}
 
 /** Punto de vista programado (capturas y pruebas): segmento, distancia y orientación. */
 export interface Viewpoint {
@@ -32,6 +37,10 @@ interface TwinState {
   showDiagnostics: boolean
   panelsVisible: boolean
   pointerLocked: boolean
+  /** El minero levanta la muñeca para mirar la manilla (Q). */
+  checkingBracelet: boolean
+  /** Sonido del buzzer de la manilla. */
+  sound: boolean
   generation: GenerationState
   diagnostics: RenderDiagnostics | null
   /** Error al cargar texturas locales (por ejemplo, si falta ejecutar assets:fetch). */
@@ -49,6 +58,8 @@ interface TwinState {
   toggleDiagnostics: () => void
   togglePanels: () => void
   setPointerLocked: (value: boolean) => void
+  setCheckingBracelet: (value: boolean) => void
+  toggleSound: () => void
   setGeneration: (state: GenerationState) => void
   setDiagnostics: (sample: RenderDiagnostics) => void
   setAssetError: (message: string | null) => void
@@ -77,6 +88,8 @@ export const useTwin = create<TwinState>(set => ({
   showDiagnostics: true,
   panelsVisible: true,
   pointerLocked: false,
+  checkingBracelet: false,
+  sound: true,
   generation: { status: 'idle', done: 0, total: 0 },
   diagnostics: null,
   assetError: null,
@@ -94,6 +107,8 @@ export const useTwin = create<TwinState>(set => ({
   toggleDiagnostics: () => set(state => ({ showDiagnostics: !state.showDiagnostics })),
   togglePanels: () => set(state => ({ panelsVisible: !state.panelsVisible })),
   setPointerLocked: pointerLocked => set({ pointerLocked }),
+  setCheckingBracelet: checkingBracelet => set({ checkingBracelet }),
+  toggleSound: () => set(state => ({ sound: !state.sound })),
   setGeneration: generation => set({ generation }),
   setDiagnostics: diagnostics => set({ diagnostics }),
   setAssetError: assetError => set({ assetError }),

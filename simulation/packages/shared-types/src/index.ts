@@ -72,4 +72,53 @@ export interface GalleryLayout {
   readonly nodes: readonly NodeSpec[]
   readonly segments: readonly SegmentSpec[]
   readonly signs: readonly SignSpec[]
+  /** Escenario ambiental simulado (opcional). */
+  readonly environment?: EnvironmentSpec
+}
+
+/**
+ * Fuente simulada de contaminante o calor ubicada en un nodo. La concentración
+ * cae con la distancia medida por las galerías (el gas no atraviesa la roca).
+ */
+export interface EnvironmentSourceSpec {
+  readonly id: string
+  readonly label: string
+  readonly node: string
+  /** CO en el nodo (ppm) al iniciar la fuente. */
+  readonly coPpm: number
+  /** Calentamiento del aire en el nodo (°C). */
+  readonly heatC?: number
+  /** Calentamiento adicional de las superficies cercanas (termómetro infrarrojo). */
+  readonly surfaceHeatC?: number
+  /** Distancia característica de dilución a lo largo de la galería (m). */
+  readonly length: number
+  /** Fuente transitoria (humos de voladura): vida media de la concentración. */
+  readonly halfLifeMinutes?: number
+  /** Minutos transcurridos desde que empezó la fuente al iniciar la simulación. */
+  readonly startedMinutesAgo?: number
+  /** Variación relativa lenta (equipo en operación), 0..1. */
+  readonly fluctuation?: number
+}
+
+/** Aire fresco o comprimido que mantiene un recinto (refugio) a una temperatura dada. */
+export interface EnvironmentShelterSpec {
+  readonly node: string
+  readonly temperatureC: number
+  readonly radius: number
+}
+
+/** Escenario ambiental didáctico de una galería. No es un modelo de ventilación. */
+export interface EnvironmentSpec {
+  /** Entrada de aire fresco (bocamina) y su temperatura. */
+  readonly intake: { readonly node: string; readonly temperatureC: number }
+  /** Temperatura de la roca virgen a la que tiende el aire al recorrer la mina. */
+  readonly rockTemperatureC: number
+  /** Distancia en que el aire se acerca a la temperatura de la roca (m). */
+  readonly warmingLength: number
+  /** CO de fondo (ppm). */
+  readonly backgroundCoPpm: number
+  /** Las superficies cercanas están algo más calientes que el aire. */
+  readonly surfaceOffsetC: number
+  readonly sources: readonly EnvironmentSourceSpec[]
+  readonly shelters: readonly EnvironmentShelterSpec[]
 }

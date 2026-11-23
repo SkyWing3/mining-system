@@ -2,6 +2,7 @@ import { useFrame } from '@react-three/fiber'
 import { useEffect, useMemo } from 'react'
 import type { GalleryLayout } from '@twin/shared-types'
 import { DiagnosticsProbe, Dust, Effects, Infrastructure, LampPool, RockChunks, type QualityProfile } from '@twin/graphics-engine'
+import { stepDevice } from '../device/runtime.ts'
 import { useGallery } from '../generation/useGallery.ts'
 import { useTwin } from '../state/store.ts'
 import { CameraRig } from './CameraRig.tsx'
@@ -12,14 +13,16 @@ import { Warmup } from './Warmup.tsx'
 export function GalleryScene({ layout, profile }: { layout: GalleryLayout; profile: QualityProfile }) {
   const gallery = useGallery(layout, profile)
   const { materials, error } = useMaterials(profile)
-  const headlamp = useTwin(state => state.headlamp && state.cameraMode === 'first-person')
-  const underground = useTwin(state => state.cameraMode === 'first-person')
+  const headlamp = useTwin(state => state.headlamp && state.cameraMode !== 'orbit')
+  const underground = useTwin(state => state.cameraMode !== 'orbit')
   const setDiagnostics = useTwin(state => state.setDiagnostics)
   const setAssetError = useTwin(state => state.setAssetError)
   const pool = useMemo(() => new LampPool(gallery.infrastructure.lamps), [gallery.infrastructure])
 
   useEffect(() => setAssetError(error), [error, setAssetError])
   useFrame(({ camera }) => pool.update(camera.position, profile.lampPool), -10)
+  // Manilla simulada y ambiente: avanzan con el tiempo de la escena.
+  useFrame((_, delta) => stepDevice(delta, useTwin.getState().sound), -15)
 
   return (
     <>

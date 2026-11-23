@@ -1,0 +1,12 @@
+{
+  "name": "@twin/mine-environment",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Modelo ambiental simulado de la mina (CO y temperatura por ubicación); escenario didáctico.",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@twin/mine-generator": "0.1.0",
+    "@twin/shared-types": "0.1.0"
+  }
+}

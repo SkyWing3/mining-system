@@ -53,7 +53,7 @@ export function useGallery(layout: GalleryLayout, profile: QualityProfile): Gall
     let cancelled = false
     let failed = false
     // Durante la regeneración no hay colisionador: volver a supervisión.
-    if (useTwin.getState().cameraMode === 'first-person') {
+    if (useTwin.getState().cameraMode !== 'orbit') {
       if (document.pointerLockElement) document.exitPointerLock()
       useTwin.getState().setCameraMode('orbit')
     }

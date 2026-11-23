@@ -4,8 +4,8 @@
 
 | Nivel | Herramienta | Qué cubre | Estado |
 | --- | --- | --- | --- |
-| Unitarias | Vitest | Generador: determinismo, sección en herradura, gálibo, piso caminable, costuras entre fragmentos, frente ciego, infraestructura. Caminante: colisión contra la galería generada. | **Implementadas (F1)** |
-| E2E | Playwright (Chromium, ANGLE/D3D11, GPU real) | Render sin errores de consola, ausencia de solicitudes externas, cambio de modo de cámara, regeneración al cambiar el perfil. | **Implementadas (F1)** |
+| Unitarias | Vitest | Generador: determinismo, sección en herradura, gálibo, piso caminable, costuras entre fragmentos, frente ciego, infraestructura. Caminante: colisión contra la galería generada. Ambiente por ubicación. Manilla: port de las pruebas del firmware e integración. | **Implementadas (F1, F2A)** |
+| E2E | Playwright (Chromium, ANGLE/D3D11, GPU real) | Render sin errores de consola, ausencia de solicitudes externas, cambio de modo de cámara, regeneración al cambiar el perfil. Minero con WASD y colisión, manilla, tramas y alarma en el frente. | **Implementadas (F1, F2A)** |
 | Visual | Playwright | 9 capturas por perfil (supervisión y 8 puntos de vista programados). | **Implementadas (F1)**; revisión humana pendiente |
 | Rendimiento | Playwright + diagnóstico interno | Recorrido fijo de 141 m a 1,6 m/s en primera persona con linterna, por perfil. Mide FPS, tiempo por fotograma, GPU, draw calls, triángulos, memoria y tirones. | **Implementado (F1)** |
 | Componentes | Vitest + Testing Library | Indicadores de estado de dispositivos y lecturas | F4–F6 |
@@ -31,6 +31,37 @@ TWIN_UNCAPPED=1 npm run bench                 # sin vsync: margen máximo (ver n
 TWIN_PROFILE=1 npx playwright test --project=bench tests/bench/profile.spec.ts   # perfil de CPU
 node scripts/generator-report.mjs config/galeria-validacion.json 0.2 1          # informe del generador
 ```
+
+## Resultados — Fase 2A (2026-11-23)
+
+El equipo y el navegador son los mismos que en la Fase 1.
+
+| Prueba | Resultado |
+| --- | --- |
+| `tsc -p tsconfig.json` | 0 errores |
+| `oxlint` | 0 errores; los mismos 2 avisos intencionales de la Fase 1 |
+| `vitest run` | **76 de 76 aprobadas** (9 archivos): 11 del generador, 2 del caminante, 7 del ambiente y 56 de la manilla |
+| `vite build` | Correcto; el bundle pesa 1,79 MB (583 kB gzip) |
+| E2E | **3 de 3 aprobadas** |
+
+Pruebas nuevas:
+
+- **`packages/device-sim/test`:**
+  - casos portados de `test_alerts`, `test_interface` y `test_link`, y de `test_app` y `test_sensors` (un caso adaptado a la cola de voz en memoria): confirmación e histéresis, prioridades del LED, silencio y reanudación, pitido de precaución, navegación y textos de la OLED, avisos y alarma en pantalla, tramas de telemetría exactas y sus límites, calibración, alarma automática una vez por transición y rearmado, heartbeat, `ack`, identidad, entrega y cola sin enlace;
+  - integración de `VirtualBracelet`: aire limpio da nivel normal, LED verde y telemetría cada 2 s; 260 ppm da peligro tras 3 muestras, LED rojo intermitente, buzzer 400/400 ms y `CO_ALARM` confirmada; misma semilla, mismo registro; sin central se encola y se entrega al reconectar; avisos con confirmación `delivered` y `read`; voz simulada; CO sin calibrar.
+- **`packages/mine-environment/test`:** bocamina limpia y fría; calentamiento del aire; frente en peligro al inicio y disipación a los 40 min; nueva voladura; propagación por las galerías (no a través de la roca); superficies más calientes que el aire; determinismo.
+- **`tests/e2e/miner.spec.ts`** (perfil Medio):
+  - botón «Minero» → tercera persona;
+  - W durante 3 s → avanza más de 2,5 m;
+  - A durante 3 s contra el hastial → no lo atraviesa;
+  - enlace conectado y telemetría con `"simulated": true`;
+  - nivel normal en la bocamina;
+  - ↓ y Enter cambian la OLED;
+  - en el frente F1, nivel peligro, `CO_ALARM` enviada y zona «Frente de avance»;
+  - sin errores de consola;
+  - capturas en `tests/output/screenshots/miner/`.
+
+No ejecutado en esta fase: el benchmark en tercera persona. Las cifras de diagnóstico anotadas en PROGRESS.md salen de las capturas, no de una medición controlada.
 
 ## Resultados — Fase 1 (2026-11-22)
 

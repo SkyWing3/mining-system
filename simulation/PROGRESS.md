@@ -3,8 +3,9 @@
 | Fase | Estado | Evidencia |
 | --- | --- | --- |
 | F0 Auditoría e investigación | ✅ Completada (2026-11-22; revisada sobre `develop`) | Ver abajo |
-| F1 Fundación gráfica | ✅ Implementada y probada (2026-11-22). **Pendiente de revisión visual del usuario** | Ver abajo y TESTING.md |
-| F2 Construcción de la mina | Pendiente (comienza tras la revisión de F1) | — |
+| F1 Fundación gráfica | ✅ Implementada y probada (2026-11-22) | Ver abajo y TESTING.md |
+| F2A Minero controlable y manilla simulada | ✅ Implementada y probada (2026-11-23), a pedido del usuario | Ver abajo y TESTING.md |
+| F2B Construcción de la mina | Pendiente | — |
 | F3 Maquinaria y trabajadores | Pendiente | — |
 | F4 Sistema ambiental | Pendiente | — |
 | F5 Dashboard industrial | Pendiente | — |
@@ -12,6 +13,60 @@
 | F7 Historial y reproducción | Pendiente | — |
 | F8 Optimización | Pendiente | — |
 | F9 Auditoría final | Pendiente | — |
+
+---
+
+## Fase 2A — 2026-11-23: minero controlable y manilla simulada
+
+Pedido del usuario: «controlar a un minero dentro de la mina, es como un juego pero realista con las métricas de simulación reales», moverse con WASD con colisiones y ver la manilla «que simula el envío de datos basado en donde me encuentro». Se adelantó esta parte antes de construir la mina completa (F2B).
+
+### Tareas
+
+| ID | Estado | Evidencia y observaciones |
+| --- | --- | --- |
+| F2A.1 Minero | ✅ | Modelo procedural articulado: overol de alta visibilidad con cintas reflectivas, casco con lámpara, lentes, respirador con filtros, guantes de cuero, botas de goma, cinturón con batería de la lámpara y autorrescatador, y la manilla en la muñeca izquierda. Animación procedural de marcha, carrera, reposo, giro de cabeza y «mirar la manilla». Sin recursos externos. Capturas en `tests/output/screenshots/miner/`. |
+| F2A.2 Control | ✅ | Tercera persona: WASD relativo a la cámara y el minero gira hacia donde camina. Primera persona: tecla V, vista desde los ojos del modelo. Misma cápsula contra BVH. E2E: avanza más de 2,5 m en 3 s y no atraviesa el hastial. |
+| F2A.3 Cámara de tercera persona | ✅ | Detrás del hombro, rueda para la distancia, colisión por rayo contra la roca (se acerca de inmediato y se aleja con suavidad). Oculta al minero si la cámara queda pegada a él. |
+| F2A.4 Port del firmware | ✅ | `packages/device-sim`, 22 módulos, escrito por un subagente y revisado: umbrales con confirmación e histéresis, alertas (LED, buzzer, motor, silencio), menú y renderizador de la OLED, catálogo de mensajes, cola durable en memoria, sesión del enlace, voz simulada sin audio, reloj sincronizado por `serverTime`. 56 pruebas, portadas de `esp32-device/test` y de integración. |
+| F2A.5 Ambiente | ✅ | `packages/mine-environment`: distancia por las galerías (Dijkstra), calentamiento del aire desde la bocamina, fuentes con dilución y vida media, refugio con aire controlado. Escenario en `config/galeria-validacion.json`: humos de voladura en F1 (700 ppm al inicio, vida media de 7 min, hace 5 min) y escape diésel en la zona de carguío (42 ppm ± 30 %). 7 pruebas. |
+| F2A.6 Central simulada | ✅ | Local: `ack` con `serverTime` e identidad, `messageId` para mensajes, avisos del catálogo del backend, corte y reconexión con espera creciente. Tramas con el formato de `docs/api.md` y `"simulated": true`. |
+| F2A.7 Interfaz | ✅ | OLED ampliada y en la muñeca, pulsadores (botones y ↑ ↓ Enter), LED, buzzer con sonido (Web Audio, 2,7 kHz) y motor (temblor en primera persona). También: lecturas de la manilla frente al modelo, ubicación, registro de tramas, central simulada, controles del escenario y etiqueta del minero en supervisión. |
+
+### Criterios de aceptación
+
+| Criterio | Resultado |
+| --- | --- |
+| Mover al minero con WASD con colisiones | ✅ E2E (`tests/e2e/miner.spec.ts`) y `walker.test.ts` |
+| La manilla mide según la ubicación | ✅ Bocamina: CO ~2 ppm, 11 °C, nivel normal. Frente F1 tras la voladura: CO > 200 ppm, nivel peligro, `CO_ALARM` enviada y confirmada (E2E). |
+| Misma lógica que el firmware | ✅ 56 pruebas portadas o de integración; tramas idénticas en formato |
+| Sin presentar datos simulados como reales | ✅ Rótulos «SIMULADO» en los paneles, `SIM` en la OLED (como el firmware con `sensors.simulated`), `"simulated": true` en cada trama y aviso «sin conexión a la central real» en la cabecera |
+| Typecheck, lint, pruebas y build | ✅ 0 errores; 76 de 76 pruebas unitarias y 3 de 3 E2E |
+
+### Limitaciones
+
+- **No hay conexión con la central real.** El navegador no puede enviar `X-Device-Key` a `/ws/device`. Haría falta un relé local o un cambio en el backend; queda como decisión del usuario (ADR-013, D6).
+- El modelo ambiental es didáctico (dilución exponencial por distancia), no un cálculo de ventilación.
+- La fuente de la OLED aproxima la Helvetica de U8g2 con Arial a 1 bit: la disposición coincide, los píxeles no.
+- El minero es procedural, de aspecto semirrealista. No tiene piel con *skinning* ni dedos articulados.
+- Solo hay un minero. No colisiona con postes ni rieles, solo con la roca (igual que en F1).
+- No se ejecutó el benchmark de recorrido en tercera persona. En las capturas de las pruebas (perfil Medio, 1600×900) el diagnóstico mostraba 60 FPS, una GPU de 4,5 a 8,7 ms y entre 62 y 131 draw calls.
+
+### Archivos
+
+- **Nuevos:**
+  - `packages/device-sim/**` y `packages/mine-environment/**`;
+  - `apps/twin-web/src/device/runtime.ts`, `apps/twin-web/src/scene/minerState.ts` y `apps/twin-web/src/ui/DevicePanels.tsx`;
+  - `packages/graphics-engine/src/character/minerAvatar.ts`;
+  - `tests/e2e/miner.spec.ts`.
+- **Modificados:**
+  - `CameraRig.tsx`, reescrito para el minero;
+  - `Hud.tsx`, `store.ts`, `GalleryScene.tsx`, `useGallery.ts` y `main.tsx`;
+  - `shared-types`, con el tipo del escenario ambiental;
+  - `config/galeria-validacion.json`, con el bloque `environment`;
+  - `apps/twin-web/package.json`;
+  - documentación.
+- **Proyecto existente:** sin cambios en esta fase.
+- No se hicieron commits.
 
 ---
 
