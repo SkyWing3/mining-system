@@ -167,4 +167,12 @@ private:
 // tensión con un gas de referencia de concentración conocida.
 bool computeCalibration(double baselineVolts, double referenceVolts, double referencePpm, CoCalibration& out, std::string& error);
 
+// Estimación PROVISIONAL sin gas de referencia, a partir de la hoja de datos del
+// SEN0564: Rs(aire) / Rs(150 ppm) >= 3 y salida en divisor con la carga RL. La
+// tensión esperada con 150 ppm es V150 = Vcc / (1 + (Vcc / V0 - 1) / 3), sin
+// depender de RL. Solo para demostraciones: no reemplaza una calibración con gas.
+constexpr double kDatasheetPpm = 150.0;
+constexpr double kDatasheetRatio = 3.0;
+bool estimateCalibration(double baselineVolts, double supplyVolts, CoCalibration& out, std::string& error);
+
 }  // namespace mining

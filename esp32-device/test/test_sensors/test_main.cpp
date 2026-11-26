@@ -155,6 +155,20 @@ void test_calibration_by_two_points() {
     TEST_ASSERT_FALSE(computeCalibration(0.4, 0.5, 0, calibration, error));
 }
 
+void test_provisional_estimate_from_the_datasheet() {
+    CoCalibration calibration;
+    std::string error;
+    // V0 = 0.28 V at 3.3 V: Rs falls to a third at 150 ppm, so the output rises to ~0.718 V.
+    TEST_ASSERT_TRUE(estimateCalibration(0.28, 3.3, calibration, error));
+    double expected = 3.3 / (1 + (3.3 / 0.28 - 1) / 3);
+    TEST_ASSERT_DOUBLE_WITHIN(0.01, 0.718, expected);
+    TEST_ASSERT_DOUBLE_WITHIN(0.01, 0.28, calibration.baselineVolts);
+    TEST_ASSERT_DOUBLE_WITHIN(0.5, 150 / (expected - 0.28), calibration.ppmPerVolt);
+    TEST_ASSERT_DOUBLE_WITHIN(1.0, 150.0, calibration.ppm(expected));
+    TEST_ASSERT_FALSE(estimateCalibration(0.0, 3.3, calibration, error));
+    TEST_ASSERT_FALSE(estimateCalibration(3.2, 3.3, calibration, error));
+}
+
 void test_wav_header_is_mono_16_bit_pcm() {
     uint8_t header[kWavHeaderBytes];
     writeWavHeader(header, 16000, 32000);
@@ -240,6 +254,7 @@ int main() {
     RUN_TEST(test_telemetry_drops_out_of_range_values_and_keeps_level);
     RUN_TEST(test_hub_publishes_and_expires_stale_samples);
     RUN_TEST(test_calibration_by_two_points);
+    RUN_TEST(test_provisional_estimate_from_the_datasheet);
     RUN_TEST(test_wav_header_is_mono_16_bit_pcm);
     RUN_TEST(test_normalization_raises_quiet_audio_without_clipping);
     RUN_TEST(test_microphone_conversion_removes_dc_offset);

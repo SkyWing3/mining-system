@@ -258,4 +258,13 @@ bool computeCalibration(double baselineVolts, double referenceVolts, double refe
     return true;
 }
 
+bool estimateCalibration(double baselineVolts, double supplyVolts, CoCalibration& out, std::string& error) {
+    if (!(supplyVolts > 0) || !(baselineVolts > 0.01) || baselineVolts >= supplyVolts * 0.9) {
+        error = "La línea base debe estar entre 0,01 V y el 90 % de la alimentación.";
+        return false;
+    }
+    double expected = supplyVolts / (1.0 + (supplyVolts / baselineVolts - 1.0) / kDatasheetRatio);
+    return computeCalibration(baselineVolts, expected, kDatasheetPpm, out, error);
+}
+
 }  // namespace mining

@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 
+#include <algorithm>
 #include <cstdlib>
 
 #include "hardware.h"
@@ -15,6 +16,10 @@ namespace device {
 
 namespace {
 constexpr size_t kMaxLine = 4096;
+// The SEN0564 is powered from the 3V3 rail.
+constexpr double kSensorSupplyVolts = 3.3;
+// Max-min spread, relative to the mean, accepted as a stable baseline.
+constexpr double kStableVariationPercent = 5.0;
 
 bool startsWith(const std::string& value, const char* prefix) { return value.rfind(prefix, 0) == 0; }
 
@@ -121,6 +126,7 @@ void Console::help() {
     print("  config reset                        vuelve a la configuración de fábrica");
     print("  calibrate co baseline [segundos]    línea base en aire limpio (60 s por defecto)");
     print("  calibrate co reference <ppm> [s]    con gas de referencia; guarda la calibración");
+    print("  calibrate co estimate [s]           estimación provisional sin gas (hoja de datos), solo demostración");
     print("  calibrate co clear                  borra la calibración (vuelve a informar voltios)");
     print("  simulate gas | simulate heat        picos de prueba con sensores simulados");
     print("  i2c scan                            dispositivos del bus I2C (OLED 0x3C, MLX90614 0x5A)");
@@ -269,7 +275,7 @@ bool Console::save(const std::string& patch) {
 
 void Console::calibrate(const std::string& arguments) {
     if (!startsWith(arguments, "co ")) {
-        print("Uso: calibrate co baseline|reference|clear");
+        print("Uso: calibrate co baseline|reference|estimate|clear");
         return;
     }
     std::string rest = trim(arguments.substr(3));
@@ -312,16 +318,35 @@ void Console::calibrate(const std::string& arguments) {
             print("Error: " + error);
             return;
         }
-        char patch[160];
-        snprintf(patch, sizeof patch, "{\"sensors\":{\"co\":{\"calibration\":{\"baseline_volts\":%.4f,\"ppm_per_volt\":%.2f}}}}",
-                 calibration.baselineVolts, calibration.ppmPerVolt);
-        if (save(patch)) {
-            if (ctx_.co != nullptr) ctx_.co->setCalibration(calibration);
-            print(std::string("Calibración guardada y aplicada: ") + patch);
-        }
+        saveCalibration(calibration);
         return;
     }
-    print("Uso: calibrate co baseline|reference|clear");
+    if (startsWith(rest, "estimate")) {
+        int seconds = atoi(trim(rest.substr(8)).c_str());
+        double volts;
+        if (!measure(seconds > 0 ? seconds : 120, volts)) return;
+        mining::CoCalibration calibration;
+        std::string error;
+        if (!mining::estimateCalibration(volts, kSensorSupplyVolts, calibration, error)) {
+            print("Error: " + error);
+            return;
+        }
+        print("ESTIMACIÓN PROVISIONAL según la hoja de datos (Rs cae a 1/3 con 150 ppm), sin gas de referencia.");
+        print("Sirve para demostraciones; no reemplaza una calibración con gas y no es apta para seguridad.");
+        saveCalibration(calibration);
+        return;
+    }
+    print("Uso: calibrate co baseline|reference|estimate|clear");
+}
+
+void Console::saveCalibration(const mining::CoCalibration& calibration) {
+    char patch[160];
+    snprintf(patch, sizeof patch, "{\"sensors\":{\"co\":{\"calibration\":{\"baseline_volts\":%.4f,\"ppm_per_volt\":%.2f}}}}",
+             calibration.baselineVolts, calibration.ppmPerVolt);
+    if (save(patch)) {
+        if (ctx_.co != nullptr) ctx_.co->setCalibration(calibration);
+        print(std::string("Calibración guardada y aplicada: ") + patch);
+    }
 }
 
 bool Console::measure(int seconds, double& volts) {
@@ -330,7 +355,7 @@ bool Console::measure(int seconds, double& volts) {
         return false;
     }
     print("Midiendo durante " + std::to_string(seconds) + " s...");
-    double total = 0;
+    double total = 0, lowest = 1e9, highest = -1e9;
     int count = 0;
     mining::Millis lastSample = -1;
     mining::Millis end = uptimeMs() + static_cast<mining::Millis>(seconds) * 1000;
@@ -340,7 +365,10 @@ bool Console::measure(int seconds, double& volts) {
         if (update && update->sampledAt != lastSample) {
             lastSample = update->sampledAt;
             if (update->snapshot.coVolts) {
-                total += *update->snapshot.coVolts;
+                double value = *update->snapshot.coVolts;
+                total += value;
+                lowest = std::min(lowest, value);
+                highest = std::max(highest, value);
                 ++count;
             }
             if (update->snapshot.coState == mining::CoState::Warming && !warned) {
@@ -355,6 +383,13 @@ bool Console::measure(int seconds, double& volts) {
         return false;
     }
     volts = total / count;
+    double variation = volts > 0 ? (highest - lowest) / volts * 100.0 : 0.0;
+    char buffer[160];
+    snprintf(buffer, sizeof buffer, "Promedio %.4f V en %d muestras (mín. %.4f, máx. %.4f, variación %.1f %%).", volts, count, lowest,
+             highest, variation);
+    print(buffer);
+    if (variation > kStableVariationPercent)
+        print("Aviso: la lectura no es estable; deja el sensor precalentarse más y repite la medición.");
     return true;
 }
 

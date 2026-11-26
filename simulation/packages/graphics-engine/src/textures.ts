@@ -29,9 +29,16 @@ export interface PbrSet {
 export const CONTENT_BASE = `${import.meta.env.BASE_URL}content/`
 
 export async function loadTextureIndex(): Promise<TextureIndex> {
+  const missing = 'No se encontraron las texturas locales. Ejecuta "npm run assets:fetch" en simulation/.'
   const response = await fetch(`${CONTENT_BASE}textures/index.json`)
-  if (!response.ok) throw new Error('No se encontraron las texturas locales. Ejecuta "npm run assets:fetch" en simulation/.')
-  return response.json() as Promise<TextureIndex>
+  // El servidor de Vite responde index.html con 200 a las rutas inexistentes: sin este control
+  // el usuario vería un error de JSON en vez del aviso de que faltan las texturas.
+  if (!response.ok || !(response.headers.get('content-type') ?? '').includes('json')) throw new Error(missing)
+  try {
+    return await response.json() as TextureIndex
+  } catch {
+    throw new Error(missing)
+  }
 }
 
 function pickResolution(available: readonly TextureResolution[], wanted: TextureResolution): TextureResolution {

@@ -101,9 +101,10 @@ struct AlertsConfig {
 
 struct VoiceConfig {
     bool enabled = true;
-    int sck = 12;
-    int ws = 13;
-    int sd = 14;
+    // Columna derecha de la DevKitC (J3), frente al conector del micrófono en la placa.
+    int sck = 41;
+    int ws = 42;
+    int sd = 40;
     // Canal I2S donde el INMP441 entrega los datos (L/R a GND: izquierdo).
     bool rightSlot = false;
     int sampleRate = 16000;

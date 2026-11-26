@@ -109,6 +109,8 @@ Consultar [OLED, sensores y alertas](docs/hardware/oled-buttons.md), [lista de c
 
 [`esp32-device/`](esp32-device/README.md) es el mismo software portado a un ESP32-S3 DevKitC con PlatformIO: mismo menú, alertas, colas y protocolo, sin ADS1115 (el SEN0564 usa el ADC interno). Se configura por la consola serie y la central no necesita cambios.
 
+[`pcb/manilla-portadora/`](pcb/manilla-portadora/README.md) es la placa portadora de doble cara para esa DevKitC: carga y protección de la batería LiPo, elevador a 5 V, LED, pulsadores, buzzer, motor y conectores JST para los módulos. Incluye el paquete de fabricación (Gerbers, lista de compras, planos de montaje y modelo 3D).
+
 ## Aplicación compilada
 
 ```sh
@@ -177,6 +179,7 @@ Hardware de la manilla: OLED SSD1306, tres botones, SEN0564 leído mediante un A
 | `web-app/` | Central React: `api`, `realtime`, `hooks`, `layout`, `pages`, `components`, `forms`, `styles` y pruebas de navegador. |
 | `device/` | Manilla: `sensors`, `alerts`, `audio`, `communication`, `display`, `input`, `tools`, orquestación (`app.py`) y simulador. |
 | `esp32-device/` | Manilla en ESP32-S3 (PlatformIO): lógica portable en `lib/core`, controladores y tareas de FreeRTOS en `src`, pruebas nativas en `test`. |
+| `pcb/manilla-portadora/` | Placa portadora en KiCad 10, generada con scripts (`tools/`) y paquete de fabricación en `fabricacion/`. |
 | `tests/` | Pruebas unitarias .NET, de integración de API/WebSockets y del despliegue Docker. |
 | `docs/` | [Contrato de API y tiempo real](docs/api.md), hardware y documentación existente. |
 | `scripts/` | Desarrollo, compilación, ejecución y pruebas. |

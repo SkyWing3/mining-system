@@ -59,6 +59,7 @@ private:
     bool save(const std::string& patch);
     void calibrate(const std::string& arguments);
     bool measure(int seconds, double& volts);
+    void saveCalibration(const mining::CoCalibration& calibration);
 
     ConsoleContext ctx_;
     double baselineVolts_ = -1;

@@ -46,7 +46,7 @@ const char kDefaults[] = R"json({
   },
   "voice": {
     "enabled": true,
-    "pins": {"sck": 12, "ws": 13, "sd": 14},
+    "pins": {"sck": 41, "ws": 42, "sd": 40},
     "slot": "left",
     "sample_rate": 16000,
     "max_seconds": 30,

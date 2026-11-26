@@ -20,7 +20,7 @@ cd esp32-device
 pio run -e esp32-s3-n16r8 -t upload    # placa con módulo N16R8 (16 MB de flash)
 pio run -e esp32-s3-n8 -t upload       # módulos N8, N8R2 o N8R8 (8 MB de flash)
 pio device monitor                     # consola serie a 115200 baudios
-pio test -e native                     # 67 pruebas de la lógica, sin placa
+pio test -e native                     # 68 pruebas de la lógica, sin placa
 ```
 
 El módulo está serigrafiado en la placa (por ejemplo `ESP32-S3-WROOM-1 N16R8`).
@@ -34,6 +34,11 @@ fuerza el modo de descarga. Después de grabar hay que soltar BOOT y presionar
 ejecuta.
 
 ## Conexiones
+
+Para el montaje definitivo hay una placa portadora con batería, cargador y
+conectores para los módulos: ver [`pcb/manilla-portadora`](../pcb/manilla-portadora/README.md).
+En esa placa el buzzer se activa en alto (`config set {"alerts":{"buzzer":{"active_high":true}}}`).
+La tabla siguiente es para el montaje en protoboard.
 
 Todos los módulos se alimentan con **3,3 V** desde el pin 3V3 de la placa, como en
 la Raspberry Pi. Los números de pin de J1 corresponden a la DevKitC-1 de
@@ -49,7 +54,7 @@ Espressif; en clones, guiarse por la serigrafía `GPIOn`.
 | OLED SSD1306 y MLX90614 | SDA | 8 | 12 |
 | OLED SSD1306 y MLX90614 | SCL | 9 | 15 |
 | Micromotor | base del NPN por 1 kΩ | 10 | 16 |
-| INMP441 | SCK / WS / SD | 12 / 13 / 14 | 18 / 19 / 20 |
+| INMP441 | SCK / WS / SD | 41 / 42 / 40 | J3: 7 / 6 / 8 (columna derecha) |
 | INMP441 | L/R | GND | — |
 
 - **Motor**: la misma etapa de [conexiones.tex](../docs/conexiones.tex) (NPN,
@@ -106,6 +111,7 @@ queda activa la consola para corregirla (modo seguro).
 | `config set {json}` / `config reset` | cambiar la configuración / volver a la de fábrica |
 | `calibrate co baseline [s]` | línea base en aire limpio (60 s por defecto) |
 | `calibrate co reference <ppm> [s]` | medición con gas de referencia; guarda y aplica la calibración |
+| `calibrate co estimate [s]` | estimación provisional sin gas de referencia (hoja de datos); solo para demostraciones |
 | `calibrate co clear` | borra la calibración (vuelve a informar voltios) |
 | `simulate gas` / `simulate heat` | picos de prueba con `sensors.simulated` |
 | `i2c scan` | dispositivos del bus I2C (OLED 0x3C, MLX90614 0x5A) |
@@ -116,6 +122,17 @@ queda activa la consola para corregirla (modo seguro).
 La calibración reemplaza a `python -m src.tools.calibrate_co` y se aplica sin
 reiniciar, así el sensor no vuelve a precalentarse. **Hay que repetirla**: los
 valores del ADS1115 no sirven para el ADC del ESP32.
+
+Antes de calibrar, DFRobot pide precalentar el sensor **más de 24 h** si es
+nuevo o estuvo sin usarse (más de 5 min en los encendidos normales). Cada
+medición informa la variación de la lectura y avisa si supera el 5 %.
+
+Sin gas de referencia, `calibrate co estimate` mide la línea base y calcula la
+pendiente con la hoja de datos: la resistencia del sensor cae al menos a un
+tercio con 150 ppm, y con la salida en divisor la tensión esperada es
+`V150 = 3,3 / (1 + (3,3 / V0 − 1) / 3)`. Es una aproximación lineal de una
+curva que no lo es: sirve para demostrar las alarmas, no para medir CO con
+fines de seguridad.
 
 ## Arquitectura
 
