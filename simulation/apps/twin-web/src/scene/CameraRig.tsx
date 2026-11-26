@@ -9,9 +9,8 @@ import { CameraControls, Html } from '@react-three/drei'
 import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import type { MeshBVH } from 'three-mesh-bvh'
 import { frameAt, type CompiledLayout } from '@twin/mine-generator'
-import { MinerAvatar, Walker, type QualityProfile, type WalkInput } from '@twin/graphics-engine'
+import { MinerAvatar, Walker, type Collider, type QualityProfile, type WalkInput } from '@twin/graphics-engine'
 import { deviceOutputs, oledTexture, useDevice } from '../device/runtime.ts'
 import { isMinerMode, useTwin, type CameraMode } from '../state/store.ts'
 import { mainRoute, overviewPose, routeFrame, yawFromTangent } from './cameraMath.ts'
@@ -31,7 +30,7 @@ function wrapAngle(angle: number): number {
   return Math.atan2(Math.sin(angle), Math.cos(angle))
 }
 
-export function CameraRig({ compiled, collider, profile }: { compiled: CompiledLayout; collider: MeshBVH | null; profile: QualityProfile }) {
+export function CameraRig({ compiled, collider, profile }: { compiled: CompiledLayout; collider: Collider | null; profile: QualityProfile }) {
   const mode = useTwin(state => state.cameraMode)
   const headlampOn = useTwin(state => state.headlamp)
   const { camera, gl } = useThree()
@@ -355,7 +354,7 @@ export function CameraRig({ compiled, collider, profile }: { compiled: CompiledL
   return (
     <>
       {minerMode ? null : (
-        <CameraControls ref={controls} makeDefault minDistance={2} maxDistance={400} maxPolarAngle={Math.PI * 0.495} smoothTime={0.35} draggingSmoothTime={0.12} />
+        <CameraControls ref={controls} makeDefault minDistance={2} maxDistance={800} maxPolarAngle={Math.PI * 0.495} smoothTime={0.35} draggingSmoothTime={0.12} />
       )}
       <primitive object={avatar.root} />
       <primitive object={avatar.viewmodel} />

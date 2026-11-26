@@ -1,6 +1,7 @@
 import type { GalleryLayout } from '@twin/shared-types'
 import { describe, expect, it } from 'vitest'
 import layoutJson from '../../../config/galeria-validacion.json'
+import mineJson from '../../../config/mina-simulada.json'
 import { GalleryGenerator, horseshoeDistance } from '../src/index.ts'
 
 const layout = layoutJson as unknown as GalleryLayout
@@ -134,5 +135,49 @@ describe('GalleryGenerator', () => {
     expect(infrastructure.bolts.length).toBeGreaterThan(50)
     expect(infrastructure.signs.length).toBe(compiled.layout.signs.length)
     expect(infrastructure.refuges.length).toBe(1)
+  })
+})
+
+describe('mina simulada de dos niveles', () => {
+  const mine = mineJson as unknown as GalleryLayout
+  const generator = new GalleryGenerator(mine)
+
+  it('la consulta por celdas encuentra las mismas cajas que recorrer todas las primitivas', () => {
+    const { pieces, chambers, min, max } = generator.compiled
+    const items = [...pieces, ...chambers]
+    const brute = (lo: number[], hi: number[]) => items.some(item => item.max[0] >= lo[0] && item.min[0] <= hi[0] && item.max[1] >= lo[1] && item.min[1] <= hi[1] && item.max[2] >= lo[2] && item.min[2] <= hi[2])
+    const size = 8
+    let checked = 0
+    for (let x = Math.floor(min[0] / size); x <= Math.floor(max[0] / size); x += 3)
+      for (let y = Math.floor(min[1] / size); y <= Math.floor(max[1] / size); y++)
+        for (let z = Math.floor(min[2] / size); z <= Math.floor(max[2] / size); z += 2) {
+          const lo = [x * size, y * size, z * size], hi = [(x + 1) * size, (y + 1) * size, (z + 1) * size]
+          expect(generator.field.touchesBox(lo, hi)).toBe(brute(lo, hi))
+          checked++
+        }
+    expect(checked).toBeGreaterThan(500)
+  })
+
+  it('mide casi 2 km de galerías en dos niveles', () => {
+    expect(generator.tunnelLength()).toBeGreaterThan(1800)
+    const heights = generator.compiled.nodes.map(node => node.position[1])
+    expect(Math.max(...heights) - Math.min(...heights)).toBeGreaterThan(20)
+  })
+
+  it('ubica los puntos de acceso, las cadenas y deja a oscuras las labores abandonadas', () => {
+    const { infrastructure } = generator
+    expect(infrastructure.accessPoints.map(ap => ap.id).sort()).toEqual(mine.network!.accessPoints.map(ap => ap.id).sort())
+    expect(infrastructure.barriers).toHaveLength(mine.barriers!.length)
+    for (const barrier of infrastructure.barriers) {
+      // La cadena va de hastial a hastial en una labor de 2,8 m de ancho.
+      expect(barrier.span).toBeGreaterThan(2)
+      expect(barrier.span).toBeLessThan(4.5)
+    }
+    for (const id of ['G1', 'G2']) {
+      const node = mine.nodes.find(item => item.id === id)!
+      const near = infrastructure.lamps.filter(lamp => Math.hypot(lamp.position[0] - node.position[0], lamp.position[2] - node.position[2]) < 6 && Math.abs(lamp.position[1] - node.position[1]) < 8)
+      expect(near, id).toHaveLength(0)
+    }
+    expect(infrastructure.signs.filter(sign => sign.kind === 'direction').every(sign => sign.label?.title)).toBe(true)
   })
 })

@@ -3,8 +3,10 @@
 // azul (obligación), rojo (prohibición). Son letreros didácticos del escenario ficticio.
 import * as THREE from 'three'
 import { mulberry32 } from '@twin/mine-generator'
+import type { SignKind, SignSpec } from '@twin/shared-types'
 
-export type SignKind = 'refuge' | 'exit' | 'caution-rail' | 'ppe' | 'no-smoking' | 'monitoring'
+export type { SignKind }
+type SignLabel = NonNullable<SignSpec['label']>
 
 const W = 768
 const H = 512
@@ -16,6 +18,20 @@ interface SignDesign {
   readonly title: string
   readonly lines: readonly string[]
   readonly icon: (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string) => void
+}
+
+/** Triángulo de advertencia (amarillo con borde negro) con un pictograma dentro. */
+function warningTriangle(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, color: string, inner: () => void) {
+  ctx.strokeStyle = color
+  ctx.lineWidth = s * 0.09
+  ctx.lineJoin = 'round'
+  ctx.beginPath()
+  ctx.moveTo(x, y - s * 0.5)
+  ctx.lineTo(x + s * 0.55, y + s * 0.44)
+  ctx.lineTo(x - s * 0.55, y + s * 0.44)
+  ctx.closePath()
+  ctx.stroke()
+  inner()
 }
 
 function arrow(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, direction: 1 | -1) {
@@ -108,6 +124,68 @@ const DESIGNS: Record<SignKind, SignDesign> = {
       ctx.stroke()
     },
   },
+  gas: {
+    background: '#f2c300', foreground: '#111111', title: 'PELIGRO: GASES', lines: ['Ingreso solo con', 'detector de CO'],
+    icon: (ctx, x, y, s, color) => warningTriangle(ctx, x, y, s, color, () => {
+      // Nube de gas: tres círculos superpuestos.
+      ctx.fillStyle = color
+      for (const [dx, dy, r] of [[-0.16, 0.18, 0.13], [0.02, 0.1, 0.16], [0.18, 0.2, 0.12]] as const) {
+        ctx.beginPath()
+        ctx.arc(x + s * dx, y + s * dy, s * r, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      ctx.fillRect(x - s * 0.28, y + s * 0.2, s * 0.56, s * 0.12)
+    }),
+  },
+  'no-entry': {
+    background: '#f4f1ea', foreground: '#111111', title: 'PROHIBIDO', lines: ['EL INGRESO', 'Labor abandonada'],
+    icon: (ctx, x, y, s) => {
+      ctx.strokeStyle = '#c8102e'
+      ctx.lineWidth = s * 0.12
+      ctx.beginPath()
+      ctx.arc(x, y, s * 0.44, 0, Math.PI * 2)
+      ctx.stroke()
+      // Persona caminando.
+      ctx.fillStyle = '#111111'
+      ctx.beginPath()
+      ctx.arc(x + s * 0.02, y - s * 0.24, s * 0.07, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.lineWidth = s * 0.07
+      ctx.strokeStyle = '#111111'
+      ctx.lineCap = 'round'
+      ctx.beginPath()
+      ctx.moveTo(x, y - s * 0.12)
+      ctx.lineTo(x - s * 0.04, y + s * 0.08)
+      ctx.lineTo(x - s * 0.14, y + s * 0.28)
+      ctx.moveTo(x - s * 0.04, y + s * 0.08)
+      ctx.lineTo(x + s * 0.1, y + s * 0.28)
+      ctx.moveTo(x - s * 0.14, y - s * 0.02)
+      ctx.lineTo(x + s * 0.14, y - s * 0.06)
+      ctx.stroke()
+      ctx.strokeStyle = '#c8102e'
+      ctx.lineWidth = s * 0.1
+      ctx.beginPath()
+      ctx.moveTo(x - s * 0.31, y - s * 0.31)
+      ctx.lineTo(x + s * 0.31, y + s * 0.31)
+      ctx.stroke()
+    },
+  },
+  heat: {
+    background: '#f2c300', foreground: '#111111', title: 'ALTA TEMPERATURA', lines: ['Agua termal y', 'roca caliente'],
+    icon: (ctx, x, y, s, color) => warningTriangle(ctx, x, y, s, color, () => {
+      // Termómetro.
+      ctx.fillStyle = color
+      ctx.fillRect(x - s * 0.045, y - s * 0.22, s * 0.09, s * 0.36)
+      ctx.beginPath()
+      ctx.arc(x, y + s * 0.2, s * 0.1, 0, Math.PI * 2)
+      ctx.fill()
+      for (let index = 0; index < 3; index++) ctx.fillRect(x + s * 0.07, y - s * 0.18 + index * s * 0.1, s * 0.08, s * 0.025)
+    }),
+  },
+  direction: {
+    background: '#1f3c2f', foreground: '#ffffff', title: '', lines: [],
+    icon: () => undefined,
+  },
   monitoring: {
     background: '#22313f', foreground: '#ffffff', title: 'ESTACIÓN DE', lines: ['MONITOREO', 'AMBIENTAL'],
     icon: (ctx, x, y, s, color) => {
@@ -159,7 +237,24 @@ function weather(ctx: CanvasRenderingContext2D, seed: number) {
   ctx.strokeRect(5, 5, W - 10, H - 10)
 }
 
-export function createSignTexture(kind: SignKind, seed: number): THREE.CanvasTexture {
+/** Letrero de dirección: título grande, dos líneas y flecha hacia el lado indicado. */
+function drawDirection(ctx: CanvasRenderingContext2D, design: SignDesign, label: SignLabel) {
+  const right = label.arrow !== 'left'
+  ctx.strokeStyle = design.foreground
+  ctx.lineWidth = 10
+  ctx.strokeRect(22, 22, W - 44, H - 44)
+  if (label.arrow) arrow(ctx, right ? W * 0.8 : W * 0.2, H * 0.5, H * 0.42, design.foreground, right ? 1 : -1)
+  const textX = label.arrow && !right ? W * 0.38 : W * 0.08
+  const maxWidth = W * 0.6
+  ctx.fillStyle = design.foreground
+  ctx.textBaseline = 'middle'
+  ctx.font = `700 70px ${FONT}`
+  ctx.fillText(label.title, textX, H * 0.3, maxWidth)
+  ctx.font = `500 46px ${FONT}`
+  ;(label.lines ?? []).slice(0, 2).forEach((line, index) => ctx.fillText(line, textX, H * (0.55 + index * 0.17), maxWidth))
+}
+
+export function createSignTexture(kind: SignKind, seed: number, label?: SignLabel): THREE.CanvasTexture {
   const canvas = document.createElement('canvas')
   canvas.width = W
   canvas.height = H
@@ -168,7 +263,15 @@ export function createSignTexture(kind: SignKind, seed: number): THREE.CanvasTex
   const design = DESIGNS[kind]
   ctx.fillStyle = design.background
   ctx.fillRect(0, 0, W, H)
-  if (kind === 'no-smoking') {
+  if (kind === 'direction') {
+    drawDirection(ctx, design, label ?? { title: '' })
+    weather(ctx, seed)
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.anisotropy = 8
+    return texture
+  }
+  if (kind === 'no-smoking' || kind === 'no-entry') {
     ctx.strokeStyle = '#c8102e'
     ctx.lineWidth = 18
     ctx.strokeRect(24, 24, W - 48, H - 48)

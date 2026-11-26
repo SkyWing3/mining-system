@@ -26,6 +26,8 @@ export interface NodeSpec {
   /** Cámaras: dimensiones interiores (ancho X, alto, largo Z) en metros. */
   readonly size?: Vec3
   readonly zone: string
+  /** Cámaras: luminarias bajo el techo (falso en labores abandonadas, que quedan a oscuras). */
+  readonly lit?: boolean
 }
 
 /** Tramo de una galería con su sostenimiento, entre dos distancias a lo largo del eje. */
@@ -56,13 +58,60 @@ export interface SegmentSpec {
   readonly zone: string
 }
 
+export type SignKind =
+  | 'refuge' | 'exit' | 'caution-rail' | 'ppe' | 'no-smoking' | 'monitoring'
+  | 'gas' | 'no-entry' | 'heat' | 'direction'
+
 export interface SignSpec {
   readonly id: string
   readonly segment: string
   /** Distancia a lo largo del eje. */
   readonly at: number
   readonly side: 'left' | 'right'
-  readonly kind: 'refuge' | 'exit' | 'caution-rail' | 'ppe' | 'no-smoking' | 'monitoring'
+  readonly kind: SignKind
+  /** Letreros de dirección: título, hasta dos líneas y flecha. */
+  readonly label?: { readonly title: string; readonly lines?: readonly string[]; readonly arrow?: 'left' | 'right' }
+}
+
+/** Cadena con letrero de prohibición atravesada en la galería (no bloquea el paso). */
+export interface BarrierSpec {
+  readonly id: string
+  readonly segment: string
+  readonly at: number
+  /** Atenuación adicional de la señal Wi-Fi al atravesarla (tapón, derrumbe parcial), dB. */
+  readonly radioLossDb?: number
+}
+
+/** Punto de acceso Wi-Fi montado en un hastial. */
+export interface AccessPointSpec {
+  readonly id: string
+  readonly segment: string
+  readonly at: number
+  readonly side: 'left' | 'right'
+  /** Potencia radiada (dBm), incluida la ganancia de la antena. */
+  readonly txPowerDbm: number
+}
+
+/**
+ * Propagación a 2,4 GHz por las galerías (didáctica): pérdida logarítmica con la
+ * distancia recorrida por la galería, atenuación por metro, pérdida por curvatura y
+ * por esquinas en los cruces. La roca no deja pasar la señal.
+ */
+export interface RadioModelSpec {
+  /** Pérdida a 1 m (dB). */
+  readonly referenceLossDb: number
+  readonly pathLossExponent: number
+  readonly attenuationDbPerM: number
+  /** Pérdida por radián de curvatura del eje. */
+  readonly bendLossDbPerRad: number
+  /** Pérdida al doblar 90° en un cruce. */
+  readonly cornerLossDb: number
+}
+
+export interface NetworkSpec {
+  readonly ssid: string
+  readonly accessPoints: readonly AccessPointSpec[]
+  readonly model: RadioModelSpec
 }
 
 export interface GalleryLayout {
@@ -72,9 +121,14 @@ export interface GalleryLayout {
   readonly nodes: readonly NodeSpec[]
   readonly segments: readonly SegmentSpec[]
   readonly signs: readonly SignSpec[]
+  readonly barriers?: readonly BarrierSpec[]
   /** Escenario ambiental simulado (opcional). */
   readonly environment?: EnvironmentSpec
+  /** Red Wi-Fi subterránea que enlaza las manillas con la central (opcional: sin ella, cobertura total). */
+  readonly network?: NetworkSpec
 }
+
+export type SourceCategory = 'diesel' | 'blast' | 'old-workings' | 'no-ventilation' | 'fire' | 'heat'
 
 /**
  * Fuente simulada de contaminante o calor ubicada en un nodo. La concentración
@@ -92,6 +146,15 @@ export interface EnvironmentSourceSpec {
   readonly surfaceHeatC?: number
   /** Distancia característica de dilución a lo largo de la galería (m). */
   readonly length: number
+  /**
+   * Recinto confinado: hasta esta distancia de la fuente el aire está igual de
+   * contaminado (cámara sin ventilación) y recién después se diluye.
+   */
+  readonly plateau?: number
+  /** Humo visible en la fuente (0..1); en fuentes de calor, vapor de agua. El CO por sí solo no se ve ni se huele. */
+  readonly smoke?: number
+  /** Tipo de fuente, para la leyenda del mapa. */
+  readonly category?: SourceCategory
   /** Fuente transitoria (humos de voladura): vida media de la concentración. */
   readonly halfLifeMinutes?: number
   /** Minutos transcurridos desde que empezó la fuente al iniciar la simulación. */

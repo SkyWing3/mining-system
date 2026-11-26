@@ -28,8 +28,11 @@ export function trackExternalRequests(page: Page, origin: string): string[] {
   return external
 }
 
-export async function openTwin(page: Page, quality: Quality): Promise<void> {
-  await page.goto(`/?automation=1&quality=${quality}`)
+/** Mina que se abre: la mina simulada (por defecto) o la galería de validación de la Fase 1. */
+export type Layout = 'mina' | 'validacion'
+
+export async function openTwin(page: Page, quality: Quality, layout: Layout = 'mina'): Promise<void> {
+  await page.goto(`/?automation=1&quality=${quality}${layout === 'validacion' ? '&layout=validacion' : ''}`)
   await page.waitForFunction(() => {
     const store = (window as unknown as { __twin?: { getState: () => { generation: { status: string }; assetError: string | null } } }).__twin
     return store?.getState().generation.status === 'done'

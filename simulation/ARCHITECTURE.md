@@ -77,12 +77,12 @@ Regla central: **el motor gráfico nunca produce datos**. Solo lee del almacén 
 
   A ese ritmo, la mina completa (≥ 5 km) tardaría varios minutos en un hilo: por eso se pre-generará en Node (F2.2).
 - **Consecuencias.** Cambiar el JSON regenera solo los fragmentos afectados. El ruido en espacio mundial asegura continuidad entre fragmentos.
-- **Estado.** Técnica de superficie aceptada (Fase 1). La pre-generación a GLB y la carga por zonas se implementan en F2.
+- **Estado.** Técnica de superficie aceptada (Fase 1). La carga por zonas se resolvió en F2B generando en el navegador por cercanía al minero (ADR-014); la pre-generación a GLB queda pendiente para cuando la mina supere lo que los workers generan en segundos.
 
 ## ADR-005 — Colisiones y selección
 
 - **Decisión.** Cápsula del caminante contra BVH (`three-mesh-bvh`) de las mallas de colisión; la misma BVH sirve para seleccionar por rayos. Vehículos y trabajadores se mueven cinemáticamente sobre el grafo; no requieren física. Rapier se incorporará solo si aparece una necesidad física concreta.
-- **Implementación.** `packages/graphics-engine/src/walker.ts` (técnica del ejemplo *characterMovement* de three-mesh-bvh, MIT, acreditada en el archivo). La BVH se construye con la roca; postes, rieles y equipos todavía no colisionan (limitación conocida).
+- **Implementación.** `packages/graphics-engine/src/walker.ts` (técnica del ejemplo *characterMovement* de three-mesh-bvh, MIT, acreditada en el archivo). Desde F2B la colisión es una BVH por fragmento (`collider.ts`, ADR-014). Postes, rieles y equipos todavía no colisionan (limitación conocida).
 - **Estado.** Aceptada (Fase 1). Evidencia: `packages/graphics-engine/test/walker.test.ts` (recorrido de los 6 segmentos y empuje contra el hastial).
 
 ## ADR-006 — Iluminación de túneles
@@ -152,3 +152,43 @@ Regla central: **el motor gráfico nunca produce datos**. Solo lee del almacén 
   - La fuente de la OLED se aproxima con Canvas 2D (Arial con umbral a 1 bit), no con las fuentes Helvetica de U8g2.
   - El modelo ambiental es didáctico: no resuelve caudales ni ventilación (eso es F4).
 - **Estado.** Aceptada (2026-11-23).
+
+## ADR-014 — Mina ampliada: generación por cercanía y colisión por fragmentos
+
+- **Contexto.** El usuario pidió una mina «mucho más grande, para que se pueda explorar de mejor manera». La mina simulada tiene 1,9 km de galerías en dos niveles (unos 1 300 fragmentos de 8 m en perfil Medio). Generarla entera antes de poder caminar tomaría 8 a 14 s en un M4 con 8 workers, y la BVH única de la Fase 1 se construía recién al final, en el hilo principal.
+- **Decisión.**
+  - Los workers piden fragmentos de a uno (dos en vuelo por worker) y el hilo principal les entrega el pendiente más cercano al minero, o a la bocamina antes de que aparezca. La cota pesa el triple, así primero se completa el nivel donde está el minero.
+  - Cada fragmento suma su propia BVH a un `ChunkedCollider`, que solo consulta los fragmentos cuya caja toca la cápsula o el rayo. El botón «Minero» se habilita cuando están los fragmentos a menos de 26 m del minero. Si el caminante llega a un fragmento todavía sin generar, espera quieto en vez de caer.
+  - Bajo tierra se recortan por distancia (90 m, alcance de la niebla) y por cota (11 m, la roca entre niveles) la roca y la infraestructura. La infraestructura se instancia por celdas de 40 m, y los tubos y rieles se parten en tramos de hasta 48 m, para que el recorte y el frustum puedan descartarlos.
+  - `MineField.touchesBox` usa la rejilla espacial que ya existía para el SDF; antes recorría todas las primitivas por cada fragmento candidato.
+- **Medición (Apple M4, Chromium 159 con ANGLE sobre Metal, 1600×900).**
+  - Perfil Medio: se puede controlar al minero a unos 3 s de abrir la página, y la mina completa termina en 8 a 10 s.
+  - El recorte bajó los triángulos por fotograma en primera persona de 2,4–3,3 millones a 0,1–0,6 millones (detalle en TESTING.md).
+- **Alternativas descartadas.**
+  - Pre-generar a GLB en Node (ADR-004): con esta mina, la generación en el navegador ya es aceptable, y la pre-generación obligaría a regenerar archivos con cada cambio del JSON.
+  - Caché en IndexedDB: acelera las recargas, pero exige invalidarla con cada cambio del generador. Queda para F8 si hiciera falta.
+- **Estado.** Aceptada (2026-11-26).
+
+## ADR-015 — Cobertura Wi-Fi simulada y comportamiento sin señal
+
+- **Contexto.** El usuario pidió que la señal con la central «no sea simplemente señal ilimitada» y que, sin señal, la manilla haga lo mismo que el firmware: cola de mensajes, reintentos y entrega posterior. La manilla real se conecta por Wi-Fi (`WiFi.mode(WIFI_STA)`, `setAutoReconnect(true)`) y, en una mina, las antenas cubren las galerías, no la roca.
+- **Decisión.**
+  - **Propagación** (`packages/mine-environment/src/radio.ts`): por cada antena se busca el camino de menor pérdida por las galerías, con Dijkstra sobre las llegadas a los nodos (nodo y segmento por el que se llega, para poder medir el ángulo de cada esquina). RSSI = Ptx − L(1 m) − 10·n·log10(d) − α·d − κ·Σ|giro| − Σ esquinas − Σ tapones. Parámetros por mina en `network.model`: L(1 m) = 40 dB, n = 2, α = 0,1 dB/m, κ = 6 dB/rad y 16 dB por esquina de 90°. Las cadenas de las labores abandonadas suman 10 y 6 dB (tapón y derrumbe parcial).
+  - **Estación Wi-Fi** (`packages/device-sim/src/wifi.ts`):
+    - se asocia al punto de acceso más fuerte por encima de −85 dBm y tarda 2,2 s (escaneo, asociación y DHCP);
+    - se queda con él aunque aparezca otro mejor, porque el firmware no pide itinerancia;
+    - se desasocia tras 6 s sin balizas (señal bajo −90 dBm), el tiempo de inactividad por defecto de ESP-IDF.
+  - **Tráfico:** con señal débil se pierden segmentos TCP (3 % a −80 dBm, 50 % a −87 dBm). Cada trama se retransmite con espera creciente (300 ms a 8 s) y en orden: si una trama espera, las siguientes del mismo sentido también. No se inventa una pérdida de tramas en la aplicación, porque TCP no la tiene: lo que se ve son demoras y, si superan 10 s, el corte de la sesión por `responseTimeoutMs`, como en `link_session.cpp`.
+  - **Firmware reproducido** (`network.cpp`):
+    - sin Wi-Fi, `LinkTask::attempt` vuelve a mirar cada 1 s;
+    - la subida de voz espera el Wi-Fi y falla con `read Timeout` a los 30 s;
+    - los mensajes quedan en la cola durable y conservan su `sentAt`;
+    - la telemetría en vivo no se encola: la central tiene un hueco, igual que con la manilla real.
+  - **Central simulada:** registra `lastSeenAt` en cada trama o subida y considera la manilla en línea durante 90 s, como `Mining:PresenceWindowSeconds`.
+  - **Sin `network` en la configuración, la cobertura es total.** Así las 56 pruebas portadas del firmware no cambian.
+- **Consecuencias.**
+  - Al caminar entre dos antenas hay un corte breve, aunque la segunda tenga buena señal: es lo que haría la manilla real con este firmware. Si se quisiera evitar, el firmware podría vigilar el RSSI y reconectarse antes de perder la antena; no se cambió el firmware.
+  - Los niveles de señal son didácticos: sirven para mostrar zonas débiles y sin cobertura, no para diseñar una red real.
+  - Al teletransportar al minero (puntos de vista de las pruebas) la estación sigue asociada a la antena anterior hasta perder sus balizas.
+- **Estado.** Aceptada (2026-11-26).
+

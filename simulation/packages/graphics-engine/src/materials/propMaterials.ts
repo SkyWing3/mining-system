@@ -23,6 +23,10 @@ export interface PropMaterials {
   readonly concrete: THREE.MeshStandardMaterial
   readonly door: THREE.MeshStandardMaterial
   readonly signBack: THREE.MeshStandardMaterial
+  /** Plástico gris claro de los puntos de acceso Wi-Fi. */
+  readonly apHousing: THREE.MeshStandardMaterial
+  /** Cadena plástica de prohibición, a franjas rojas y blancas. */
+  readonly chain: THREE.MeshStandardMaterial
   readonly sign: (texture: THREE.Texture) => THREE.MeshStandardMaterial
   dispose(): void
 }
@@ -69,6 +73,24 @@ function ribTexture(): THREE.CanvasTexture {
   return texture
 }
 
+/** Franjas rojas y blancas de la cadena de seguridad (una franja cada 12 cm). */
+function stripeTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas')
+  canvas.width = 32
+  canvas.height = 4
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('Canvas 2D no disponible.')
+  ctx.fillStyle = '#b8141f'
+  ctx.fillRect(0, 0, 16, 4)
+  ctx.fillStyle = '#e9e5dc'
+  ctx.fillRect(16, 0, 16, 4)
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.wrapS = THREE.RepeatWrapping
+  texture.wrapT = THREE.RepeatWrapping
+  return texture
+}
+
 export function createPropMaterials(sets: PropTextureSets, lampPool: number): PropMaterials {
   const created: THREE.Material[] = []
   const lit = <T extends THREE.MeshStandardMaterial>(material: T, instanced = true): T => {
@@ -90,11 +112,15 @@ export function createPropMaterials(sets: PropTextureSets, lampPool: number): Pr
   const concrete = lit(pbr(sets.concrete, 0.5, { color: new THREE.Color(0.66, 0.65, 0.62), metalness: 0 }), false)
   const door = lit(pbr(sets.painted, 1, { color: new THREE.Color(0.55, 0.9, 0.6) }), false)
   const signBack = lit(pbr(sets.steel, 2, { metalness: 0.6 }), false)
+  const apHousing = lit(new THREE.MeshStandardMaterial({ color: new THREE.Color(0.72, 0.72, 0.7), roughness: 0.55, metalness: 0 }), false)
+  const stripes = stripeTexture()
+  const chain = lit(new THREE.MeshStandardMaterial({ map: stripes, roughness: 0.45, metalness: 0 }), false)
   const sign = (texture: THREE.Texture) => lit(new THREE.MeshStandardMaterial({ map: texture, roughness: 0.62, metalness: 0.1 }), false)
   return {
-    timber, steel, railSteel, painted, waterPipe, duct, cable, housing, lens, concrete, door, signBack, sign,
+    timber, steel, railSteel, painted, waterPipe, duct, cable, housing, lens, concrete, door, signBack, apHousing, chain, sign,
     dispose() {
       rib.dispose()
+      stripes.dispose()
       for (const material of created) {
         for (const value of Object.values(material)) if (value instanceof THREE.Texture) value.dispose()
         material.dispose()

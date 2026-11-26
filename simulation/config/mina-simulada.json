@@ -1,0 +1,257 @@
+{
+  "name": "mina-simulada",
+  "seed": 20261126,
+  "profiles": {
+    "socavon-entibado": { "width": 3.0, "wallHeight": 2.45, "archRise": 0.45 },
+    "galeria-roca": { "width": 3.6, "wallHeight": 2.3, "archRise": 1.15 },
+    "galeria-arcos": { "width": 3.8, "wallHeight": 2.1, "archRise": 1.55 },
+    "galeria-shotcrete": { "width": 4.0, "wallHeight": 2.4, "archRise": 1.3 },
+    "crucero": { "width": 3.0, "wallHeight": 2.2, "archRise": 0.95 },
+    "veta": { "width": 3.0, "wallHeight": 2.2, "archRise": 0.9 },
+    "rampa": { "width": 4.4, "wallHeight": 2.6, "archRise": 1.2 },
+    "labor": { "width": 2.8, "wallHeight": 2.15, "archRise": 0.6 }
+  },
+  "nodes": [
+    { "id": "P0", "position": [0, 0, 0], "kind": "end", "zone": "Socavón principal" },
+    { "id": "J1", "position": [110, 0.33, 2], "kind": "junction", "zone": "Socavón principal" },
+    { "id": "T1", "position": [114, 0.36, -52], "kind": "chamber", "size": [16, 6, 12], "zone": "Taller de mantenimiento" },
+    { "id": "R1", "position": [106, 0.35, 40], "kind": "refuge", "size": [5, 3.2, 6], "zone": "Refugio N0" },
+    { "id": "J2", "position": [210, 0.62, -4], "kind": "junction", "zone": "Galería principal N0" },
+    { "id": "C1", "position": [300, 0.88, -2], "kind": "chamber", "size": [14, 6.5, 11], "zone": "Zona de carguío N0" },
+    { "id": "J3", "position": [360, 1.05, 2], "kind": "junction", "zone": "Galería principal N0" },
+    { "id": "J4", "position": [430, 1.25, 0], "kind": "junction", "zone": "Galería principal N0" },
+    { "id": "V1", "position": [212, 0.64, -94], "kind": "junction", "zone": "Galería de veta Norte" },
+    { "id": "G1", "position": [140, 0.52, -122], "kind": "chamber", "size": [12, 4.6, 10], "zone": "Labor abandonada (CO acumulado)", "lit": false },
+    { "id": "V2", "position": [362, 1.06, -92], "kind": "junction", "zone": "Galería de veta Norte" },
+    { "id": "F2", "position": [440, 1.25, -98], "kind": "face", "zone": "Frente sin ventilación auxiliar" },
+    { "id": "F1", "position": [366, 1.07, 78], "kind": "face", "zone": "Frente de avance Sur" },
+    { "id": "L0", "position": [440, -24.0, 44], "kind": "junction", "zone": "Galería principal N-1" },
+    { "id": "L1", "position": [340, -24.3, 48], "kind": "junction", "zone": "Galería principal N-1" },
+    { "id": "H1", "position": [342, -24.2, 2], "kind": "chamber", "size": [12, 5.5, 12], "zone": "Labor caliente (agua termal)" },
+    { "id": "L2", "position": [240, -24.6, 44], "kind": "junction", "zone": "Galería principal N-1" },
+    { "id": "C2", "position": [236, -24.65, 92], "kind": "chamber", "size": [14, 6.5, 11], "zone": "Zona de carguío N-1" },
+    { "id": "F3", "position": [200, -24.8, 140], "kind": "face", "zone": "Frente de avance N-1" },
+    { "id": "L3", "position": [140, -24.9, 46], "kind": "junction", "zone": "Galería principal N-1" },
+    { "id": "R2", "position": [142, -24.9, 8], "kind": "refuge", "size": [5, 3.2, 6], "zone": "Refugio N-1" },
+    { "id": "G2", "position": [66, -25.1, 52], "kind": "chamber", "size": [13, 5, 11], "zone": "Labor antigua (incendio latente)", "lit": false }
+  ],
+  "segments": [
+    {
+      "id": "S01", "from": "P0", "to": "J1", "via": [[55, 0.16, -2]], "profile": "socavon-entibado", "zone": "Socavón principal",
+      "supports": [{ "from": 0, "to": 60, "support": "timber" }],
+      "infrastructure": { "rails": true, "pipes": true, "cables": true, "lampSpacing": 8 }
+    },
+    {
+      "id": "S02", "from": "J1", "to": "J2", "via": [[160, 0.48, 0]], "profile": "galeria-roca", "zone": "Galería principal N0",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "rails": true, "pipes": true, "duct": true, "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S03", "from": "J2", "to": "C1", "via": [[255, 0.75, -7]], "profile": "galeria-arcos", "zone": "Galería principal N0",
+      "supports": [{ "from": 0, "to": 200, "support": "steel-arch" }],
+      "infrastructure": { "rails": true, "pipes": true, "duct": true, "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S04", "from": "C1", "to": "J3", "profile": "galeria-shotcrete", "zone": "Galería principal N0",
+      "supports": [{ "from": 0, "to": 200, "support": "shotcrete" }],
+      "infrastructure": { "rails": true, "pipes": true, "duct": true, "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S05", "from": "J3", "to": "J4", "via": [[395, 1.15, 3]], "profile": "galeria-roca", "zone": "Galería principal N0",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "pipes": true, "duct": true, "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S06", "from": "J1", "to": "T1", "profile": "crucero", "zone": "Crucero al taller",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "cables": true, "lampSpacing": 9 }
+    },
+    {
+      "id": "S07", "from": "J1", "to": "R1", "via": [[108, 0.34, 20]], "profile": "crucero", "zone": "Crucero al refugio N0",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "cables": true, "lampSpacing": 9 }
+    },
+    {
+      "id": "S08", "from": "J2", "to": "V1", "via": [[214, 0.63, -50]], "profile": "crucero", "zone": "Crucero a la veta Norte",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S09", "from": "V1", "to": "G1", "via": [[200, 0.6, -110], [178, 0.57, -120]], "profile": "labor", "zone": "Acceso a la labor abandonada",
+      "supports": [{ "from": 0, "to": 200, "support": "timber" }],
+      "infrastructure": {}
+    },
+    {
+      "id": "S10", "from": "V1", "to": "V2", "via": [[290, 0.85, -89]], "profile": "veta", "zone": "Galería de veta Norte",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "cables": true, "lampSpacing": 12 }
+    },
+    {
+      "id": "S11", "from": "V2", "to": "J3", "via": [[364, 1.05, -45]], "profile": "crucero", "zone": "Crucero de la veta Norte",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S12", "from": "V2", "to": "F2", "profile": "veta", "zone": "Frente sin ventilación auxiliar",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "cables": true, "lampSpacing": 14 }
+    },
+    {
+      "id": "S13", "from": "J3", "to": "F1", "via": [[368, 1.06, 40]], "profile": "galeria-roca", "zone": "Frente de avance Sur",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "pipes": true, "duct": true, "lampSpacing": 9 }
+    },
+    {
+      "id": "S14", "from": "J4", "to": "L0",
+      "via": [[480, -3.84, 0], [525, -8.42, 2], [543, -10.43, 10], [549, -11.89, 23], [543, -13.35, 36], [525, -15.35, 44], [480, -19.93, 45]],
+      "profile": "rampa", "zone": "Rampa N0 - N-1",
+      "supports": [{ "from": 0, "to": 400, "support": "shotcrete" }],
+      "infrastructure": { "pipes": true, "cables": true, "lampSpacing": 12 }
+    },
+    {
+      "id": "S20", "from": "L0", "to": "L1", "via": [[390, -24.15, 47]], "profile": "galeria-shotcrete", "zone": "Galería principal N-1",
+      "supports": [{ "from": 0, "to": 200, "support": "shotcrete" }],
+      "infrastructure": { "pipes": true, "duct": true, "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S21", "from": "L1", "to": "L2", "via": [[290, -24.45, 42]], "profile": "galeria-arcos", "zone": "Galería principal N-1",
+      "supports": [{ "from": 0, "to": 200, "support": "steel-arch" }],
+      "infrastructure": { "pipes": true, "duct": true, "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S22", "from": "L2", "to": "L3", "via": [[190, -24.75, 48]], "profile": "galeria-roca", "zone": "Galería principal N-1",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "pipes": true, "cables": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S23", "from": "L1", "to": "H1", "via": [[341, -24.25, 26]], "profile": "crucero", "zone": "Crucero a la labor caliente",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "cables": true, "lampSpacing": 12 }
+    },
+    {
+      "id": "S24", "from": "L2", "to": "C2", "profile": "galeria-roca", "zone": "Crucero de carguío N-1",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "pipes": true, "duct": true, "lampSpacing": 10 }
+    },
+    {
+      "id": "S25", "from": "C2", "to": "F3", "via": [[220, -24.7, 118]], "profile": "galeria-roca", "zone": "Frente de avance N-1",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "pipes": true, "duct": true, "lampSpacing": 9 }
+    },
+    {
+      "id": "S26", "from": "L3", "to": "R2", "profile": "crucero", "zone": "Crucero al refugio N-1",
+      "supports": [{ "from": 0, "to": 200, "support": "bare" }],
+      "infrastructure": { "cables": true, "lampSpacing": 9 }
+    },
+    {
+      "id": "S27", "from": "L3", "to": "G2", "via": [[105, -25.0, 50]], "profile": "labor", "zone": "Acceso a la labor antigua",
+      "supports": [{ "from": 0, "to": 200, "support": "timber" }],
+      "infrastructure": {}
+    }
+  ],
+  "barriers": [
+    { "id": "tapon-g1", "segment": "S09", "at": 14, "radioLossDb": 10 },
+    { "id": "tapon-g2", "segment": "S27", "at": 18, "radioLossDb": 6 }
+  ],
+  "environment": {
+    "intake": { "node": "P0", "temperatureC": 11 },
+    "rockTemperatureC": 27,
+    "warmingLength": 220,
+    "backgroundCoPpm": 0.5,
+    "surfaceOffsetC": 2,
+    "sources": [
+      {
+        "id": "voladura-f1", "label": "Humos de voladura del frente Sur", "node": "F1", "category": "blast",
+        "coPpm": 700, "heatC": 7, "surfaceHeatC": 12, "length": 26, "smoke": 0.55,
+        "halfLifeMinutes": 7, "startedMinutesAgo": 5
+      },
+      {
+        "id": "voladura-f3", "label": "Humos de voladura del frente N-1", "node": "F3", "category": "blast",
+        "coPpm": 700, "heatC": 7, "surfaceHeatC": 12, "length": 26, "smoke": 0.55,
+        "halfLifeMinutes": 7, "startedMinutesAgo": 90
+      },
+      {
+        "id": "diesel-taller", "label": "Motores diésel en el taller", "node": "T1", "category": "diesel",
+        "coPpm": 58, "heatC": 3, "surfaceHeatC": 6, "length": 12, "plateau": 6, "fluctuation": 0.35
+      },
+      {
+        "id": "diesel-c1", "label": "Escape diésel en la zona de carguío N0", "node": "C1", "category": "diesel",
+        "coPpm": 40, "heatC": 5, "surfaceHeatC": 4, "length": 14, "fluctuation": 0.3
+      },
+      {
+        "id": "diesel-c2", "label": "Escape diésel en la zona de carguío N-1", "node": "C2", "category": "diesel",
+        "coPpm": 40, "heatC": 5, "surfaceHeatC": 4, "length": 14, "fluctuation": 0.3
+      },
+      {
+        "id": "labor-abandonada", "label": "CO acumulado en la labor abandonada", "node": "G1", "category": "old-workings",
+        "coPpm": 420, "heatC": 1, "length": 8, "plateau": 9
+      },
+      {
+        "id": "frente-sin-ventilacion", "label": "Frente sin ventilación auxiliar", "node": "F2", "category": "no-ventilation",
+        "coPpm": 120, "heatC": 8, "surfaceHeatC": 5, "length": 10, "plateau": 10
+      },
+      {
+        "id": "incendio-latente", "label": "Incendio latente en la labor antigua", "node": "G2", "category": "fire",
+        "coPpm": 950, "heatC": 12, "surfaceHeatC": 45, "length": 9, "plateau": 7, "smoke": 0.85, "fluctuation": 0.15
+      },
+      {
+        "id": "agua-termal", "label": "Afloramiento de agua termal", "node": "H1", "category": "heat",
+        "coPpm": 0, "heatC": 14, "surfaceHeatC": 62, "length": 10, "plateau": 7, "smoke": 0.45
+      }
+    ],
+    "shelters": [
+      { "node": "R1", "temperatureC": 18, "radius": 6 },
+      { "node": "R2", "temperatureC": 18, "radius": 6 }
+    ]
+  },
+  "network": {
+    "ssid": "MINA-IOT",
+    "model": {
+      "referenceLossDb": 40,
+      "pathLossExponent": 2,
+      "attenuationDbPerM": 0.1,
+      "bendLossDbPerRad": 6,
+      "cornerLossDb": 16
+    },
+    "accessPoints": [
+      { "id": "AP-01", "segment": "S01", "at": 14, "side": "right", "txPowerDbm": 23 },
+      { "id": "AP-02", "segment": "S02", "at": 10, "side": "left", "txPowerDbm": 23 },
+      { "id": "AP-03", "segment": "S07", "at": 30, "side": "right", "txPowerDbm": 20 },
+      { "id": "AP-04", "segment": "S03", "at": 55, "side": "right", "txPowerDbm": 23 },
+      { "id": "AP-05", "segment": "S05", "at": 40, "side": "left", "txPowerDbm": 23 },
+      { "id": "AP-12", "segment": "S08", "at": 52, "side": "right", "txPowerDbm": 20 },
+      { "id": "AP-06", "segment": "S10", "at": 110, "side": "left", "txPowerDbm": 23 },
+      { "id": "AP-07", "segment": "S13", "at": 22, "side": "right", "txPowerDbm": 23 },
+      { "id": "AP-08", "segment": "S20", "at": 10, "side": "right", "txPowerDbm": 23 },
+      { "id": "AP-09", "segment": "S21", "at": 50, "side": "left", "txPowerDbm": 23 },
+      { "id": "AP-10", "segment": "S24", "at": 36, "side": "right", "txPowerDbm": 23 },
+      { "id": "AP-11", "segment": "S26", "at": 30, "side": "left", "txPowerDbm": 20 }
+    ]
+  },
+  "signs": [
+    { "id": "ppe-entrada", "segment": "S01", "at": 5, "side": "left", "kind": "ppe" },
+    { "id": "locomotoras", "segment": "S01", "at": 22, "side": "right", "kind": "caution-rail" },
+    { "id": "dir-j1", "segment": "S01", "at": 100, "side": "left", "kind": "direction", "label": { "title": "TALLER", "lines": ["Crucero norte", "a la izquierda"], "arrow": "left" } },
+    { "id": "refugio-j1", "segment": "S01", "at": 102, "side": "right", "kind": "refuge" },
+    { "id": "salida-s02", "segment": "S02", "at": 14, "side": "right", "kind": "exit" },
+    { "id": "no-fumar", "segment": "S02", "at": 30, "side": "left", "kind": "no-smoking" },
+    { "id": "dir-j2", "segment": "S02", "at": 88, "side": "left", "kind": "direction", "label": { "title": "VETA NORTE", "lines": ["Crucero a la", "izquierda"], "arrow": "left" } },
+    { "id": "monitoreo", "segment": "S03", "at": 26, "side": "right", "kind": "monitoring" },
+    { "id": "dir-j3", "segment": "S04", "at": 50, "side": "right", "kind": "direction", "label": { "title": "FRENTE SUR", "lines": ["Voladuras:", "respetar horarios"], "arrow": "right" } },
+    { "id": "dir-rampa", "segment": "S05", "at": 58, "side": "right", "kind": "direction", "label": { "title": "NIVEL -1", "lines": ["Rampa 10 %", "al frente"], "arrow": "right" } },
+    { "id": "salida-s05", "segment": "S05", "at": 20, "side": "left", "kind": "exit" },
+    { "id": "gas-taller", "segment": "S06", "at": 36, "side": "right", "kind": "gas" },
+    { "id": "prohibido-g1", "segment": "S09", "at": 10, "side": "right", "kind": "no-entry" },
+    { "id": "gas-g1", "segment": "S09", "at": 10, "side": "left", "kind": "gas" },
+    { "id": "salida-s10", "segment": "S10", "at": 20, "side": "right", "kind": "exit" },
+    { "id": "gas-f2", "segment": "S12", "at": 30, "side": "left", "kind": "gas" },
+    { "id": "salida-s14", "segment": "S14", "at": 230, "side": "right", "kind": "exit" },
+    { "id": "rampa-precaucion", "segment": "S14", "at": 15, "side": "left", "kind": "caution-rail" },
+    { "id": "dir-l1", "segment": "S20", "at": 88, "side": "right", "kind": "direction", "label": { "title": "LABOR CALIENTE", "lines": ["Agua termal", "a la derecha"], "arrow": "right" } },
+    { "id": "calor-h1", "segment": "S23", "at": 22, "side": "left", "kind": "heat" },
+    { "id": "salida-s21", "segment": "S21", "at": 15, "side": "right", "kind": "exit" },
+    { "id": "dir-l3", "segment": "S22", "at": 90, "side": "left", "kind": "refuge" },
+    { "id": "prohibido-g2", "segment": "S27", "at": 12, "side": "right", "kind": "no-entry" },
+    { "id": "gas-g2", "segment": "S27", "at": 12, "side": "left", "kind": "gas" }
+  ]
+}

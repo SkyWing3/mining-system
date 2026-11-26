@@ -25,6 +25,8 @@ export interface GenerationState {
   readonly triangles?: number
   readonly workers?: number
   readonly error?: string
+  /** La zona alrededor del minero ya está generada: se lo puede controlar. */
+  readonly ready?: boolean
 }
 
 interface TwinState {
@@ -35,6 +37,8 @@ interface TwinState {
   headlamp: boolean
   walkSpeed: number
   showDiagnostics: boolean
+  /** Mapa de la mina con cobertura, cuartos de gas y antenas (tecla M). */
+  showMap: boolean
   panelsVisible: boolean
   pointerLocked: boolean
   /** El minero levanta la muñeca para mirar la manilla (Q). */
@@ -56,6 +60,7 @@ interface TwinState {
   toggleHeadlamp: () => void
   setWalkSpeed: (speed: number) => void
   toggleDiagnostics: () => void
+  toggleMap: () => void
   togglePanels: () => void
   setPointerLocked: (value: boolean) => void
   setCheckingBracelet: (value: boolean) => void
@@ -86,6 +91,7 @@ export const useTwin = create<TwinState>(set => ({
   headlamp: true,
   walkSpeed: 1.4,
   showDiagnostics: true,
+  showMap: true,
   panelsVisible: true,
   pointerLocked: false,
   checkingBracelet: false,
@@ -105,6 +111,7 @@ export const useTwin = create<TwinState>(set => ({
   toggleHeadlamp: () => set(state => ({ headlamp: !state.headlamp })),
   setWalkSpeed: walkSpeed => set({ walkSpeed }),
   toggleDiagnostics: () => set(state => ({ showDiagnostics: !state.showDiagnostics })),
+  toggleMap: () => set(state => ({ showMap: !state.showMap })),
   togglePanels: () => set(state => ({ panelsVisible: !state.panelsVisible })),
   setPointerLocked: pointerLocked => set({ pointerLocked }),
   setCheckingBracelet: checkingBracelet => set({ checkingBracelet }),

@@ -52,6 +52,8 @@ export class SimulatedCentral {
   readonly voices: CentralVoice[] = []
   readonly counters = { heartbeats: 0, telemetry: 0, rejected: 0 }
   lastTelemetry: Json | null = null
+  /** Última trama o subida recibida (`LastSeenAt` del dispositivo en la central real). */
+  lastSeenAt: number | null = null
   private readonly clock: MonotonicClock
   private readonly startEpochMs: number
   private nextMessageId = 1
@@ -100,6 +102,7 @@ export class SimulatedCentral {
       return [this.error('invalid', 'Trama inválida.')]
     }
     const now = this.serverTime()
+    this.lastSeenAt = now
     switch (frame.type) {
       case 'heartbeat': {
         this.counters.heartbeats += 1
@@ -132,6 +135,7 @@ export class SimulatedCentral {
 
   /** POST /api/device/voice. El gemelo no envía audio: se valida la duración declarada. */
   uploadVoice(clientMessageId: string, durationMs: number, recordedAt: string): { status: number; body: string } {
+    this.lastSeenAt = this.serverTime()
     const duplicate = this.voices.find(voice => voice.clientMessageId === clientMessageId)
     if (duplicate) return { status: 200, body: JSON.stringify({ voice: { id: duplicate.voiceId }, duplicate: true }) }
     if (durationMs < VOICE_MIN_MS || durationMs > VOICE_MAX_MS) return { status: 400, body: JSON.stringify({ message: 'Duración fuera de rango.' }) }

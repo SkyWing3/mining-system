@@ -5,12 +5,12 @@
 | Nivel | Herramienta | Qué cubre | Estado |
 | --- | --- | --- | --- |
 | Unitarias | Vitest | Generador: determinismo, sección en herradura, gálibo, piso caminable, costuras entre fragmentos, frente ciego, infraestructura. Caminante: colisión contra la galería generada. Ambiente por ubicación. Manilla: port de las pruebas del firmware e integración. | **Implementadas (F1, F2A)** |
-| E2E | Playwright (Chromium, ANGLE/D3D11, GPU real) | Render sin errores de consola, ausencia de solicitudes externas, cambio de modo de cámara, regeneración al cambiar el perfil. Minero con WASD y colisión, manilla, tramas y alarma en el frente. | **Implementadas (F1, F2A)** |
+| E2E | Playwright (Chromium, ANGLE sobre D3D11 o Metal, GPU real) | Render sin errores de consola, ausencia de solicitudes externas, cambio de modo de cámara, regeneración al cambiar el perfil. Minero con WASD y colisión, manilla, tramas y alarma en el frente. Cobertura Wi-Fi: cola sin señal, entrega al volver y falla de una antena. | **Implementadas (F1, F2A, F2B)** |
 | Visual | Playwright | 9 capturas por perfil (supervisión y 8 puntos de vista programados). | **Implementadas (F1)**; revisión humana pendiente |
 | Rendimiento | Playwright + diagnóstico interno | Recorrido fijo de 141 m a 1,6 m/s en primera persona con linterna, por perfil. Mide FPS, tiempo por fotograma, GPU, draw calls, triángulos, memoria y tirones. | **Implementado (F1)** |
 | Componentes | Vitest + Testing Library | Indicadores de estado de dispositivos y lecturas | F4–F6 |
 | Integración | Central real (MySQL en contenedor) + cliente de prueba | `CentralAdapter` | F6 |
-| Resiliencia | Servidores simulados | Desconexión, pérdida y desorden de mensajes | F6 |
+| Resiliencia | Vitest + manilla virtual | Sin cobertura, señal débil (retransmisiones y cortes), cambio de antena, presencia en la central | **Implementadas (F2B)**; con la central real, F6 |
 | Regresión del proyecto existente | `./scripts/test.sh` | Después de cualquier cambio en `backend/`, `scripts/` o la configuración raíz | La Fase 1 no modificó el proyecto existente, salvo una línea del `.gitignore` raíz |
 
 Reglas:
@@ -31,6 +31,72 @@ TWIN_UNCAPPED=1 npm run bench                 # sin vsync: margen máximo (ver n
 TWIN_PROFILE=1 npx playwright test --project=bench tests/bench/profile.spec.ts   # perfil de CPU
 node scripts/generator-report.mjs config/galeria-validacion.json 0.2 1          # informe del generador
 ```
+
+## Resultados — Fase 2B, primera parte (2026-11-26)
+
+Equipo: Apple M4 (CPU y GPU de 10 núcleos, Metal 4) con 16 GB, macOS, Node 26.8, Chromium 159 de Playwright 1.65 con ANGLE sobre Metal, ventana de 1600×900.
+
+| Prueba | Resultado |
+| --- | --- |
+| `tsc -p tsconfig.json` | 0 errores |
+| `oxlint` | 0 errores; los mismos 2 avisos intencionales (`useGallery.ts`, `useMaterials.ts`) |
+| `vitest run` | **99 de 99 aprobadas** (11 archivos): 14 del generador, 2 del caminante, 18 del ambiente y la cobertura, y 65 de la manilla |
+| `vite build` | Correcto; el bundle pesa 1,84 MB (598 kB gzip) |
+| E2E | **4 de 4 aprobadas** |
+
+Pruebas nuevas:
+
+- **`packages/device-sim/test/wifi.test.ts`:**
+  - la estación se asocia a la antena más fuerte y tarda en hacerlo; no se asocia bajo −85 dBm;
+  - se queda con su antena y cambia solo tras 6 s sin balizas;
+  - la pérdida de segmentos crece al debilitarse la señal;
+  - sin señal, la `CO_ALARM` queda en la cola, las alertas locales siguen y la alarma llega al volver la cobertura con su `sentAt` original;
+  - la central marca la manilla fuera de línea a los 90 s;
+  - con −86 dBm las tramas llegan tarde y el enlace se corta y se rehace;
+  - con buena señal se comporta como con cobertura total;
+  - la voz espera la cobertura.
+- **`packages/mine-environment/test/mine.test.ts`:**
+  - niveles de cada cuarto de gas y de calor con los umbrales del firmware;
+  - aire normal en galerías y refugios;
+  - la zona no se confunde entre niveles;
+  - buena señal en las galerías principales y sin señal en la labor abandonada;
+  - la señal no atraviesa la roca entre niveles;
+  - una esquina cuesta más que seguir recto;
+  - una antena fuera de servicio deja un hueco.
+- **`packages/mine-generator/test`:**
+  - la consulta por celdas coincide con la búsqueda exhaustiva en más de 500 cajas;
+  - la mina mide más de 1,8 km en dos niveles;
+  - antenas y cadenas ubicadas; labores abandonadas sin luminarias; letreros de dirección con texto.
+- **`tests/e2e/coverage.spec.ts`** (perfil Medio):
+  - en la veta, señal buena con AP-06;
+  - en el fondo de la labor abandonada: peligro, Wi-Fi desconectado, enlace caído, 1 mensaje en la cola y la central todavía con la manilla en línea;
+  - de vuelta en la veta: cola vacía y `CO_ALARM` recibida con más de 5 s de espera, visible como «en cola» en el panel;
+  - la falla de AP-06 desde el mapa deja sin señal el frente sin ventilación y al restablecerla se reconecta;
+  - sin errores de consola.
+- **`smoke.spec.ts` y `miner.spec.ts`:** adaptados a la mina simulada (frente Sur por `S13`). La regeneración al cambiar el perfil usa la galería de validación.
+
+### Generación de la mina simulada (en la aplicación, 8 workers)
+
+| Perfil | Hasta poder controlar al minero | Mina completa | Fragmentos | Triángulos de roca |
+| --- | --- | --- | --- | --- |
+| Medio | ~3,3 s desde abrir la página (55 fragmentos) | 8,2–10,4 s | 1 303 | 1 085 288 |
+| Alto | — | 13,8 s | 1 303 | 1 726 788 |
+
+En un hilo de Node, perfil Bajo: 552 fragmentos con superficie, 545 456 triángulos, 17,4 s (`scripts/generator-report.mjs`).
+
+### Primera persona en la mina simulada (con vsync, 1600×900)
+
+Medido con el diagnóstico interno tras 4 a 7 s en cada punto. El GPU informado por el *timer query* bajo Metal no es confiable (da más de 16 ms con 60 FPS), así que se registran FPS y p99.
+
+| Punto | Medio antes del recorte | Medio | Alto |
+| --- | --- | --- | --- |
+| Galería con arcos (S03) | 60 FPS · 3,20 M triángulos | 60,1 FPS · p99 19,1 ms · 168 draw calls · 0,54 M | 59,8 FPS · 0,59 M |
+| Rampa (S14) | 60 FPS · 2,36 M | 59,8 FPS · 0,30 M | 56,5 FPS · 0,36 M |
+| Zona de carguío N0 | 45,1 FPS · 3,35 M | 56,6 FPS · 0,58 M | **38,8 FPS** · 0,66 M |
+| Incendio latente (humo) | 60 FPS · 1,59 M | 60,2 FPS · 0,11 M | 60,1 FPS · 0,14 M |
+| Labor caliente (con luminarias y vapor) | 50,9 FPS · 3,11 M (sin luminarias) | 60,0 FPS · p99 18,4 ms · 0,40 M | **40,2 FPS** · 0,43 M |
+
+En Alto, las caídas en las cámaras amplias se deben al relleno de píxeles (oclusión ambiental media, DPR 1,5 y sombra de 2048), no a la geometría: siguen con el recorte activo y con menos de 0,7 M de triángulos.
 
 ## Resultados — Fase 2A (2026-11-23)
 

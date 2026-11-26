@@ -37,9 +37,15 @@ export interface EnvironmentReading {
   readonly ambientC: number
   /** Temperatura de las superficies cercanas (lo que mide el termómetro infrarrojo). */
   readonly objectC: number
+  /** Humo o polvo visible en el lugar (0..1); el CO por sí solo es invisible. */
+  readonly smoke: number
+  /** Vapor de agua visible (afloramientos termales), 0..1. */
+  readonly steam: number
   readonly location: Location
   readonly sources: readonly SourceContribution[]
 }
+
+export { RadioCoverage, type AccessPointSignal, type RadioReading } from './radio.ts'
 
 interface Edge { readonly to: number; readonly length: number }
 
@@ -120,17 +126,24 @@ export class MineEnvironment {
     let ambient = spec.rockTemperatureC - (spec.rockTemperatureC - spec.intake.temperatureC) * Math.exp(-intakeDistance / spec.warmingLength)
     let surface = spec.surfaceOffsetC
     let co = spec.backgroundCoPpm
+    let smoke = 0
+    let steam = 0
     const sources: SourceContribution[] = []
     for (const source of spec.sources) {
       const distance = this.distanceTo(source.node, location)
-      const falloff = Math.exp(-distance / source.length)
+      // En un recinto confinado el aire está igual de contaminado hasta `plateau`.
+      const beyond = Math.max(0, distance - (source.plateau ?? 0))
+      const falloff = Math.exp(-beyond / source.length)
       const gas = this.temporalFactor(source, timeSeconds, 1)
       // El calor de la roca recién volada se disipa más despacio que los humos.
       const heat = this.temporalFactor(source, timeSeconds, 3)
       const contribution = source.coPpm * gas * falloff
       co += contribution
       ambient += (source.heatC ?? 0) * heat * falloff
-      surface += (source.surfaceHeatC ?? 0) * heat * Math.exp(-distance / (source.length * 0.5))
+      surface += (source.surfaceHeatC ?? 0) * heat * Math.exp(-beyond / (source.length * 0.5))
+      // En una fuente de calor lo visible es vapor de agua; en las demás, humo o polvo.
+      if (source.smoke && source.category === 'heat') steam = Math.max(steam, source.smoke * falloff)
+      else if (source.smoke) smoke = Math.max(smoke, source.smoke * gas * falloff)
       sources.push({ id: source.id, label: source.label, coPpm: contribution, strengthPpm: source.coPpm * gas, distance })
     }
     for (const shelter of spec.shelters) {
@@ -139,8 +152,10 @@ export class MineEnvironment {
       const weight = Math.exp(-((distance / shelter.radius) ** 2))
       ambient += (shelter.temperatureC - ambient) * weight
       co *= 1 - weight * 0.95
+      smoke *= 1 - weight
+      steam *= 1 - weight
     }
-    return { coPpm: co, ambientC: ambient, objectC: ambient + surface, location, sources }
+    return { coPpm: co, ambientC: ambient, objectC: ambient + surface, smoke, steam, location, sources }
   }
 
   /** Distancia por las galerías desde un punto ubicado hasta un nodo. */
@@ -169,6 +184,8 @@ export class MineEnvironment {
     for (const node of this.compiled.nodes) {
       const radius = nodeRadius(node)
       if (radius === 0) continue
+      // Otro nivel: una cámara bajo la galería no es la zona del minero.
+      if (Math.abs(point.y - node.position[1]) > (node.size?.[1] ?? 4) + 3) continue
       const distance = Math.hypot(point.x - node.position[0], point.z - node.position[2])
       if (distance < radius && distance < best) {
         best = distance

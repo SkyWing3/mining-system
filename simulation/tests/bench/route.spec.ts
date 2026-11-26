@@ -9,7 +9,7 @@ const results: Record<string, unknown> = {}
 
 for (const quality of qualities) {
   test(`recorrido de benchmark en perfil ${quality}`, async ({ page, browserName }) => {
-    await openTwin(page, quality)
+    await openTwin(page, quality, 'validacion')
     const generation = await getState<{ milliseconds: number; triangles: number; workers: number }>(page, 'generation')
     const viewport = page.viewportSize()
     const gpu = await page.evaluate(() => {

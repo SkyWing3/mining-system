@@ -1,7 +1,8 @@
 import { defineConfig } from '@playwright/test'
 
 // Las pruebas visuales y de rendimiento necesitan GPU: Chromium usa ANGLE sobre D3D11
-// en Windows. Con TWIN_SOFTWARE_GL=1 se fuerza SwiftShader (solo pruebas funcionales).
+// en Windows y sobre Metal en macOS. Con TWIN_SOFTWARE_GL=1 se fuerza SwiftShader (solo
+// pruebas funcionales).
 const software = process.env.TWIN_SOFTWARE_GL === '1'
 // Por defecto se respeta la sincronía vertical (lo que ve un operador). TWIN_UNCAPPED=1 la
 // desactiva para medir el margen máximo; en ese modo la cola de presentación de Chrome
@@ -9,7 +10,7 @@ const software = process.env.TWIN_SOFTWARE_GL === '1'
 const uncapped = process.env.TWIN_UNCAPPED === '1'
 const gpuArgs = software
   ? ['--use-angle=swiftshader', '--enable-unsafe-swiftshader']
-  : ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist', ...(uncapped ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : [])]
+  : [`--use-angle=${process.platform === 'darwin' ? 'metal' : 'd3d11'}`, '--enable-gpu', '--ignore-gpu-blocklist', ...(uncapped ? ['--disable-gpu-vsync', '--disable-frame-rate-limit'] : [])]
 
 export default defineConfig({
   testDir: './tests',

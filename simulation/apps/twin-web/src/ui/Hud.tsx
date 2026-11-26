@@ -1,10 +1,11 @@
 // Interfaz sobre la vista 3D: identidad, controles de cámara y calidad, minero
 // controlable con su manilla simulada, diagnóstico de rendimiento y ayudas de navegación.
 import { useEffect, useState, type ReactNode } from 'react'
-import { Activity, Eye, Gauge, HardHat, Layers, Lightbulb, LightbulbOff, Maximize2, Minimize2, Mountain, Scissors, ScanEye, Volume2, VolumeX, Watch } from 'lucide-react'
+import { Activity, Eye, Gauge, HardHat, Layers, Lightbulb, LightbulbOff, Map as MapIcon, Maximize2, Minimize2, Mountain, Scissors, ScanEye, Volume2, VolumeX, Watch } from 'lucide-react'
 import { QUALITY_PROFILES, type QualityLevel } from '@twin/graphics-engine'
 import { isMinerMode, useTwin } from '../state/store.ts'
 import { BraceletPanel, CentralPanel } from './DevicePanels.tsx'
+import { MineMap } from './MineMap.tsx'
 
 function useClock(): string {
   const [now, setNow] = useState(() => new Date())
@@ -79,11 +80,14 @@ export function Hud({ layoutName }: { layoutName: string }) {
   const clock = useClock()
   const minerMode = isMinerMode(state.cameraMode)
   const generating = state.generation.status === 'running'
+  // El minero se puede controlar en cuanto su zona está generada; el resto sigue en segundo plano.
+  const playable = state.generation.status === 'done' || (generating && state.generation.ready === true)
 
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if ((event.target as HTMLElement)?.closest?.('input, select, textarea')) return
       if (event.code === 'KeyH') useTwin.getState().togglePanels()
+      if (event.code === 'KeyM' && !event.repeat) useTwin.getState().toggleMap()
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
@@ -116,8 +120,9 @@ export function Hud({ layoutName }: { layoutName: string }) {
         {state.panelsVisible ? <div className="max-h-full w-[21rem] overflow-y-auto"><BraceletPanel /></div> : <div />}
         {state.panelsVisible ? (
           <div className="flex max-h-full w-[22rem] flex-col items-end gap-3 overflow-y-auto">
-            {state.showDiagnostics ? <div className="pointer-events-auto"><Diagnostics /></div> : null}
+            {state.showMap ? <div className="w-full"><MineMap /></div> : null}
             <div className="w-full"><CentralPanel /></div>
+            {state.showDiagnostics ? <div className="pointer-events-auto"><Diagnostics /></div> : null}
           </div>
         ) : null}
       </div>
@@ -127,7 +132,7 @@ export function Hud({ layoutName }: { layoutName: string }) {
       ) : null}
       {generating ? (
         <div data-testid="generation-progress" className="mx-auto mb-3 w-80 rounded-md border border-ink-700 bg-ink-900/90 px-4 py-2 text-xs text-ink-300">
-          Generando galería… {state.generation.done}/{state.generation.total} fragmentos
+          {state.generation.ready ? 'Completando la mina por zonas (ya puedes recorrerla)…' : 'Generando la zona del minero…'} {state.generation.done}/{state.generation.total} fragmentos
           <div className="mt-2 h-1 overflow-hidden rounded bg-ink-700"><div className="h-full bg-sand-300" style={{ width: `${(state.generation.done / Math.max(state.generation.total, 1)) * 100}%` }} /></div>
         </div>
       ) : null}
@@ -136,7 +141,7 @@ export function Hud({ layoutName }: { layoutName: string }) {
         <>
           {state.cameraMode === 'first-person' ? <div className="absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink-100/70" /> : null}
           <div className="absolute bottom-20 left-1/2 -translate-x-1/2 rounded bg-ink-950/70 px-3 py-1 text-xs whitespace-nowrap text-ink-300">
-            WASD caminar · Shift correr · Ratón mirar · Rueda distancia · V vista · Q mirar la manilla · ↑ ↓ Enter pulsadores · F linterna · Esc pausa
+            WASD caminar · Shift correr · Ratón mirar · Rueda distancia · V vista · Q mirar la manilla · ↑ ↓ Enter pulsadores · F linterna · M mapa · Esc pausa
           </div>
         </>
       ) : null}
@@ -151,7 +156,7 @@ export function Hud({ layoutName }: { layoutName: string }) {
         <footer className="pointer-events-auto flex flex-wrap items-center justify-between gap-3 border-t border-ink-800 bg-ink-950/85 px-4 py-2 backdrop-blur">
           <div className="flex items-center gap-2">
             <Button label="Vista de supervisión (orbital)" testId="mode-orbit" active={!minerMode} onClick={() => state.setCameraMode('orbit')}><Eye size={16} />Supervisión</Button>
-            <Button label="Controlar al minero (WASD)" testId="mode-miner" active={minerMode} disabled={state.generation.status !== 'done'} onClick={enterMiner}><HardHat size={16} />Minero</Button>
+            <Button label="Controlar al minero (WASD)" testId="mode-miner" active={minerMode} disabled={!playable} onClick={enterMiner}><HardHat size={16} />Minero</Button>
             {!minerMode ? (
               <Button label="Cortar la bóveda para ver el interior" active={state.roofCut} onClick={() => state.setRoofCut(!state.roofCut)}><Scissors size={16} />Corte de bóveda</Button>
             ) : (
@@ -185,6 +190,7 @@ export function Hud({ layoutName }: { layoutName: string }) {
                 </button>
               ))}
             </div>
+            <Button label="Mapa de la mina (M)" testId="toggle-map" active={state.showMap} onClick={state.toggleMap}><MapIcon size={16} /></Button>
             <Button label="Mostrar u ocultar el diagnóstico" active={state.showDiagnostics} onClick={state.toggleDiagnostics}><Activity size={16} /></Button>
             <Button label="Ocultar paneles (H)" onClick={state.togglePanels}><Maximize2 size={16} /></Button>
           </div>

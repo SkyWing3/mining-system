@@ -17,7 +17,7 @@ const qualities = (process.env.TWIN_QUALITIES ?? 'low,medium,high,ultra').split(
 
 for (const quality of qualities) {
   test(`capturas en perfil ${quality}`, async ({ page }) => {
-    await openTwin(page, quality)
+    await openTwin(page, quality, 'validacion')
     await showOverview(page)
     await page.screenshot({ path: `tests/output/screenshots/${quality}/00-supervision.png` })
     for (const { name, view } of VIEWPOINTS) {

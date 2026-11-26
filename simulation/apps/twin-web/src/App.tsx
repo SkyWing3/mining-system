@@ -1,12 +1,9 @@
 import { Canvas } from '@react-three/fiber'
-import type { GalleryLayout } from '@twin/shared-types'
 import { QUALITY_PROFILES } from '@twin/graphics-engine'
-import layoutJson from '../../../config/galeria-validacion.json'
+import { layout, layoutTitle } from './layout.ts'
 import { GalleryScene } from './scene/GalleryScene.tsx'
 import { useTwin } from './state/store.ts'
 import { Hud } from './ui/Hud.tsx'
-
-const layout = layoutJson as unknown as GalleryLayout
 
 export default function App() {
   const quality = useTwin(state => state.quality)
@@ -18,12 +15,12 @@ export default function App() {
         dpr={[1, profile.maxDpr]}
         shadows
         gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
-        camera={{ fov: 68, near: 0.05, far: 900, position: [40, 80, 120] }}
+        camera={{ fov: 68, near: 0.05, far: 1400, position: [40, 80, 120] }}
         data-testid="twin-canvas"
       >
         <GalleryScene layout={layout} profile={profile} />
       </Canvas>
-      <Hud layoutName="Galería de validación" />
+      <Hud layoutName={layoutTitle} />
     </div>
   )
 }

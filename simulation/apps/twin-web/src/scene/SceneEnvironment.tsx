@@ -6,9 +6,15 @@ import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import type { QualityProfile } from '@twin/graphics-engine'
+import { useDevice } from '../device/runtime.ts'
 import { useTwin } from '../state/store.ts'
 
 const ROOF_CUT_HEIGHT = 2.55
+/** Niebla subterránea con aire limpio y con humo denso (incendio, humos de voladura) o vapor. */
+const CLEAN_FOG = { color: new THREE.Color(0x0a0a0b), density: 0.024 }
+const HAZE_DENSITY = 0.095
+const SMOKE_COLOR = new THREE.Color(0x24211e)
+const STEAM_COLOR = new THREE.Color(0x3a3d40)
 
 /** Escena simple para el mapa de entorno subterráneo: roca oscura y luminarias lineales. */
 function mineEnvironmentScene(): THREE.Scene {
@@ -47,9 +53,26 @@ export function SceneEnvironment({ profile }: { profile: QualityProfile }) {
   // que alternar entre 0 y 1 plano recompilaría todos los sombreadores. Sin corte, se aleja.
   const clipPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, -1, 0), ROOF_CUT_HEIGHT), [])
 
+  // Humo o vapor visible donde el modelo ambiental lo indica (el CO por sí solo es invisible).
+  const haze = useMemo(() => ({ amount: 0, color: new THREE.Color(), tint: new THREE.Color() }), [])
+  useFrame((_, delta) => {
+    if (orbit || !(scene.fog instanceof THREE.FogExp2)) return
+    const reading = useDevice.getState().reading
+    const smoke = reading?.smoke ?? 0, steam = reading?.steam ?? 0
+    const target = Math.max(smoke, steam)
+    const blend = 1 - Math.exp(-delta * 1.5)
+    haze.amount += (target - haze.amount) * blend
+    if (target > 0.01) haze.tint.lerpColors(SMOKE_COLOR, STEAM_COLOR, steam / (smoke + steam))
+    haze.color.lerp(haze.tint, blend)
+    const fog = scene.fog
+    fog.density = THREE.MathUtils.lerp(CLEAN_FOG.density, HAZE_DENSITY, haze.amount)
+    fog.color.lerpColors(CLEAN_FOG.color, haze.color, haze.amount)
+    if (scene.background instanceof THREE.Color) scene.background.copy(fog.color)
+  })
+
   useEffect(() => {
     scene.background = new THREE.Color(orbit ? 0x16181b : 0x050506)
-    scene.fog = orbit ? new THREE.FogExp2(0x16181b, 0.0016) : new THREE.FogExp2(0x0a0a0b, 0.024)
+    scene.fog = orbit ? new THREE.FogExp2(0x16181b, 0.0012) : new THREE.FogExp2(CLEAN_FOG.color.getHex(), CLEAN_FOG.density)
     scene.environment = environment
     scene.environmentIntensity = orbit ? 0.45 : 1
     clipPlane.constant = orbit && roofCut ? ROOF_CUT_HEIGHT : 1e6

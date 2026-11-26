@@ -2,7 +2,9 @@
 // lecturas frente al modelo ambiental, la central simulada y el registro de tramas.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Bell, CornerDownLeft, Flame, Radio, RadioTower, Smartphone, Vibrate, Wind, Zap } from 'lucide-react'
-import { deviceFrames, NOTICE_OPTIONS, oledCanvas, useDevice, type NoticeCode } from '../device/runtime.ts'
+import { parseIso, type WifiStatus } from '@twin/device-sim'
+import { BLAST_SOURCES, deviceFrames, NOTICE_OPTIONS, oledCanvas, radio, useDevice, type NoticeCode } from '../device/runtime.ts'
+import { BAND_LABEL, signalBand } from './signal.ts'
 
 const LEVEL_TEXT = { normal: 'Normal', caution: 'Precaución', danger: 'Peligro' } as const
 const LEVEL_CLASS = { normal: 'text-state-ok', caution: 'text-state-warn', danger: 'text-state-alarm' } as const
@@ -12,6 +14,34 @@ const LED_CLASS: Record<string, string> = {
   red: 'bg-[#ff3b30] shadow-[0_0_12px_#ff3b30]',
   blue: 'bg-[#3b82ff] shadow-[0_0_10px_#3b82ff]',
   off: 'bg-ink-700',
+}
+
+/** Barras de señal como las de un teléfono: 4 con buena señal, ninguna sin señal. */
+export function SignalBars({ rssi }: { rssi: number | null }) {
+  const bars = rssi === null ? 0 : rssi >= -67 ? 4 : rssi >= -75 ? 3 : rssi >= -82 ? 2 : rssi >= -88 ? 1 : 0
+  const band = signalBand(rssi)
+  const color = band === 'good' ? 'bg-state-ok' : band === 'fair' ? 'bg-state-warn' : 'bg-state-alarm'
+  return (
+    <span className="inline-flex items-end gap-px" aria-label={`${bars} de 4 barras`}>
+      {[0, 1, 2, 3].map(index => <span key={index} className={`w-[3px] rounded-[1px] ${index < bars ? color : 'bg-ink-700'}`} style={{ height: 4 + index * 3 }} />)}
+    </span>
+  )
+}
+
+/** Estado de la radio Wi-Fi en palabras. */
+function wifiText(wifi: WifiStatus | null): string {
+  if (!wifi) return 'Cobertura total'
+  // Asociada pero sin balizas: la estación todavía no se dio por desconectada.
+  if (wifi.state === 'connected') return wifi.rssi === null ? `${wifi.accessPoint} · sin balizas` : `${wifi.accessPoint} · ${Math.round(wifi.rssi)} dBm`
+  if (wifi.state === 'connecting') return `Asociándose a ${wifi.accessPoint}`
+  return wifi.best ? `Buscando red · ${wifi.best.id} ${Math.round(wifi.best.rssi)} dBm` : 'Sin señal'
+}
+
+/** «hace 5 s», «hace 1 min 20 s». */
+function ago(ms: number): string {
+  const seconds = Math.max(0, Math.round(ms / 1000))
+  if (seconds < 60) return `hace ${seconds} s`
+  return `hace ${Math.floor(seconds / 60)} min ${seconds % 60} s`
 }
 
 function format(value: number | null | undefined, digits: number, unit: string): string {
@@ -112,6 +142,15 @@ export function BraceletPanel() {
         <span className="text-ink-400" title="Ubicación del minero en el gemelo. La manilla real no conoce su posición: la central le asigna una zona.">Ubicación (gemelo)</span>
         <span data-testid="miner-zone" className="text-ink-100">{reading?.location.zone ?? '—'}</span>
       </div>
+      {radio ? (
+        <div className="mt-1 flex items-center justify-between gap-2">
+          <span className="whitespace-nowrap text-ink-400" title="Intensidad Wi-Fi que recibe la manilla según el modelo de cobertura del gemelo. El firmware no la muestra en la OLED.">Wi-Fi (gemelo)</span>
+          <span data-testid="wifi-status" data-state={device.wifi?.state ?? 'none'} className="flex items-center gap-1.5 text-ink-100">
+            <SignalBars rssi={device.wifi?.state === 'connected' ? device.wifi.rssi : null} />
+            {wifiText(device.wifi)}
+          </span>
+        </div>
+      ) : null}
       <p className="mt-2 text-[10px] leading-snug text-ink-400">
         Umbrales del firmware: CO 35/200 ppm, aire 32/38 °C, superficie 60/90 °C, con 3 muestras de confirmación e histéresis. Escenario didáctico, no apto para decisiones de seguridad.
       </p>
@@ -136,27 +175,70 @@ function FrameLog() {
       {frames.map(frame => (
         <li key={frame.seq} title={frame.text} className="truncate">
           <span className="text-ink-400">{elapsed(frame.atMs)}</span>{' '}
-          <span className={frame.direction === 'tx' ? 'text-sand-300' : 'text-state-ok'}>{frame.direction === 'tx' ? '↑' : '↓'}</span>{' '}
-          <span className="text-ink-300">{frame.text}</span>
+          <span className={frame.direction === 'tx' ? 'text-sand-300' : frame.direction === 'rx' ? 'text-state-ok' : 'text-ink-400'}>{frame.direction === 'tx' ? '↑' : frame.direction === 'rx' ? '↓' : '•'}</span>{' '}
+          <span className={frame.direction === 'event' ? 'text-ink-100' : 'text-ink-300'}>{frame.text}</span>
         </li>
       ))}
     </ol>
   )
 }
 
+/** Mensajes que registró la central: cuánto esperaron en la cola de la manilla. */
+function RecentMessages() {
+  const messages = useDevice(state => state.recentMessages)
+  if (messages.length === 0) return null
+  return (
+    <>
+      <h3 className="mt-3 mb-1 text-[10px] tracking-wider text-ink-400 uppercase">Mensajes recibidos por la central</h3>
+      <ol data-testid="central-messages" className="space-y-0.5 font-mono text-[10px]">
+        {messages.slice().reverse().map(message => {
+          const sentAt = parseIso(message.sentAt)
+          const waited = sentAt === null ? 0 : message.receivedAt - sentAt
+          return (
+            <li key={message.messageId} className="flex justify-between gap-2" title={`Enviado ${message.sentAt}`}>
+              <span className="text-ink-100">{message.code}</span>
+              <span className={waited > 5000 ? 'text-state-warn' : 'text-ink-400'}>{waited > 5000 ? `${Math.round(waited / 1000)} s en cola` : 'en vivo'}</span>
+            </li>
+          )
+        })}
+      </ol>
+    </>
+  )
+}
+
 export function CentralPanel() {
   const device = useDevice()
   const [notice, setNotice] = useState<NoticeCode>('EVACUATE')
+  const wifiBand = device.wifi ? signalBand(device.wifi.state === 'connected' ? device.wifi.rssi : null) : 'good'
+  const sinceLast = device.central.lastSeenAt === null ? null : device.central.serverTime - device.central.lastSeenAt
   return (
     <Panel title="Central simulada" icon={<RadioTower size={14} />} testId="central-panel" badge={<SimBadge />}>
+      {radio ? (
+        <div className="flex items-center justify-between">
+          <span className="text-ink-400" title="Red Wi-Fi subterránea: la señal recorre las galerías y no atraviesa la roca">Wi-Fi ({radio.network.ssid})</span>
+          <span data-testid="wifi-band" data-band={wifiBand} className={`flex items-center gap-1.5 ${wifiBand === 'good' ? 'text-state-ok' : wifiBand === 'fair' || device.wifi?.state === 'connecting' ? 'text-state-warn' : 'text-state-alarm'}`}>
+            <SignalBars rssi={device.wifi?.state === 'connected' ? device.wifi.rssi : null} />
+            {device.wifi?.state === 'connecting' ? 'Asociando' : BAND_LABEL[wifiBand]}
+            {device.wifi?.state === 'connected' && device.wifi.segmentLoss > 0.01 ? <span className="text-ink-400">({Math.round(device.wifi.segmentLoss * 100)} % pérdida)</span> : null}
+          </span>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between">
         <span className="text-ink-400">Enlace WebSocket</span>
         <span data-testid="link-status" className={device.link.connected ? 'text-state-ok' : 'text-state-warn'}>{device.link.connected ? 'Conectada' : 'Sin enlace'}</span>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-ink-400">Cola en la manilla</span>
-        <span className="font-mono text-ink-100 tabular-nums">{device.pending.messages} msg · {device.pending.voices} voz</span>
+        <span className="text-ink-400" title="Como la central real: la manilla figura en línea si envió algo en los últimos 90 s (PresenceWindowSeconds)">La central ve la manilla</span>
+        <span data-testid="central-presence" data-online={device.central.deviceOnline} className={device.central.deviceOnline ? 'text-state-ok' : 'text-state-alarm'}>
+          {device.central.deviceOnline ? 'En línea' : 'Fuera de línea'}
+          {sinceLast !== null ? <span className="text-ink-400"> · última trama {ago(sinceLast)}</span> : null}
+        </span>
       </div>
+      <div className="flex items-center justify-between">
+        <span className="text-ink-400">Cola en la manilla</span>
+        <span data-testid="bracelet-queue" className={`font-mono tabular-nums ${device.pending.messages > 0 ? 'text-state-warn' : 'text-ink-100'}`}>{device.pending.messages} msg · {device.pending.voices} voz</span>
+      </div>
+      <RecentMessages />
       <div className="mt-2 flex flex-wrap gap-1.5">
         <SmallButton label="Cortar o restablecer el enlace con la central simulada" active={!device.centralOnline} testId="toggle-central" onClick={() => device.setCentralOnline(!device.centralOnline)}><Radio size={12} />{device.centralOnline ? 'Cortar enlace' : 'Restablecer'}</SmallButton>
         <select aria-label="Aviso de la central" value={notice} onChange={event => setNotice(event.target.value as NoticeCode)} className="h-7 rounded border border-ink-700 bg-ink-850 px-1 text-[11px] text-ink-100">
@@ -168,7 +250,9 @@ export function CentralPanel() {
       <FrameLog />
       <h3 className="mt-3 mb-1 text-[10px] tracking-wider text-ink-400 uppercase">Escenario</h3>
       <div className="flex flex-wrap gap-1.5">
-        <SmallButton label="Nueva voladura en el frente F1: humos de CO que se disipan con la ventilación" testId="scenario-blast" onClick={device.blast}><Zap size={12} />Voladura en F1</SmallButton>
+        {BLAST_SOURCES.map(source => (
+          <SmallButton key={source.id} label={`Nueva voladura: ${source.label.toLowerCase()} (CO que se disipa con la ventilación)`} testId={`scenario-blast-${source.node}`} onClick={() => device.blast(source.id)}><Zap size={12} />Voladura en {source.node}</SmallButton>
+        ))}
         <SmallButton label="Como «simulate gas» de la consola: CO de 260 ppm durante 25 s" onClick={device.spikeGas}><Wind size={12} />Pico de gas</SmallButton>
         <SmallButton label="Como «simulate heat» de la consola: 41 °C durante 25 s" onClick={device.spikeHeat}><Flame size={12} />Pico de calor</SmallButton>
         <SmallButton label="Con el SEN0564 sin calibrar la manilla solo informa voltios y no evalúa el CO" active={!device.calibrated} onClick={() => device.setCalibrated(!device.calibrated)}>{device.calibrated ? 'CO calibrado' : 'CO sin calibrar'}</SmallButton>

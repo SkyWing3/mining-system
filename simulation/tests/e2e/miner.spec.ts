@@ -37,7 +37,7 @@ test('el minero camina con WASD sin atravesar la roca y la manilla transmite seg
   expect(Math.hypot(walked.x - start.x, walked.z - start.z)).toBeGreaterThan(2.5)
   expect(Math.abs(walked.y - start.y)).toBeLessThan(0.5)
 
-  // Caminar contra el hastial durante 3 s no lo atraviesa (galería de 3 m de ancho).
+  // Caminar contra el hastial durante 3 s no lo atraviesa (socavón de 3 m de ancho).
   await page.keyboard.down('a')
   await page.waitForTimeout(3000)
   await page.keyboard.up('a')
@@ -71,11 +71,11 @@ test('el minero camina con WASD sin atravesar la roca y la manilla transmite seg
   await page.keyboard.press('Enter')
 
   // Frente de avance recién volado: la manilla pasa a peligro y envía CO_ALARM.
-  await setState(page, { cameraMode: 'first-person', viewpoint: { segment: 'S5', s: 17 } })
+  await setState(page, { cameraMode: 'first-person', viewpoint: { segment: 'S13', s: 70 } })
   await expect.poll(() => device<string>(page, 'level'), { timeout: 20_000 }).toBe('danger')
   await expect.poll(async () => (await frames(page)).some(frame => frame.direction === 'tx' && frame.text.includes('"code":"CO_ALARM"')), { timeout: 10_000 }).toBe(true)
   const zone = await page.getByTestId('miner-zone').textContent()
-  expect(zone).toBe('Frente de avance')
+  expect(zone).toBe('Frente de avance Sur')
   await setState(page, { viewpoint: null, cameraMode: 'third-person', checkingBracelet: true })
   await page.waitForTimeout(1500)
   await page.screenshot({ path: 'tests/output/screenshots/miner/frente-peligro.png' })

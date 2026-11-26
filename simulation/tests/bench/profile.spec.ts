@@ -11,7 +11,7 @@ test.skip(process.env.TWIN_PROFILE !== '1', 'Diagnóstico manual: TWIN_PROFILE=1
 
 test('perfil de CPU del recorrido', async ({ page }) => {
   const quality = (process.env.TWIN_QUALITIES ?? 'high') as Quality
-  await openTwin(page, quality)
+  await openTwin(page, quality, 'validacion')
   await setState(page, { cameraMode: 'first-person', viewpoint: null, panelsVisible: false, headlamp: true, autopilot: { active: true, progress: 0, finished: false } })
   await page.waitForTimeout(3000)
   const cdp = await page.context().newCDPSession(page)

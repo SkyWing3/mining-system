@@ -13,7 +13,7 @@ export { compileLayout, frameAt, supportAt } from './layout.ts'
 export type { CompiledLayout, CompiledSegment } from './layout.ts'
 export { horseshoeDistance, profileOutline, profileHeight } from './profile.ts'
 export { buildInfrastructure, quaternionFromBasis } from './infrastructure.ts'
-export type { Infrastructure, LampSpec, PathSpec, Placement, SignPlacement, ArchSet, RefugePlacement } from './infrastructure.ts'
+export type { AccessPointPlacement, ArchSet, BarrierPlacement, Infrastructure, LampSpec, PathSpec, Placement, RefugePlacement, SignPlacement } from './infrastructure.ts'
 export type { BakedChunk } from './bake.ts'
 export { hashBuffers, hashString, mulberry32 } from './rng.ts'
 

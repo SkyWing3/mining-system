@@ -19,7 +19,7 @@
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 import * as THREE from 'three'
-import type { MeshBVH } from 'three-mesh-bvh'
+import type { Collider } from './collider.ts'
 
 export interface WalkInput {
   forward: number
@@ -46,7 +46,7 @@ export class Walker {
   readonly velocity = new THREE.Vector3()
   onGround = false
   private readonly options: WalkerOptions
-  private readonly bvh: MeshBVH
+  private readonly bvh: Collider
   private readonly segment = new THREE.Line3()
   private readonly box = new THREE.Box3()
   private readonly triPoint = new THREE.Vector3()
@@ -55,7 +55,10 @@ export class Walker {
   private readonly move = new THREE.Vector3()
   private readonly spawn = new THREE.Vector3()
 
-  constructor(bvh: MeshBVH, options: WalkerOptions = DEFAULT_WALKER) {
+  /** Verdadero mientras espera que se genere la roca de alrededor (no cae ni avanza). */
+  waiting = false
+
+  constructor(bvh: Collider, options: WalkerOptions = DEFAULT_WALKER) {
     this.bvh = bvh
     this.options = options
   }
@@ -78,6 +81,12 @@ export class Walker {
     this.move.set(-sin * input.forward + cos * input.right, 0, -cos * input.forward - sin * input.right)
     if (this.move.lengthSq() > 1) this.move.normalize()
     this.move.multiplyScalar(speed * (input.run ? 2.2 : 1))
+    // Roca todavía sin generar cerca (mina grande cargándose por zonas): esperar quieto.
+    this.waiting = this.bvh.pendingNear?.(this.position) ?? false
+    if (this.waiting) {
+      this.velocity.set(0, 0, 0)
+      return
+    }
     for (let step = 0; step < SUBSTEPS; step++) this.step(dt)
     if (this.position.y < this.spawn.y - 30) this.reset(this.spawn)
   }

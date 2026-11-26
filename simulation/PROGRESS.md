@@ -5,7 +5,7 @@
 | F0 Auditoría e investigación | ✅ Completada (2026-11-22; revisada sobre `develop`) | Ver abajo |
 | F1 Fundación gráfica | ✅ Implementada y probada (2026-11-22) | Ver abajo y TESTING.md |
 | F2A Minero controlable y manilla simulada | ✅ Implementada y probada (2026-11-23), a pedido del usuario | Ver abajo y TESTING.md |
-| F2B Construcción de la mina | Pendiente | — |
+| F2B Construcción de la mina | 🟡 Primera parte implementada y probada (2026-11-26), a pedido del usuario: mina de 1,9 km en dos niveles, cuartos de gas y cobertura Wi-Fi | Ver abajo y TESTING.md |
 | F3 Maquinaria y trabajadores | Pendiente | — |
 | F4 Sistema ambiental | Pendiente | — |
 | F5 Dashboard industrial | Pendiente | — |
@@ -13,6 +13,61 @@
 | F7 Historial y reproducción | Pendiente | — |
 | F8 Optimización | Pendiente | — |
 | F9 Auditoría final | Pendiente | — |
+
+---
+
+## Fase 2B (primera parte) — 2026-11-26: mina ampliada, cuartos de gas y cobertura Wi-Fi
+
+Pedido del usuario: «que la mina fuera mucho más grande, para que se pueda explorar de mejor manera», con «lugares de gases (como cuartos pero de mina) donde el sensor se ponga a prueba». También pidió que «en todo momento se monitoree la señal con la central, que no sea simplemente señal ilimitada»: cuando no hay señal, la manilla debe hacer lo que hace el firmware, con la cola de mensajes.
+
+### Tareas
+
+| ID | Estado | Evidencia y observaciones |
+| --- | --- | --- |
+| F2B.1 Mina ampliada | ✅ | `config/mina-simulada.json`: 1 915 m de ejes, 22 segmentos y 22 nodos en dos niveles. El nivel 0 tiene socavón entibado, galería principal con arcos y concreto lanzado, crucero al taller y al refugio, y la veta Norte con un circuito y labores. La rampa del 10 % (251 m, codo de 180°) baja 25 m al nivel −1, con su galería principal, zona de carguío, frente de avance, labor caliente, refugio y labor antigua. `scripts/layout-report.mjs` comprueba pendientes y que no haya cruces no previstos entre galerías. |
+| F2B.2 Generación por cercanía | ✅ | Los workers reciben primero el fragmento pendiente más cercano al minero. Hay colisión por fragmento (`ChunkedCollider`) y se puede entrar en cuanto la zona inicial está lista. Perfil Medio en un M4: unos 3 s hasta poder controlar al minero y 8 a 10 s hasta la mina completa (1 303 fragmentos, 1,09 M de triángulos). ADR-014. |
+| F2B.3 Rendimiento | ✅ | La roca y la infraestructura se recortan por distancia y por nivel. La infraestructura se instancia por celdas de 40 m y los tubos se parten en tramos. En primera persona, de 2,4–3,3 M de triángulos por fotograma se pasó a 0,1–0,6 M. `touchesBox` usa la rejilla del SDF. |
+| F2B.4 Cuartos de gas y de calor | ✅ | Fuentes con recinto confinado (`plateau`: gas parejo dentro del cuarto) y humo o vapor visible:<ul><li>labor abandonada (CO 420 ppm, sin luz ni señal, cadena de prohibición);</li><li>frente sin ventilación auxiliar (precaución por CO y aire);</li><li>incendio latente (CO 950 ppm, calor y humo);</li><li>labor con agua termal (aire de unos 40 °C, superficies de unos 104 °C, vapor);</li><li>taller diésel, dos zonas de carguío y dos frentes de voladura.</li></ul>Letreros nuevos: peligro gases, prohibido el ingreso, alta temperatura y de dirección. |
+| F2B.5 Cobertura Wi-Fi | ✅ | 12 antenas en el hastial con LED de estado. Propagación por las galerías con pérdida por distancia, curvatura, esquinas y tapones; la roca no deja pasar la señal. `scripts/coverage-report.mjs` muestra la señal por galería. ADR-015. |
+| F2B.6 Manilla sin señal | ✅ | La estación Wi-Fi del ESP32 se asocia, se queda con su antena y se desasocia tras 6 s sin balizas. Hay retransmisiones TCP en orden, reintento del enlace cada 1 s sin Wi-Fi, cola durable con `sentAt` original, subida de voz que espera la cobertura y presencia de 90 s en la central simulada. |
+| F2B.7 Interfaz | ✅ | Mapa (tecla M) con cobertura por galería, cuartos de gas, antenas (clic: falla o restablecimiento), refugios y flecha del minero; filtro por nivel. Panel de la central: Wi-Fi, enlace, presencia, cola y mensajes con su espera en la cola. Registro de tramas con los eventos de Wi-Fi y del enlace. Botones de voladura por frente. |
+
+### Criterios de aceptación
+
+| Criterio | Resultado |
+| --- | --- |
+| Mina bastante más grande y explorable | ✅ 1,9 km en dos niveles (antes 203 m), con mapa, letreros de dirección y 60 FPS en Medio (M4) |
+| Cuartos donde se ponen a prueba los sensores | ✅ Pruebas de `mine.test.ts`: peligro por CO en la labor abandonada y en el incendio; precaución en el frente sin ventilación; peligro por temperatura del aire y de las superficies en la labor caliente; aire normal en galerías y refugios |
+| Señal limitada con la central | ✅ `wifi.test.ts` y `coverage.spec.ts`: sin señal la `CO_ALARM` queda en la cola y llega al volver la cobertura con su hora original; con señal débil hay demoras y cortes; la central marca la manilla fuera de línea a los 90 s |
+| Sin cambiar el comportamiento portado del firmware | ✅ Las 56 pruebas portadas pasan sin cambios: sin `network`, la cobertura es total |
+| Typecheck, lint, pruebas y build | ✅ 0 errores; 99 de 99 pruebas unitarias y 4 de 4 E2E |
+
+### Limitaciones
+
+- El modelo de propagación es didáctico (ADR-015): los niveles de señal no sirven para diseñar una red real.
+- La manilla no cambia de antena hasta perder la señal (así está el firmware), y al pasar entre dos antenas hay un corte breve. No se modificó el firmware.
+- El humo y el vapor son niebla de color, no volúmenes iluminados por la linterna.
+- En perfil Alto, la zona de carguío y la labor caliente bajan a unos 40 FPS en el M4: el límite es el relleno de píxeles (oclusión ambiental y DPR 1,5), no la geometría. `suggestQuality` propone Alto en equipos de más de 8 núcleos, y este M4 tiene 10.
+- La mina completa sigue generándose en el navegador cada vez que se abre (sin caché). El benchmark y las capturas siguen usando la galería de validación.
+- Todavía no hay superficie andina, pique ni maquinaria (resto de F2B y F3).
+
+### Archivos
+
+- **Nuevos:**
+  - configuración: `config/mina-simulada.json`;
+  - simulación: `packages/mine-environment/src/radio.ts`, `packages/device-sim/src/wifi.ts`;
+  - gráficos: `packages/graphics-engine/src/collider.ts`, `culling.ts`;
+  - aplicación: `apps/twin-web/src/layout.ts`, `ui/MineMap.tsx`, `ui/signal.ts`;
+  - scripts: `scripts/layout-report.mjs`, `scripts/coverage-report.mjs`;
+  - pruebas: `wifi.test.ts`, `mine.test.ts`, `tests/e2e/coverage.spec.ts`.
+- **Modificados:**
+  - generador: `field.ts` y `infrastructure.ts` (antenas, cadenas, cámaras sin luz, letreros con texto);
+  - gráficos: `signs.ts`, `props.ts`, `propMaterials.ts`, `Infrastructure.tsx`, `RockChunks.tsx`, `walker.ts`;
+  - simulación: `bracelet.ts` y `central.ts`; ambiente con recinto confinado, humo y vapor, y zona por nivel;
+  - aplicación: `useGallery.ts`, `generator.worker.ts`, `runtime.ts`, paneles, HUD, escena y niebla;
+  - pruebas y Playwright: Metal en macOS; las capturas y el benchmark usan `?layout=validacion`;
+  - documentación.
+- **Proyecto existente:** sin cambios.
 
 ---
 

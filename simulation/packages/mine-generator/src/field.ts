@@ -72,9 +72,19 @@ export class MineField {
 
   /** ¿Hay alguna primitiva que influya en la caja dada? Permite omitir fragmentos de roca maciza. */
   touchesBox(min: readonly number[], max: readonly number[]): boolean {
-    for (const item of [...this.compiled.pieces, ...this.compiled.chambers]) {
-      if (item.max[0] >= min[0] && item.min[0] <= max[0] && item.max[1] >= min[1] && item.min[1] <= max[1] && item.max[2] >= min[2] && item.min[2] <= max[2]) return true
-    }
+    // Solo las primitivas registradas en las celdas que cubre la caja (la mina completa
+    // tiene miles de tramos y se consulta una caja por fragmento candidato).
+    const pieces = this.compiled.pieces
+    for (let x = Math.floor(min[0] / CELL); x <= Math.floor(max[0] / CELL); x++)
+      for (let y = Math.floor(min[1] / CELL); y <= Math.floor(max[1] / CELL); y++)
+        for (let z = Math.floor(min[2] / CELL); z <= Math.floor(max[2] / CELL); z++) {
+          const list = this.grid.get(cellKey(x, y, z))
+          if (!list) continue
+          for (const id of list) {
+            const item = id < pieces.length ? pieces[id] : this.compiled.chambers[id - pieces.length]
+            if (item.max[0] >= min[0] && item.min[0] <= max[0] && item.max[1] >= min[1] && item.min[1] <= max[1] && item.max[2] >= min[2] && item.min[2] <= max[2]) return true
+          }
+        }
     return false
   }
 

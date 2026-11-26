@@ -21,12 +21,13 @@ import { EnvironmentSensors, SensorHub, type EnvironmentSample } from './sensors
 import type { Action } from './types.ts'
 import { SimulatedRecorder, VoiceQueue } from './voice.ts'
 import { formatIso, WallClock } from './wallclock.ts'
+import { WifiStation, type RadioScan, type WifiStatus, type WifiTiming } from './wifi.ts'
 
 export interface FrameLogEntry {
   readonly seq: number
   readonly atMs: number
-  /** tx: manilla → central; rx: central → manilla. */
-  readonly direction: 'tx' | 'rx'
+  /** tx: manilla → central; rx: central → manilla; event: Wi-Fi y enlace (registro del firmware). */
+  readonly direction: 'tx' | 'rx' | 'event'
   readonly kind: string
   readonly text: string
 }
@@ -42,10 +43,23 @@ export interface VirtualBraceletOptions {
   readonly startEpochMs?: number
   /** Latencia de la red en un sentido (ms). */
   readonly latencyMs?: number
+  /**
+   * Puntos de acceso que alcanzan a la manilla en cada instante. Sin esta función la
+   * cobertura es total (Wi-Fi siempre asociado y sin pérdidas), como en las pruebas del firmware.
+   */
+  readonly radio?: RadioScan
+  readonly wifiTiming?: WifiTiming
 }
 
 export interface CentralView {
+  /** La central acepta conexiones (no se cortó el enlace desde el panel). */
   readonly online: boolean
+  /** Última trama o subida recibida de la manilla (hora de la central, ms de época). */
+  readonly lastSeenAt: number | null
+  /** Hora actual de la central (ms de época). */
+  readonly serverTime: number
+  /** Manilla en línea según la central: última señal dentro de la ventana de presencia. */
+  readonly deviceOnline: boolean
   readonly heartbeats: number
   readonly telemetry: number
   readonly rejected: number
@@ -61,11 +75,22 @@ const CONNECT_TIMEOUT_MS = 12000
 const UPLOAD_IDLE_MS = 30000
 const UPLOAD_MAX_BACKOFF_MS = 60000
 const PERMANENT_UPLOAD_FAILURES = [400, 413, 415]
+/** HTTPClient del firmware: `setTimeout(30000)`. */
+const UPLOAD_TIMEOUT_MS = 30000
+/** Retransmisión TCP: espera inicial y máxima entre intentos. */
+const INITIAL_RTO_MS = 300
+const MAX_RTO_MS = 8000
+/** Mining:PresenceWindowSeconds de la central (90 s por defecto). */
+export const PRESENCE_WINDOW_MS = 90_000
+const RADIO_UPDATE_MS = 100
 
 type LinkState = 'idle' | 'connecting' | 'open'
 
 interface Delivery {
-  readonly at: number
+  /** Próximo intento de entrega (las retransmisiones TCP lo postergan). */
+  at: number
+  /** Espera hasta la siguiente retransmisión si este intento se pierde. */
+  rto: number
   readonly to: 'central' | 'bracelet'
   readonly text: string
   /** Conexión en la que viajaba la trama; al cerrarse se pierde. */
@@ -96,13 +121,18 @@ export class VirtualBracelet {
   private nextAttempt = 0
   private retryMs = 1000
   private connectAt = 0
+  private connectRto = INITIAL_RTO_MS
   private connectDeadline = 0
   private connection = 0
   private deliveries: Delivery[] = []
   // Subida de voz.
   private nextUpload = 0
   private uploadBackoff = 2000
-  private uploadInFlight: { readonly id: string; readonly at: number } | null = null
+  private uploadInFlight: { readonly id: string; readonly startedAt: number; remainingMs: number; lastAt: number } | null = null
+  // Radio: estación Wi-Fi y pérdidas (con su propia semilla, para no alterar las lecturas).
+  private readonly wifi: WifiStation | null
+  private readonly radioRandom: () => number
+  private nextRadioUpdate = 0
   // Registro de tramas.
   private readonly log: FrameLogEntry[] = []
   private logSeq = 0
@@ -113,6 +143,9 @@ export class VirtualBracelet {
     const ids = createRandom(seed ^ 0x5bd1e995)
     this.latencyMs = options.latencyMs ?? 40
     this.centralOnline = options.centralOnline ?? true
+    const radioRandom = createRandom(seed ^ 0x2545f491)
+    this.radioRandom = radioRandom.next
+    this.wifi = options.radio ? new WifiStation(options.radio, text => this.record('event', 'wifi', text), options.wifiTiming) : null
     this.outputsImpl = new PatternOutputs(this.clock)
     this.wall = new WallClock(1, this.clock)
     this.sensors = new EnvironmentSensors({
@@ -206,10 +239,20 @@ export class VirtualBracelet {
     return this.logSeq
   }
 
+  /** Estado de la radio Wi-Fi; null si la manilla tiene cobertura total (sin modelo de radio). */
+  wifiStatus(): WifiStatus | null {
+    return this.wifi?.status() ?? null
+  }
+
   /** Lo que registró la central simulada (no es la base de datos real). */
   centralView(): CentralView {
+    const serverTime = this.central.serverTime()
+    const lastSeenAt = this.central.lastSeenAt
     return {
       online: this.centralOnline,
+      lastSeenAt,
+      serverTime,
+      deviceOnline: lastSeenAt !== null && serverTime - lastSeenAt <= PRESENCE_WINDOW_MS,
       heartbeats: this.central.counters.heartbeats,
       telemetry: this.central.counters.telemetry,
       rejected: this.central.counters.rejected,
@@ -263,6 +306,10 @@ export class VirtualBracelet {
   // --- ciclo ---
 
   private runDue(): void {
+    if (this.wifi && this.now >= this.nextRadioUpdate) {
+      this.wifi.update(this.now)
+      this.nextRadioUpdate = this.now + RADIO_UPDATE_MS
+    }
     this.deliver()
     if (this.now >= this.nextSample) {
       this.hub.sampleOnce()
@@ -283,21 +330,43 @@ export class VirtualBracelet {
     for (let event = this.events.pop(); event; event = this.events.pop()) this.app.process(event)
   }
 
-  private record(direction: 'tx' | 'rx', kind: string, text: string): void {
+  private record(direction: FrameLogEntry['direction'], kind: string, text: string): void {
     this.logSeq += 1
     this.log.push({ seq: this.logSeq, atMs: this.now, direction, kind, text })
     if (this.log.length > FRAME_LOG_SIZE) this.log.splice(0, this.log.length - FRAME_LOG_SIZE)
   }
 
   private schedule(to: 'central' | 'bracelet', text: string, extraDelay = 0): void {
-    this.deliveries.push({ at: this.now + this.latencyMs + extraDelay, to, text, connection: this.connection })
+    this.deliveries.push({ at: this.now + this.latencyMs + extraDelay, rto: INITIAL_RTO_MS, to, text, connection: this.connection })
+  }
+
+  /** Probabilidad de que la radio pierda este intento de entrega (0 con cobertura total). */
+  private radioLoses(): boolean {
+    return this.wifi !== null && this.radioRandom() < this.wifi.loss()
   }
 
   private deliver(): void {
     if (this.deliveries.length === 0) return
-    const due = this.deliveries.filter(item => item.at <= this.now)
+    // TCP entrega en orden: si una trama espera su retransmisión, las siguientes del
+    // mismo sentido esperan detrás de ella.
+    const blocked = { central: false, bracelet: false }
+    const due: Delivery[] = []
+    const remaining: Delivery[] = []
+    for (const item of this.deliveries) {
+      if (blocked[item.to] || item.at > this.now) {
+        blocked[item.to] = true
+        remaining.push(item)
+      } else if (item.connection === this.connection && this.radioLoses()) {
+        item.at = this.now + item.rto
+        item.rto = Math.min(item.rto * 2, MAX_RTO_MS)
+        blocked[item.to] = true
+        remaining.push(item)
+      } else {
+        due.push(item)
+      }
+    }
     if (due.length === 0) return
-    this.deliveries = this.deliveries.filter(item => item.at > this.now)
+    this.deliveries = remaining
     for (const item of due) {
       if (item.connection !== this.connection || this.linkState !== 'open' || !this.session) continue
       if (item.to === 'central') {
@@ -318,29 +387,43 @@ export class VirtualBracelet {
     switch (this.linkState) {
       case 'idle':
         if (this.now >= this.nextAttempt) {
+          if (this.wifi && !this.wifi.connected()) {
+            // LinkTask::attempt: el Wi-Fi se reconecta solo; se vuelve a mirar en 1 s.
+            this.nextAttempt = this.now + 1000
+            break
+          }
           this.linkState = 'connecting'
           // Apertura TCP y handshake del WebSocket: dos viajes de ida y vuelta.
           this.connectAt = this.now + 4 * this.latencyMs
+          this.connectRto = INITIAL_RTO_MS
           this.connectDeadline = this.now + CONNECT_TIMEOUT_MS
         }
         break
       case 'connecting':
-        if (this.now >= this.connectAt) {
-          if (!this.centralOnline) {
-            this.finish('La central cerró el enlace')
-            break
-          }
-          this.linkState = 'open'
-          this.connection += 1
-          this.central.socketOpened()
-          session.opened(this.now, frame => {
-            this.record('tx', frameType(frame), frame)
-            this.schedule('central', frame)
-            return true
-          })
-        } else if (this.now >= this.connectDeadline) {
+        if (this.now >= this.connectDeadline) {
           this.finish('Tiempo de conexión agotado')
+          break
         }
+        if (this.now < this.connectAt) break
+        if (this.wifi && (!this.wifi.connected() || this.radioLoses())) {
+          // SYN o handshake perdido: TCP lo reintenta con espera creciente.
+          this.connectAt = this.now + this.connectRto
+          this.connectRto = Math.min(this.connectRto * 2, MAX_RTO_MS)
+          break
+        }
+        if (!this.centralOnline) {
+          this.finish('La central cerró el enlace')
+          break
+        }
+        this.linkState = 'open'
+        this.connection += 1
+        this.central.socketOpened()
+        if (this.wifi) this.record('event', 'link', 'WebSocket abierto con la central')
+        session.opened(this.now, frame => {
+          this.record('tx', frameType(frame), frame)
+          this.schedule('central', frame)
+          return true
+        })
         break
       case 'open':
         session.poll(this.now)
@@ -353,6 +436,7 @@ export class VirtualBracelet {
     const session = this.session
     if (!session) return
     const wasConnected = session.connected()
+    if (this.wifi) this.record('event', 'link', `Enlace cerrado: ${detail}`)
     this.linkState = 'idle'
     this.connection += 1
     this.deliveries = []
@@ -370,14 +454,24 @@ export class VirtualBracelet {
     if (!voices) return
     const flight = this.uploadInFlight
     if (flight) {
-      if (this.now < flight.at) return
+      // La subida avanza solo con Wi-Fi y más despacio cuanto más segmentos se pierden.
+      const progress = this.wifi ? (this.wifi.connected() ? 1 - this.wifi.loss() : 0) : 1
+      flight.remainingMs -= (this.now - flight.lastAt) * progress
+      flight.lastAt = this.now
+      if (flight.remainingMs > 0) {
+        if (this.now - flight.startedAt >= UPLOAD_TIMEOUT_MS) {
+          this.uploadInFlight = null
+          this.failUpload('read Timeout')
+        }
+        return
+      }
       this.uploadInFlight = null
       this.completeUpload(flight.id)
       return
     }
     if (this.now < this.nextUpload) return
     // La fecha de la grabación necesita la hora de la central, tomada de los acks.
-    if (!this.wall.synced()) {
+    if ((this.wifi && !this.wifi.connected()) || !this.wall.synced()) {
       this.nextUpload = this.now + 2000
       return
     }
@@ -389,7 +483,14 @@ export class VirtualBracelet {
     const recordedAt = formatIso(this.wall.resolve(voice.stamp) ?? this.wall.now() ?? 0)
     this.record('tx', 'voice', `POST /api/device/voice · X-Client-Message-Id: ${voice.id} · X-Recorded-At: ${recordedAt} · audio/wav ${(voice.durationMs / 1000).toFixed(1)} s (simulado, sin audio)`)
     // Una grabación pesa ~32 kB/s a 16 kHz: la subida tarda más que una trama.
-    this.uploadInFlight = { id: voice.id, at: this.now + 2 * this.latencyMs + Math.round(voice.durationMs * 0.02) }
+    this.uploadInFlight = { id: voice.id, startedAt: this.now, lastAt: this.now, remainingMs: 2 * this.latencyMs + Math.round(voice.durationMs * 0.02) }
+  }
+
+  /** Falla de red durante la subida (status 0 en el firmware): se reintenta con espera creciente. */
+  private failUpload(detail: string): void {
+    this.record('event', 'voice', `Subida de voz pendiente (0): ${detail}`)
+    this.nextUpload = this.now + this.uploadBackoff
+    this.uploadBackoff = Math.min(this.uploadBackoff * 2, UPLOAD_MAX_BACKOFF_MS)
   }
 
   private completeUpload(id: string): void {

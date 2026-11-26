@@ -2,20 +2,19 @@
 // alimentada por el modelo ambiental de la galería según la posición del minero.
 //
 // Todo lo que produce es simulado: las tramas llevan `"simulated": true` y la
-// central que responde es local (no hay conexión con la central real).
+// central que responde es local (no hay conexión con la central real). La cobertura
+// Wi-Fi también es simulada: depende de dónde esté el minero respecto de las antenas.
 import * as THREE from 'three'
 import { create } from 'zustand'
 import {
   MonoFramebuffer, VirtualBracelet,
-  type Action, type Font, type FrameLogEntry, type Identity, type LedColor, type Level, type OutputLevels, type SensorSnapshot, type TextRasterizer,
+  type AccessPointSignal, type Action, type CentralMessage, type Font, type FrameLogEntry, type Identity, type LedColor, type Level, type OutputLevels, type SensorSnapshot,
+  type TextRasterizer, type WifiStatus,
 } from '@twin/device-sim'
 import { compileLayout } from '@twin/mine-generator'
-import { MineEnvironment, type EnvironmentReading } from '@twin/mine-environment'
-import type { GalleryLayout } from '@twin/shared-types'
-import layoutJson from '../../../../config/galeria-validacion.json'
+import { MineEnvironment, RadioCoverage, type EnvironmentReading, type Location } from '@twin/mine-environment'
+import { layout } from '../layout.ts'
 import { BRACELET_HEIGHT, miner } from '../scene/minerState.ts'
-
-const layout = layoutJson as unknown as GalleryLayout
 
 export type NoticeCode = 'EVACUATE' | 'SURFACE' | 'SHELTER' | 'HELP_COMING' | 'RECEIVED' | 'REPORT'
 export const NOTICE_OPTIONS: readonly { code: NoticeCode; label: string }[] = [
@@ -28,7 +27,7 @@ export const NOTICE_OPTIONS: readonly { code: NoticeCode; label: string }[] = [
 ]
 
 /** Identidad que devuelve la central simulada (asignación administrativa, no posición). */
-export const IDENTITY: Identity = { name: 'Manilla 07 (simulada)', minerName: 'Minero simulado', zone: 'Galería principal N1' }
+export const IDENTITY: Identity = { name: 'Manilla 07 (simulada)', minerName: 'Minero simulado', zone: 'Galería principal N0' }
 
 // --- OLED: framebuffer 1 bit → lienzo 128×64 compartido por la escena 3D y la interfaz ----
 
@@ -123,9 +122,31 @@ function presentOled(): boolean {
 
 // --- simulación -------------------------------------------------------------------------
 
-const environment = layout.environment ? new MineEnvironment(compileLayout(layout), layout.environment) : null
+/** Galería compilada que usan el ambiente, la cobertura y el mapa. */
+export const mineCompiled = compileLayout(layout)
+const environment = layout.environment ? new MineEnvironment(mineCompiled, layout.environment) : null
+/** Cobertura de la red Wi-Fi subterránea; null si la mina no la define (cobertura total). */
+export const radio = layout.network && environment ? new RadioCoverage(mineCompiled, layout.network, layout.barriers ?? []) : null
+/** Fuentes transitorias (frentes de voladura) que se pueden reiniciar desde el panel. */
+export const BLAST_SOURCES = (layout.environment?.sources ?? []).filter(source => source.halfLifeMinutes).map(source => ({ id: source.id, node: source.node, label: source.label }))
+
 let simSeconds = 0
 let reading: EnvironmentReading | null = null
+
+/** Concentración actual de CO en cada fuente (ppm), para el mapa. */
+export function sourceStrengths(): Record<string, number> {
+  if (!environment) return {}
+  return Object.fromEntries(environment.spec.sources.map(source => [source.id, environment.sourceStrength(source, simSeconds)]))
+}
+
+/** Ubicación de la manilla sobre la red de galerías (se recalcula solo si el minero se movió). */
+let located: { x: number; y: number; z: number; location: Location } | null = null
+function braceletLocation(): Location | null {
+  if (!environment) return null
+  const x = miner.position.x, y = miner.position.y + BRACELET_HEIGHT, z = miner.position.z
+  if (!located || Math.abs(located.x - x) + Math.abs(located.y - y) + Math.abs(located.z - z) > 0.05) located = { x, y, z, location: environment.locate({ x, y, z }) }
+  return located.location
+}
 
 function sampleEnvironment() {
   if (!environment) return { coPpm: 0, ambientC: 20, objectC: 22 }
@@ -133,7 +154,13 @@ function sampleEnvironment() {
   return { coPpm: reading.coPpm, ambientC: reading.ambientC, objectC: reading.objectC }
 }
 
-const bracelet = new VirtualBracelet({ environment: sampleEnvironment, identity: IDENTITY, seed: 20261123 })
+/** Lo que la antena de la manilla recibe de cada punto de acceso en su posición actual. */
+function scanRadio(): readonly AccessPointSignal[] {
+  const location = braceletLocation()
+  return radio && location ? radio.sample(location).signals : []
+}
+
+const bracelet = new VirtualBracelet({ environment: sampleEnvironment, identity: IDENTITY, seed: 20261123, radio: radio ? scanRadio : undefined })
 
 const NO_OUTPUTS: OutputLevels = { red: false, green: false, blue: false, buzzer: false, motor: false }
 
@@ -147,6 +174,14 @@ export interface DeviceView {
   readonly snapshot: SensorSnapshot | null
   readonly link: { configured: boolean; connected: boolean; identity: Identity | null; blocked: string }
   readonly pending: { messages: number; voices: number }
+  /** Radio Wi-Fi de la manilla; null con cobertura total. */
+  readonly wifi: WifiStatus | null
+  /** Lo que sabe la central simulada de la manilla (presencia como `PresenceWindowSeconds`). */
+  readonly central: { readonly lastSeenAt: number | null; readonly serverTime: number; readonly deviceOnline: boolean }
+  /** Últimos mensajes registrados por la central, con su hora de envío y de recepción. */
+  readonly recentMessages: readonly CentralMessage[]
+  /** Puntos de acceso puestos fuera de servicio desde el panel. */
+  readonly disabledAccessPoints: ReadonlySet<string>
   /** Valores del modelo ambiental en la posición del minero (lo que «hay», no lo que mide la manilla). */
   readonly reading: EnvironmentReading | null
   readonly framesVersion: number
@@ -158,9 +193,11 @@ export interface DeviceView {
   sendNotice: (code: NoticeCode) => void
   spikeGas: () => void
   spikeHeat: () => void
-  /** Nueva voladura en el frente F1 (reinicia los humos del escenario). */
-  blast: () => void
+  /** Nueva voladura en un frente (reinicia los humos de esa fuente). */
+  blast: (sourceId: string) => void
   setCalibrated: (calibrated: boolean) => void
+  /** Falla o restablecimiento de un punto de acceso Wi-Fi. */
+  toggleAccessPoint: (id: string) => void
 }
 
 export const useDevice = create<DeviceView>(set => ({
@@ -173,6 +210,10 @@ export const useDevice = create<DeviceView>(set => ({
   snapshot: null,
   link: { configured: true, connected: false, identity: null, blocked: '' },
   pending: { messages: 0, voices: 0 },
+  wifi: null,
+  central: { lastSeenAt: null, serverTime: 0, deviceOnline: false },
+  recentMessages: [],
+  disabledAccessPoints: new Set<string>(),
   reading: null,
   framesVersion: 0,
   oledVersion: 0,
@@ -183,8 +224,13 @@ export const useDevice = create<DeviceView>(set => ({
   sendNotice: code => bracelet.sendNotice(code),
   spikeGas: () => bracelet.spikeGas(),
   spikeHeat: () => bracelet.spikeHeat(),
-  blast: () => environment?.restartSource('voladura-f1', simSeconds),
+  blast: sourceId => environment?.restartSource(sourceId, simSeconds),
   setCalibrated: calibrated => { bracelet.setCalibrated(calibrated); set({ calibrated }) },
+  toggleAccessPoint: id => {
+    if (!radio) return
+    radio.setEnabled(id, !radio.isEnabled(id))
+    set({ disabledAccessPoints: new Set(radio.accessPoints.filter(ap => !radio.isEnabled(ap.id)).map(ap => ap.id)) })
+  },
 }))
 
 /** Salidas físicas instantáneas de la manilla (LED, buzzer y motor) para la escena 3D. */
@@ -208,7 +254,11 @@ function publish(force = false): void {
   if (!force && now - lastPublish < 150) return
   lastPublish = now
   const assessment = bracelet.assessment()
+  const central = bracelet.centralView()
   useDevice.setState({
+    wifi: bracelet.wifiStatus(),
+    central: { lastSeenAt: central.lastSeenAt, serverTime: central.serverTime, deviceOnline: central.deviceOnline },
+    recentMessages: central.messages.slice(-4),
     simSeconds,
     outputs: bracelet.outputs(),
     led: bracelet.ledColor(),

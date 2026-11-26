@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { getState, openTwin, setState, showViewpoint, trackExternalRequests, type DiagnosticsSample } from '../support/twin.ts'
 
-test('genera la galería, renderiza y no solicita recursos externos', async ({ page, baseURL }) => {
+test('genera la mina, renderiza y no solicita recursos externos', async ({ page, baseURL }) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
@@ -10,14 +10,15 @@ test('genera la galería, renderiza y no solicita recursos externos', async ({ p
   await openTwin(page, 'medium')
   const generation = await getState<{ status: string; total: number; triangles: number }>(page, 'generation')
   expect(generation.status).toBe('done')
-  expect(generation.triangles).toBeGreaterThan(50_000)
+  // Mina simulada de ~1,9 km en perfil Medio.
+  expect(generation.triangles).toBeGreaterThan(600_000)
 
   const diagnostics = await getState<DiagnosticsSample>(page, 'diagnostics')
   expect(diagnostics.drawCalls).toBeGreaterThan(10)
   expect(diagnostics.fps).toBeGreaterThan(0)
 
   // Primera persona en un punto programado y regreso inmediato a supervisión.
-  await showViewpoint(page, { segment: 'S2', s: 10 })
+  await showViewpoint(page, { segment: 'S02', s: 10 })
   expect(await getState<string>(page, 'cameraMode')).toBe('first-person')
   await setState(page, { cameraMode: 'orbit', viewpoint: null, panelsVisible: true })
   await expect(page.getByTestId('mode-orbit')).toHaveAttribute('aria-pressed', 'true')
@@ -28,7 +29,7 @@ test('genera la galería, renderiza y no solicita recursos externos', async ({ p
 })
 
 test('cambiar el perfil gráfico regenera la galería', async ({ page }) => {
-  await openTwin(page, 'low')
+  await openTwin(page, 'low', 'validacion')
   const low = await getState<{ triangles: number }>(page, 'generation')
   await page.getByTestId('quality-high').click()
   await page.waitForFunction(() => (window as unknown as { __twin: { getState: () => { generation: { status: string } } } }).__twin.getState().generation.status === 'running')

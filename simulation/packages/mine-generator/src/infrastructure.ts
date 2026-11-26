@@ -32,7 +32,21 @@ export interface LampSpec {
 
 export interface SignPlacement {
   readonly kind: SignSpec['kind']
+  readonly label?: SignSpec['label']
   readonly placement: Placement
+}
+
+/** Punto de acceso Wi-Fi en el hastial. X = avance, Y = arriba, Z = hacia el eje de la galería. */
+export interface AccessPointPlacement {
+  readonly id: string
+  readonly placement: Placement
+}
+
+/** Cadena atravesada en la galería: centro a la altura del pecho y largo entre hastiales. */
+export interface BarrierPlacement {
+  readonly id: string
+  readonly placement: Placement
+  readonly span: number
 }
 
 export interface ArchSet {
@@ -61,6 +75,8 @@ export interface Infrastructure {
   readonly bolts: Placement[]
   readonly signs: SignPlacement[]
   readonly refuges: RefugePlacement[]
+  readonly accessPoints: AccessPointPlacement[]
+  readonly barriers: BarrierPlacement[]
 }
 
 /** Cuaternión desde un marco ortonormal: X = avance, Y = arriba, Z = derecha. */
@@ -130,7 +146,7 @@ function offsetPath(segment: CompiledSegment, lateral: number, height: number, s
 export function buildInfrastructure(compiled: CompiledLayout, field: MineField): Infrastructure {
   const result: Infrastructure = {
     lamps: [], sleepers: [], rails: [], airPipes: [], waterPipes: [], pipeBrackets: [], ducts: [], cables: [],
-    timberPosts: [], timberCaps: [], lagging: [], arches: [], bolts: [], signs: [], refuges: [],
+    timberPosts: [], timberCaps: [], lagging: [], arches: [], bolts: [], signs: [], refuges: [], accessPoints: [], barriers: [],
   }
   const archSets = new Map<string, ArchSet>()
   for (const [segmentIndex, segment] of compiled.segments.entries()) {
@@ -255,7 +271,25 @@ export function buildInfrastructure(compiled: CompiledLayout, field: MineField):
       const point: Vec3Tuple = [origin[0] + direction[0] * (hit - 0.06), origin[1], origin[2] + direction[2] * (hit - 0.06)]
       // El letrero mira hacia el eje de la galería.
       const facing: Vec3Tuple = [-direction[0], 0, -direction[2]]
-      result.signs.push({ kind: sign.kind, placement: surfacePlacement(point, facing, [0, 1, 0], 0, true) })
+      result.signs.push({ kind: sign.kind, label: sign.label, placement: surfacePlacement(point, facing, [0, 1, 0], 0, true) })
+    }
+    for (const ap of compiled.layout.network?.accessPoints.filter(item => item.segment === spec.id) ?? []) {
+      const frame = frameAt(segment, Math.min(Math.max(ap.at, 0), length))
+      const side = ap.side === 'right' ? 1 : -1
+      const origin = offsetPoint(frame, 0, profile.wallHeight - 0.15)
+      const direction: Vec3Tuple = [frame.right[0] * side, frame.right[1] * side, frame.right[2] * side]
+      const hit = field.raycast(origin[0], origin[1], origin[2], direction[0], direction[1], direction[2], halfWidth + 1.5)
+      if (hit === null) continue
+      const point: Vec3Tuple = [origin[0] + direction[0] * (hit - 0.05), origin[1], origin[2] + direction[2] * (hit - 0.05)]
+      result.accessPoints.push({ id: ap.id, placement: surfacePlacement(point, [-direction[0], 0, -direction[2]], [0, 1, 0], 0, true) })
+    }
+    for (const barrier of compiled.layout.barriers?.filter(item => item.segment === spec.id) ?? []) {
+      const frame = frameAt(segment, Math.min(Math.max(barrier.at, 0), length))
+      const origin = offsetPoint(frame, 0, 1.15)
+      const reach = (sign: number) => field.raycast(origin[0], origin[1], origin[2], frame.right[0] * sign, frame.right[1] * sign, frame.right[2] * sign, halfWidth + 1.5) ?? halfWidth
+      const left = reach(-1), right = reach(1)
+      const center = offsetPoint(frame, (right - left) / 2, 1.15)
+      result.barriers.push({ id: barrier.id, placement: framePlacement(frame, center), span: left + right })
     }
     if (toNode?.kind === 'refuge') {
       // Tabique en la boca de la cámara del refugio: donde el eje entra en su caja.
@@ -273,7 +307,7 @@ export function buildInfrastructure(compiled: CompiledLayout, field: MineField):
   }
   // Cámaras: luminarias en rejilla bajo el techo.
   for (const node of compiled.nodes) {
-    if (node.kind !== 'chamber' || !node.size) continue
+    if (node.kind !== 'chamber' || !node.size || node.lit === false) continue
     const [sx, sy, sz] = node.size
     const [x, y, z] = node.position
     const height = y + sy - 0.55

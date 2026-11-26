@@ -151,3 +151,23 @@ export function signPlateGeometry(): THREE.BufferGeometry {
 export function signBackGeometry(): THREE.BufferGeometry {
   return translate(new RoundedBoxGeometry(0.62, 0.42, 0.012, 1, 0.004), 0, 0, -0.008)
 }
+
+/**
+ * Punto de acceso Wi-Fi industrial con dos antenas, en el marco de una superficie:
+ * X a lo largo del hastial, Y arriba, Z hacia la galería.
+ */
+export function accessPointGeometry(): THREE.BufferGeometry {
+  const housing = translate(new RoundedBoxGeometry(0.26, 0.2, 0.07, 2, 0.012), 0, 0, 0.045)
+  const bracket = translate(new THREE.BoxGeometry(0.1, 0.24, 0.012), 0, 0, 0.006)
+  const antennas = [-0.085, 0.085].map(x => {
+    const base = translate(new THREE.CylinderGeometry(0.014, 0.014, 0.025, 10), x, 0.112, 0.045)
+    const whip = translate(new THREE.CylinderGeometry(0.0075, 0.0085, 0.2, 8), x, 0.22, 0.045)
+    return [base, whip]
+  }).flat()
+  return merge([housing, bracket, ...antennas])
+}
+
+/** LED de estado en la cara frontal del punto de acceso. */
+export function accessPointLedGeometry(): THREE.BufferGeometry {
+  return translate(new THREE.BoxGeometry(0.018, 0.018, 0.006), 0.085, -0.065, 0.082)
+}
