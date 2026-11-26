@@ -40,9 +40,9 @@ Equipo: Apple M4 (CPU y GPU de 10 núcleos, Metal 4) con 16 GB, macOS, Node 26.8
 | --- | --- |
 | `tsc -p tsconfig.json` | 0 errores |
 | `oxlint` | 0 errores; los mismos 2 avisos intencionales (`useGallery.ts`, `useMaterials.ts`) |
-| `vitest run` | **99 de 99 aprobadas** (11 archivos): 14 del generador, 2 del caminante, 18 del ambiente y la cobertura, y 65 de la manilla |
+| `vitest run` | **99 de 99 aprobadas** (11 archivos): 14 del generador, 2 del caminante, 18 del ambiente y la cobertura, y 65 de la manilla. Después del ajuste de la OLED: **106 de 106** (12 archivos, 7 nuevas de las fuentes U8g2) |
 | `vite build` | Correcto; el bundle pesa 1,84 MB (598 kB gzip) |
-| E2E | **4 de 4 aprobadas** |
+| E2E | **4 de 4 aprobadas** (repetidas después del ajuste de la OLED y los pulsadores) |
 
 Pruebas nuevas:
 
@@ -73,7 +73,9 @@ Pruebas nuevas:
   - de vuelta en la veta: cola vacía y `CO_ALARM` recibida con más de 5 s de espera, visible como «en cola» en el panel;
   - la falla de AP-06 desde el mapa deja sin señal el frente sin ventilación y al restablecerla se reconecta;
   - sin errores de consola.
-- **`smoke.spec.ts` y `miner.spec.ts`:** adaptados a la mina simulada (frente Sur por `S13`). La regeneración al cambiar el perfil usa la galería de validación.
+- **`smoke.spec.ts` y `miner.spec.ts`:** adaptados a la mina simulada (frente Sur por `S13`). La regeneración al cambiar el perfil usa la galería de validación. `miner.spec.ts` prueba además que los pulsadores resaltan su botón y que Q con la rueda recorre el menú.
+- **`packages/device-sim/test/u8g2.test.ts`:** fuentes reales de la OLED (ver PROGRESS.md, ajuste del 2026-11-26).
+- **`coverage.spec.ts`** espera 6 s en la labor antes de volver: sin esa espera, si el Wi-Fi caía antes de la alarma, la entrega podía llegar en menos de 5 s y la prueba fallaba por tiempos, no por la simulación.
 
 ### Generación de la mina simulada (en la aplicación, 8 workers)
 

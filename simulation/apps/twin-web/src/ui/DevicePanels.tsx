@@ -2,7 +2,7 @@
 // lecturas frente al modelo ambiental, la central simulada y el registro de tramas.
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ArrowDown, ArrowUp, Bell, CornerDownLeft, Flame, Radio, RadioTower, Smartphone, Vibrate, Wind, Zap } from 'lucide-react'
-import { parseIso, type WifiStatus } from '@twin/device-sim'
+import { parseIso, type Action, type WifiStatus } from '@twin/device-sim'
 import { BLAST_SOURCES, deviceFrames, NOTICE_OPTIONS, oledCanvas, radio, useDevice, type NoticeCode } from '../device/runtime.ts'
 import { BAND_LABEL, signalBand } from './signal.ts'
 
@@ -82,17 +82,63 @@ function SmallButton({ onClick, children, label, active, testId }: { onClick: ()
   )
 }
 
-/** Copia de la OLED 128×64 ampliada sin suavizado. */
+/** Ancho máximo de la OLED en el panel (px CSS). */
+const OLED_MAX_WIDTH = 296
+
+/**
+ * Píxeles físicos de pantalla por píxel de la OLED: siempre un entero. Con una escala
+ * fraccionaria (antes 2,25) unos píxeles salían de 2 y otros de 3 y las letras se
+ * deformaban. Se recalcula si cambia la densidad (zoom o pantalla distinta).
+ */
+function useOledScale(): { scale: number; width: number; height: number } {
+  const [ratio, setRatio] = useState(() => (typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1))
+  useEffect(() => {
+    const media = window.matchMedia(`(resolution: ${ratio}dppx)`)
+    const change = () => setRatio(window.devicePixelRatio || 1)
+    media.addEventListener('change', change)
+    return () => media.removeEventListener('change', change)
+  }, [ratio])
+  const scale = Math.max(1, Math.floor((OLED_MAX_WIDTH * ratio) / 128))
+  return { scale, width: (128 * scale) / ratio, height: (64 * scale) / ratio }
+}
+
+/** Copia de la OLED 128×64 a escala entera, con la rejilla tenue de los píxeles del SSD1306. */
 function OledView() {
   const version = useDevice(state => state.oledVersion)
   const canvas = useRef<HTMLCanvasElement>(null)
+  const { scale, width, height } = useOledScale()
   useEffect(() => {
     const ctx = canvas.current?.getContext('2d')
     if (!ctx) return
     ctx.imageSmoothingEnabled = false
-    ctx.drawImage(oledCanvas, 0, 0)
-  }, [version])
-  return <canvas ref={canvas} width={128} height={64} data-testid="bracelet-oled" className="block h-[144px] w-[288px] rounded-sm [image-rendering:pixelated]" />
+    ctx.drawImage(oledCanvas, 0, 0, 128 * scale, 64 * scale)
+    if (scale >= 4) {
+      // Separación de 1 píxel físico entre píxeles de la OLED, apenas visible.
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.16)'
+      for (let x = 1; x < 128; x++) ctx.fillRect(x * scale, 0, 1, 64 * scale)
+      for (let y = 1; y < 64; y++) ctx.fillRect(0, y * scale, 128 * scale, 1)
+    }
+  }, [version, scale])
+  return <canvas ref={canvas} width={128 * scale} height={64 * scale} style={{ width, height }} data-testid="bracelet-oled" data-scale={scale} className="block" aria-label="Pantalla OLED de la manilla" role="img" />
+}
+
+/** Pulsador físico de la manilla; se ilumina al presionarlo con el teclado o la rueda (la tecla va en el título). */
+function BraceletButton({ action, label, keyHint, icon, testId }: { action: Action; label: string; keyHint: string; icon: ReactNode; testId: string }) {
+  const pressed = useDevice(state => state.pressedAction === action)
+  const press = useDevice(state => state.press)
+  return (
+    <button
+      type="button"
+      title={`Pulsador ${label.toLowerCase()} (${keyHint})`}
+      aria-label={`Pulsador ${label.toLowerCase()} (tecla ${keyHint})`}
+      data-testid={testId}
+      data-pressed={pressed}
+      onClick={event => { press(action); event.currentTarget.blur() }}
+      className={`flex h-9 items-center justify-center gap-1.5 rounded-md border px-2 text-xs transition-colors duration-75 ${pressed ? 'border-sand-300 bg-ink-600 text-ink-100' : 'border-ink-600 bg-ink-850 text-ink-100 hover:bg-ink-800'}`}
+    >
+      {icon}{label}
+    </button>
+  )
 }
 
 export function BraceletPanel() {
@@ -111,12 +157,15 @@ export function BraceletPanel() {
           <span className={`flex items-center gap-1 ${device.outputs.buzzer ? 'text-state-alarm' : ''}`} title="Buzzer"><Bell size={12} />Buzzer</span>
           <span className={`flex items-center gap-1 ${device.outputs.motor ? 'text-state-warn' : ''}`} title="Motor vibrador"><Vibrate size={12} />Motor</span>
         </div>
-        <div className="flex justify-center rounded-md bg-black p-1.5"><OledView /></div>
+        <div className="flex justify-center rounded-md bg-black p-2"><OledView /></div>
         <div className="mt-2 grid grid-cols-3 gap-2">
-          <SmallButton label="Pulsador subir (↑)" testId="bracelet-up" onClick={() => device.press('up')}><ArrowUp size={13} />Subir</SmallButton>
-          <SmallButton label="Pulsador bajar (↓)" testId="bracelet-down" onClick={() => device.press('down')}><ArrowDown size={13} />Bajar</SmallButton>
-          <SmallButton label="Pulsador enter (Enter)" testId="bracelet-enter" onClick={() => device.press('enter')}><CornerDownLeft size={13} />Enter</SmallButton>
+          <BraceletButton action="up" label="Subir" keyHint="↑" icon={<ArrowUp size={14} />} testId="bracelet-up" />
+          <BraceletButton action="down" label="Bajar" keyHint="↓" icon={<ArrowDown size={14} />} testId="bracelet-down" />
+          <BraceletButton action="enter" label="Enter" keyHint="Enter" icon={<CornerDownLeft size={14} />} testId="bracelet-enter" />
         </div>
+        <p className="mt-2 text-center text-[11px] leading-snug text-ink-300">
+          Con <kbd className="font-mono text-ink-100">Q</kbd> mantenida: rueda para moverse y clic para elegir.
+        </p>
       </div>
 
       <table className="mt-3 w-full border-collapse text-[11px]">
@@ -128,9 +177,9 @@ export function BraceletPanel() {
           </tr>
         </thead>
         <tbody className="font-mono tabular-nums">
-          <tr><td className="py-0.5 font-sans text-ink-300">CO (SEN0564)</td><td className="text-right text-ink-100" data-testid="reading-co">{co}</td><td className="text-right text-ink-400">{format(reading?.coPpm, 0, 'ppm')}</td></tr>
-          <tr><td className="py-0.5 font-sans text-ink-300">Aire (MLX90614)</td><td className="text-right text-ink-100">{format(snapshot?.ambientC, 1, '°C')}</td><td className="text-right text-ink-400">{format(reading?.ambientC, 1, '°C')}</td></tr>
-          <tr><td className="py-0.5 font-sans text-ink-300">Superficie (IR)</td><td className="text-right text-ink-100">{format(snapshot?.objectC, 1, '°C')}</td><td className="text-right text-ink-400">{format(reading?.objectC, 1, '°C')}</td></tr>
+          <tr><td className="py-0.5 font-sans text-ink-300">CO (SEN0564)</td><td className="text-right text-ink-100" data-testid="reading-co">{co}</td><td className="text-right text-ink-300">{format(reading?.coPpm, 0, 'ppm')}</td></tr>
+          <tr><td className="py-0.5 font-sans text-ink-300">Aire (MLX90614)</td><td className="text-right text-ink-100">{format(snapshot?.ambientC, 1, '°C')}</td><td className="text-right text-ink-300">{format(reading?.ambientC, 1, '°C')}</td></tr>
+          <tr><td className="py-0.5 font-sans text-ink-300">Superficie (IR)</td><td className="text-right text-ink-100">{format(snapshot?.objectC, 1, '°C')}</td><td className="text-right text-ink-300">{format(reading?.objectC, 1, '°C')}</td></tr>
         </tbody>
       </table>
       <div className="mt-2 flex items-center justify-between border-t border-ink-700 pt-2">
@@ -151,7 +200,7 @@ export function BraceletPanel() {
           </span>
         </div>
       ) : null}
-      <p className="mt-2 text-[10px] leading-snug text-ink-400">
+      <p className="mt-2 text-[11px] leading-snug text-ink-400">
         Umbrales del firmware: CO 35/200 ppm, aire 32/38 °C, superficie 60/90 °C, con 3 muestras de confirmación e histéresis. Escenario didáctico, no apto para decisiones de seguridad.
       </p>
     </Panel>

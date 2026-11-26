@@ -10,6 +10,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { frameAt, type CompiledLayout } from '@twin/mine-generator'
+import type { Action } from '@twin/device-sim'
 import { MinerAvatar, Walker, type Collider, type QualityProfile, type WalkInput } from '@twin/graphics-engine'
 import { deviceOutputs, oledTexture, useDevice } from '../device/runtime.ts'
 import { isMinerMode, useTwin, type CameraMode } from '../state/store.ts'
@@ -24,6 +25,15 @@ const PIVOT_HEIGHT = 1.58
 const SHOULDER_OFFSET = 0.42
 const CAMERA_MARGIN = 0.22
 const LEVEL_LABEL: Record<string, string> = { normal: 'Normal', caution: 'Precaución', danger: 'Peligro' }
+/**
+ * Pulsadores de la manilla: ↑ (subir), ↓ (bajar) y Enter. Con Q mantenida, la rueda
+ * recorre el menú y el clic confirma.
+ */
+const BRACELET_KEYS: Readonly<Record<string, Action>> = {
+  ArrowUp: 'up', ArrowDown: 'down', Enter: 'enter', NumpadEnter: 'enter',
+}
+/** Desplazamiento de rueda (px) por paso del menú: una muesca de ratón o un gesto corto del trackpad. */
+const WHEEL_STEP = 60
 
 /** Ángulo equivalente en (−π, π]. */
 function wrapAngle(angle: number): number {
@@ -137,14 +147,18 @@ export function CameraRig({ compiled, collider, profile }: { compiled: CompiledL
       if (event.code === 'KeyV' && minerMode && !event.repeat) state.setCameraMode(state.cameraMode === 'first-person' ? 'third-person' : 'first-person')
       if (event.code === 'KeyQ' && !event.repeat) state.setCheckingBracelet(true)
       // Pulsadores de la manilla: subir, bajar y enter.
-      if (!event.repeat && (event.code === 'ArrowUp' || event.code === 'ArrowDown' || event.code === 'Enter' || event.code === 'NumpadEnter')) {
+      const action = BRACELET_KEYS[event.code]
+      if (action && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault()
-        useDevice.getState().press(event.code === 'ArrowUp' ? 'up' : event.code === 'ArrowDown' ? 'down' : 'enter')
+        useDevice.getState().press(action)
       }
     }
     const up = (event: KeyboardEvent) => {
       keys.current.delete(event.code)
-      if (event.code === 'KeyQ') useTwin.getState().setCheckingBracelet(false)
+      if (event.code === 'KeyQ') {
+        useTwin.getState().setCheckingBracelet(false)
+        wheelAccumulator = 0
+      }
     }
     const blur = () => {
       keys.current.clear()
@@ -155,7 +169,25 @@ export function CameraRig({ compiled, collider, profile }: { compiled: CompiledL
       look.current.yaw -= event.movementX * SENSITIVITY
       look.current.pitch = THREE.MathUtils.clamp(look.current.pitch - event.movementY * SENSITIVITY, -1.35, 1.2)
     }
+    // Con la manilla levantada (Q), la rueda recorre el menú en lugar de alejar la cámara.
+    let wheelAccumulator = 0
+    const braceletInHand = () => {
+      const state = useTwin.getState()
+      return state.checkingBracelet && isMinerMode(state.cameraMode)
+    }
+    const click = (event: MouseEvent) => {
+      if (event.button !== 0 || document.pointerLockElement !== gl.domElement || !braceletInHand()) return
+      useDevice.getState().press('enter')
+    }
     const wheel = (event: WheelEvent) => {
+      if (braceletInHand()) {
+        wheelAccumulator += event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 20 : event.deltaY
+        while (Math.abs(wheelAccumulator) >= WHEEL_STEP) {
+          useDevice.getState().press(wheelAccumulator > 0 ? 'down' : 'up')
+          wheelAccumulator -= Math.sign(wheelAccumulator) * WHEEL_STEP
+        }
+        return
+      }
       if (document.pointerLockElement !== gl.domElement) return
       boom.current.target = THREE.MathUtils.clamp(boom.current.target + Math.sign(event.deltaY) * 0.3, 1.3, 4.8)
     }
@@ -165,6 +197,7 @@ export function CameraRig({ compiled, collider, profile }: { compiled: CompiledL
     window.addEventListener('blur', blur)
     document.addEventListener('mousemove', move)
     document.addEventListener('wheel', wheel, { passive: true })
+    document.addEventListener('mousedown', click)
     document.addEventListener('pointerlockchange', lockChange)
     return () => {
       window.removeEventListener('keydown', down)
@@ -172,6 +205,7 @@ export function CameraRig({ compiled, collider, profile }: { compiled: CompiledL
       window.removeEventListener('blur', blur)
       document.removeEventListener('mousemove', move)
       document.removeEventListener('wheel', wheel)
+      document.removeEventListener('mousedown', click)
       document.removeEventListener('pointerlockchange', lockChange)
     }
   }, [gl])

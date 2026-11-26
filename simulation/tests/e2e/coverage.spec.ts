@@ -44,6 +44,9 @@ test('sin cobertura Wi-Fi la manilla encola la alarma y la entrega al volver a l
   expect((await device(page)).central.deviceOnline).toBe(true)
   await expect(page.getByTestId('bracelet-queue')).toContainText('1 msg')
   await page.screenshot({ path: 'tests/output/screenshots/coverage/labor-sin-senal.png' })
+  // Permanece un rato en la labor: la alarma espera en la cola mientras no hay señal.
+  await page.waitForTimeout(6000)
+  expect((await device(page)).pending.messages).toBeGreaterThanOrEqual(1)
 
   // De vuelta en la veta: reconecta, vacía la cola y la central recibe la alarma tardía.
   await goTo(page, 'S10', 100)

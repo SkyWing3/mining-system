@@ -39,7 +39,9 @@ No se copió código de los repositorios descartados (sin licencia o AGPL).
 
 - **El minero no usa recursos externos.** Es geometría procedural (tornos, cápsulas, `RoundedBoxGeometry` de three, MIT), y el mapa normal de la tela se genera en el navegador. Se descartaron los personajes de Mixamo por su licencia de redistribución.
 - **La manilla es un port propio** de `esp32-device/lib/core` (código de este mismo repositorio).
-- **La OLED** usa la fuente Arial del sistema rasterizada a 1 bit. No se copiaron las fuentes de U8g2.
+- **La OLED** usa, desde el 2026-11-26, las mismas fuentes bitmap que el firmware: `u8g2_font_helvR08_tf` y `u8g2_font_helvR10_tf` de [U8g2](https://github.com/olikraus/u8g2) 2.36.18. Hasta entonces se usaba Arial del sistema rasterizada a 1 bit.
+  - **Datos copiados sin modificar** a `packages/device-sim/src/fonts/helvetica.ts` (generado por `scripts/extract-u8g2-fonts.mjs` desde la copia de PlatformIO). Derivan de las fuentes X11 `HELVR08.BDF` y `HELVR10.BDF`: Copyright 1984-1989, 1994 Adobe Systems Incorporated y Copyright 1988, 1994 Digital Equipment Corporation. Su licencia permite usarlas, copiarlas, modificarlas y distribuirlas, sin costo, conservando los avisos de copyright y de permiso. El aviso completo está en ese archivo y en el `LICENSE` de U8g2.
+  - **Decodificador propio** (`packages/device-sim/src/u8g2.ts`), escrito a partir del formato de fuente y de `u8g2_font.c` (licencia BSD de dos cláusulas, © 2016 olikraus). No se copió código de U8g2; el archivo lo acredita.
 - No se agregaron dependencias npm.
 
 ## 2. Evaluación de repositorios de referencia

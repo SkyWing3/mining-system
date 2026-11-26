@@ -149,7 +149,7 @@ Regla central: **el motor gráfico nunca produce datos**. Solo lee del almacén 
   - Conectar el navegador directo a `/ws/device`: imposible sin la cabecera `X-Device-Key`. Haría falta un relé (Node) o un cambio en el backend; queda como decisión del usuario (D6).
 - **Consecuencias.**
   - El comportamiento visible (niveles, LED, buzzer, pantallas, tramas) sale del mismo algoritmo que el firmware y se verifica con pruebas portadas de `esp32-device/test`.
-  - La fuente de la OLED se aproxima con Canvas 2D (Arial con umbral a 1 bit), no con las fuentes Helvetica de U8g2.
+  - La OLED usa las mismas fuentes bitmap de U8g2 que la placa (helvR08 y helvR10), decodificadas en TypeScript, con la misma posición y medida del texto que `display.cpp` (desde el 2026-11-26; antes se aproximaba con Arial a 1 bit y algunas letras se deformaban).
   - El modelo ambiental es didáctico: no resuelve caudales ni ventilación (eso es F4).
 - **Estado.** Aceptada (2026-11-23).
 

@@ -19,7 +19,7 @@ Hoy el gemelo tiene:
 - un **mapa** con la cobertura por galería, los cuartos de gas, las antenas (con un clic se simula la falla de una) y la posición del minero;
 - la **galería de validación** de unos 200 m de la Fase 1 (`?layout=validacion`), que siguen usando las capturas y el benchmark;
 - un **minero** con equipo de protección que se controla con WASD, choca con la roca y se ve en tercera o primera persona;
-- su **manilla ESP32-S3 simulada**, con la misma lógica que el firmware: pantalla OLED con el menú real, LED, buzzer y motor, umbrales con confirmación e histéresis, alarmas automáticas y tramas de telemetría cada 2 s;
+- su **manilla ESP32-S3 simulada**, con la misma lógica que el firmware: pantalla OLED con el menú real y las mismas fuentes de U8g2 que la placa, LED, buzzer y motor, umbrales con confirmación e histéresis, alarmas automáticas y tramas de telemetría cada 2 s;
 - un **ambiente simulado** que depende de la ubicación: aire fresco en la bocamina, recintos confinados con el gas parejo dentro del cuarto, escape diésel y humos de voladura que se disipan con el tiempo. El humo y el vapor se ven; el CO por sí solo no (como en una mina real);
 - una **central simulada** local que responde a la manilla, le envía avisos y registra cuánto esperó cada mensaje en la cola;
 - vista de supervisión con corte de bóveda, 4 perfiles gráficos y diagnóstico de render.
@@ -47,7 +47,7 @@ npm run dev               # http://localhost:5180
 | --- | --- |
 | Supervisión | Arrastrar: orbitar · rueda: acercar · botón derecho: desplazar · «Corte de bóveda» muestra el interior · la etiqueta sigue al minero |
 | Minero | Botón «Minero» y clic para capturar el ratón · **WASD: caminar** · Shift: correr · ratón: mirar · rueda: distancia de la cámara · **V: primera o tercera persona** · F: linterna del casco · Esc: liberar el ratón (pausa) |
-| Manilla | **Mantener Q: mirar la manilla** · **↑ ↓ Enter: pulsadores subir, bajar y enter** (también con los botones del panel) |
+| Manilla | **↑ ↓ Enter: pulsadores subir, bajar y enter** (también con los botones del panel) · **mantener Q: mirar la manilla**; con Q mantenida, la rueda recorre el menú y el clic elige |
 | General | H: ocultar o mostrar paneles · **M: mapa** · selector de perfil Bajo/Medio/Alto/Ultra · «Supervisión» vuelve a la vista orbital |
 
 El **mapa** muestra el nivel donde está el minero (o N0, N−1 o ambos), colorea las galerías según la señal Wi-Fi del modelo (buena, aceptable, débil, sin señal) y marca los cuartos de gas con su estado actual. Un clic en una antena la pone fuera de servicio (su LED se apaga en la escena) y otro la restablece.

@@ -2,8 +2,8 @@
 //
 // Las figuras se trazan en TypeScript puro (Bresenham y punto medio), así la
 // misma imagen se obtiene en el navegador y en las pruebas. El texto se delega a
-// un rasterizador intercambiable: el navegador usa Canvas 2D y las pruebas una
-// fuente de bloques determinista.
+// un rasterizador intercambiable: el gemelo usa las fuentes reales de U8g2
+// (`U8G2_RASTERIZER`) y algunas pruebas, una fuente de bloques determinista.
 import type { Canvas, Font } from './canvas.ts'
 
 export interface TextRasterizer {

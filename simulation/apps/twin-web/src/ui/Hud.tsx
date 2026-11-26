@@ -98,8 +98,9 @@ export function Hud({ layoutName }: { layoutName: string }) {
     requestLock()
   }
 
+  // z-20: los paneles quedan sobre la etiqueta flotante del minero (Html de drei, z 0–10).
   return (
-    <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between">
       {state.panelsVisible ? (
         <header className="pointer-events-auto flex items-center justify-between gap-4 border-b border-ink-800 bg-ink-950/85 px-4 py-2 backdrop-blur">
           <div className="flex items-center gap-3">
@@ -141,7 +142,7 @@ export function Hud({ layoutName }: { layoutName: string }) {
         <>
           {state.cameraMode === 'first-person' ? <div className="absolute top-1/2 left-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink-100/70" /> : null}
           <div className="absolute bottom-20 left-1/2 -translate-x-1/2 rounded bg-ink-950/70 px-3 py-1 text-xs whitespace-nowrap text-ink-300">
-            WASD caminar · Shift correr · Ratón mirar · Rueda distancia · V vista · Q mirar la manilla · ↑ ↓ Enter pulsadores · F linterna · M mapa · Esc pausa
+            WASD caminar · Shift correr · Ratón mirar · Rueda distancia · V vista · Q mirar la manilla (+ rueda y clic) · ↑ ↓ Enter pulsadores · F linterna · M mapa · Esc pausa
           </div>
         </>
       ) : null}

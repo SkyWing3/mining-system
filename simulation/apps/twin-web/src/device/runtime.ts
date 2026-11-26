@@ -7,9 +7,9 @@
 import * as THREE from 'three'
 import { create } from 'zustand'
 import {
-  MonoFramebuffer, VirtualBracelet,
-  type AccessPointSignal, type Action, type CentralMessage, type Font, type FrameLogEntry, type Identity, type LedColor, type Level, type OutputLevels, type SensorSnapshot,
-  type TextRasterizer, type WifiStatus,
+  MonoFramebuffer, U8G2_RASTERIZER, VirtualBracelet,
+  type AccessPointSignal, type Action, type CentralMessage, type FrameLogEntry, type Identity, type LedColor, type Level, type OutputLevels, type SensorSnapshot,
+  type WifiStatus,
 } from '@twin/device-sim'
 import { compileLayout } from '@twin/mine-generator'
 import { MineEnvironment, RadioCoverage, type EnvironmentReading, type Location } from '@twin/mine-environment'
@@ -30,64 +30,8 @@ export const NOTICE_OPTIONS: readonly { code: NoticeCode; label: string }[] = [
 export const IDENTITY: Identity = { name: 'Manilla 07 (simulada)', minerName: 'Minero simulado', zone: 'Galería principal N0' }
 
 // --- OLED: framebuffer 1 bit → lienzo 128×64 compartido por la escena 3D y la interfaz ----
-
-const FONTS: Record<Font, string> = {
-  small: '9px Arial, "Liberation Sans", Helvetica, sans-serif',
-  large: '12px Arial, "Liberation Sans", Helvetica, sans-serif',
-}
-/**
- * Línea base respecto de `y` (borde superior según el renderizador, como Pillow): U8g2 dibuja
- * la mayúscula 2 px (Helvetica 8) o 1 px (Helvetica 10) más abajo (`display.cpp`).
- */
-const BASELINE: Record<Font, number> = { small: 9, large: 10 }
-const GLYPH_HEIGHT: Record<Font, number> = { small: 12, large: 14 }
-/** Umbral a 1 bit: más alto da trazos finos como los de la fuente de mapa de bits. */
-const THRESHOLD = 160
-
-interface Glyphs { readonly width: number; readonly height: number; readonly bits: Uint8Array }
-
-/** Texto de la OLED rasterizado con Canvas 2D y umbral a 1 bit (aproxima las fuentes Helvetica de U8g2). */
-class CanvasTextRasterizer implements TextRasterizer {
-  private readonly canvas = document.createElement('canvas')
-  private readonly ctx = this.canvas.getContext('2d', { willReadFrequently: true })!
-  private readonly cache = new Map<string, Glyphs>()
-
-  width(text: string, font: Font): number {
-    this.ctx.font = FONTS[font]
-    return Math.round(this.ctx.measureText(text).width)
-  }
-
-  draw(buffer: MonoFramebuffer, x: number, y: number, text: string, font: Font, on: boolean): void {
-    const glyphs = this.glyphs(text, font)
-    for (let j = 0; j < glyphs.height; j++) {
-      for (let i = 0; i < glyphs.width; i++) if (glyphs.bits[j * glyphs.width + i]) buffer.setPixel(x + i, y + j, on)
-    }
-  }
-
-  private glyphs(text: string, font: Font): Glyphs {
-    const key = `${font}|${text}`
-    const cached = this.cache.get(key)
-    if (cached) return cached
-    const width = Math.max(1, this.width(text, font) + 2)
-    const height = GLYPH_HEIGHT[font]
-    this.canvas.width = width
-    this.canvas.height = height
-    const ctx = this.ctx
-    ctx.fillStyle = '#000'
-    ctx.fillRect(0, 0, width, height)
-    ctx.font = FONTS[font]
-    ctx.textBaseline = 'alphabetic'
-    ctx.fillStyle = '#fff'
-    ctx.fillText(text, 0, BASELINE[font])
-    const data = ctx.getImageData(0, 0, width, height).data
-    const bits = new Uint8Array(width * height)
-    for (let index = 0; index < bits.length; index++) bits[index] = data[index * 4] > THRESHOLD ? 1 : 0
-    const glyphs = { width, height, bits }
-    if (this.cache.size > 400) this.cache.clear()
-    this.cache.set(key, glyphs)
-    return glyphs
-  }
-}
+// El texto usa las mismas fuentes bitmap de U8g2 que la placa (helvR08 y helvR10):
+// la pantalla del gemelo coincide píxel por píxel con la de la manilla real.
 
 export const oledCanvas = document.createElement('canvas')
 oledCanvas.width = 128
@@ -98,7 +42,7 @@ oledTexture.minFilter = THREE.LinearFilter
 oledTexture.generateMipmaps = false
 oledTexture.colorSpace = THREE.SRGBColorSpace
 
-const framebuffer = new MonoFramebuffer(new CanvasTextRasterizer())
+const framebuffer = new MonoFramebuffer(U8G2_RASTERIZER)
 const oledContext = oledCanvas.getContext('2d')!
 const oledImage = oledContext.createImageData(128, 64)
 let lastPixels = new Uint8Array(0)
@@ -188,6 +132,8 @@ export interface DeviceView {
   readonly oledVersion: number
   readonly centralOnline: boolean
   readonly calibrated: boolean
+  /** Último pulsador presionado (por un instante), para resaltar el botón del panel. */
+  readonly pressedAction: Action | null
   press: (action: Action) => void
   setCentralOnline: (online: boolean) => void
   sendNotice: (code: NoticeCode) => void
@@ -199,6 +145,8 @@ export interface DeviceView {
   /** Falla o restablecimiento de un punto de acceso Wi-Fi. */
   toggleAccessPoint: (id: string) => void
 }
+
+let pressedTimer: ReturnType<typeof setTimeout> | undefined
 
 export const useDevice = create<DeviceView>(set => ({
   simSeconds: 0,
@@ -219,7 +167,15 @@ export const useDevice = create<DeviceView>(set => ({
   oledVersion: 0,
   centralOnline: true,
   calibrated: true,
-  press: action => { bracelet.press(action); renderOled(); publish(true) },
+  pressedAction: null,
+  press: action => {
+    bracelet.press(action)
+    renderOled()
+    publish(true)
+    set({ pressedAction: action })
+    clearTimeout(pressedTimer)
+    pressedTimer = setTimeout(() => set({ pressedAction: null }), 160)
+  },
   setCentralOnline: online => { bracelet.setCentralOnline(online); set({ centralOnline: online }) },
   sendNotice: code => bracelet.sendNotice(code),
   spikeGas: () => bracelet.spikeGas(),

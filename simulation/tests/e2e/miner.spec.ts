@@ -63,12 +63,22 @@ test('el minero camina con WASD sin atravesar la roca y la manilla transmite seg
   expect(await device<string>(page, 'level')).toBe('normal')
   expect(await page.getByTestId('bracelet-level').getAttribute('data-level')).toBe('normal')
 
-  // Los pulsadores cambian la pantalla OLED.
+  // Los pulsadores ↑ ↓ Enter cambian la pantalla OLED y resaltan el botón del panel.
   const before = await device<number>(page, 'oledVersion')
   await page.keyboard.press('ArrowDown')
   await page.keyboard.press('Enter')
   await expect.poll(() => device<number>(page, 'oledVersion')).toBeGreaterThan(before)
+  await expect(page.getByTestId('bracelet-enter')).toHaveAttribute('data-pressed', 'true')
   await page.keyboard.press('Enter')
+  await page.keyboard.press('ArrowUp')
+  // Con Q mantenida, la rueda recorre el menú en vez de alejar la cámara.
+  const wheel = await device<number>(page, 'oledVersion')
+  await page.keyboard.down('q')
+  await page.mouse.move(800, 450)
+  await page.mouse.wheel(0, 120)
+  await expect.poll(() => device<number>(page, 'oledVersion')).toBeGreaterThan(wheel)
+  await page.mouse.wheel(0, -120)
+  await page.keyboard.up('q')
 
   // Frente de avance recién volado: la manilla pasa a peligro y envía CO_ALARM.
   await setState(page, { cameraMode: 'first-person', viewpoint: { segment: 'S13', s: 70 } })

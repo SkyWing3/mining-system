@@ -16,6 +16,19 @@
 
 ---
 
+## Ajuste — 2026-11-26: OLED legible y pulsadores desde el teclado
+
+Pedido del usuario, con una captura del panel de la manilla: «los textos no son tan legibles… "Estado" parece "Estaco"»; y asignar teclas a subir, bajar y enter para usar la manilla mientras se controla al minero.
+
+| Cambio | Evidencia |
+| --- | --- |
+| **Fuentes reales de U8g2.** El texto de la OLED usaba Arial a 9 px con umbral a 1 bit, que borraba trazos finos (la asta de la «d»). Ahora se decodifican las mismas fuentes que la placa (`helvR08_tf` y `helvR10_tf`) y se reproducen la posición superior, el modo transparente, el desplazamiento de `display.cpp` y el ancho balanceado de `getUTF8Width`. La pantalla del gemelo coincide píxel por píxel con la real, en el panel y en la muñeca. | `u8g2.test.ts` (7 pruebas): encabezado, la «E» completa, el ancho de «C» documentado por U8g2 (8 px), la posición vertical, «Estado» ≠ «Estaco», todos los caracteres del menú, mensajes y avisos (con tildes, ñ y °) y el menú dibujado completo. |
+| **Escala entera en el panel.** La OLED se mostraba a 2,25 px por píxel y las letras salían desparejas. Ahora se dibuja con un número entero de píxeles físicos por píxel (4 en pantallas Retina, 2 en pantallas comunes), con una rejilla tenue como la del SSD1306. | Capturas con densidad 1 y 2 revisadas |
+| **Pulsadores en el teclado.** Siguen en ↑ ↓ Enter: se probaron teclas adicionales (Z X C y luego J K L) y el usuario decidió quitarlas. Con Q mantenida (manilla levantada), la rueda recorre el menú y el clic elige. El botón del panel se ilumina al usar su tecla (la tecla figura en su título, no en el botón). | `miner.spec.ts`: ↓ y Enter cambian la OLED y resaltan el botón; Q y la rueda recorren el menú |
+| **Legibilidad del resto del panel.** La columna «Modelo» y la nota de umbrales tienen más contraste y la nota pasó de 10 a 11 px. Los paneles quedan por encima de la etiqueta flotante del minero, que antes se superponía. | — |
+
+---
+
 ## Fase 2B (primera parte) — 2026-11-26: mina ampliada, cuartos de gas y cobertura Wi-Fi
 
 Pedido del usuario: «que la mina fuera mucho más grande, para que se pueda explorar de mejor manera», con «lugares de gases (como cuartos pero de mina) donde el sensor se ponga a prueba». También pidió que «en todo momento se monitoree la señal con la central, que no sea simplemente señal ilimitada»: cuando no hay señal, la manilla debe hacer lo que hace el firmware, con la cola de mensajes.
@@ -101,7 +114,7 @@ Pedido del usuario: «controlar a un minero dentro de la mina, es como un juego 
 
 - **No hay conexión con la central real.** El navegador no puede enviar `X-Device-Key` a `/ws/device`. Haría falta un relé local o un cambio en el backend; queda como decisión del usuario (ADR-013, D6).
 - El modelo ambiental es didáctico (dilución exponencial por distancia), no un cálculo de ventilación.
-- La fuente de la OLED aproxima la Helvetica de U8g2 con Arial a 1 bit: la disposición coincide, los píxeles no.
+- ~~La fuente de la OLED aproxima la Helvetica de U8g2 con Arial a 1 bit: la disposición coincide, los píxeles no.~~ Resuelto el 2026-11-26: se usan las fuentes reales de U8g2.
 - El minero es procedural, de aspecto semirrealista. No tiene piel con *skinning* ni dedos articulados.
 - Solo hay un minero. No colisiona con postes ni rieles, solo con la roca (igual que en F1).
 - No se ejecutó el benchmark de recorrido en tercera persona. En las capturas de las pruebas (perfil Medio, 1600×900) el diagnóstico mostraba 60 FPS, una GPU de 4,5 a 8,7 ms y entre 62 y 131 draw calls.
